@@ -1,0 +1,352 @@
+{
+  "0": {
+    "env_params": {
+      "name": "SingleHop, Two Users, Non-admissible arrival rates",
+      "env_type": "SH",
+      "nodes": [
+        1,
+        2,
+        0
+      ],
+      "X_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.133
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 2,
+          "probability": 0.5225
+        }
+      },
+      "Y_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "capacity": [
+            0,
+            1
+          ],
+          "probability": [
+            0.3,
+            0.7
+          ]
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "capacity": [
+            0,
+            1,
+            2
+          ],
+          "probability": [
+            0.2,
+            0.5,
+            0.3
+          ]
+        }
+      }
+    },
+    "arrival_rates": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.133
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "arrival": 2,
+        "probability": 0.5225
+      }
+    },
+    "network_load": 0.33249999999999996,
+    "lta": 18.176184,
+    "admissible": true
+  },
+  "1": {
+    "env_params": {
+      "name": "SingleHop, Two Users, Non-admissible arrival rates",
+      "env_type": "SH",
+      "nodes": [
+        1,
+        2,
+        0
+      ],
+      "X_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.29924999999999996
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.87875
+        }
+      },
+      "Y_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "capacity": [
+            0,
+            1
+          ],
+          "probability": [
+            0.3,
+            0.7
+          ]
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "capacity": [
+            0,
+            1,
+            2
+          ],
+          "probability": [
+            0.2,
+            0.5,
+            0.3
+          ]
+        }
+      }
+    },
+    "arrival_rates": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.29924999999999996
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.87875
+      }
+    },
+    "network_load": 0.6131818181818182,
+    "lta": 8.269076,
+    "admissible": true
+  },
+  "2": {
+    "env_params": {
+      "name": "SingleHop, Two Users, Non-admissible arrival rates",
+      "env_type": "SH",
+      "nodes": [
+        1,
+        2,
+        0
+      ],
+      "X_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.46549999999999997
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.7124999999999999
+        }
+      },
+      "Y_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "capacity": [
+            0,
+            1
+          ],
+          "probability": [
+            0.3,
+            0.7
+          ]
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "capacity": [
+            0,
+            1,
+            2
+          ],
+          "probability": [
+            0.2,
+            0.5,
+            0.3
+          ]
+        }
+      }
+    },
+    "arrival_rates": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.46549999999999997
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.7124999999999999
+      }
+    },
+    "network_load": 0.6563636363636363,
+    "lta": 16.481892,
+    "admissible": true
+  },
+  "3": {
+    "env_params": {
+      "name": "SingleHop, Two Users, Non-admissible arrival rates",
+      "env_type": "SH",
+      "nodes": [
+        1,
+        2,
+        0
+      ],
+      "X_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.5652499999999999
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.513
+        }
+      },
+      "Y_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "capacity": [
+            0,
+            1
+          ],
+          "probability": [
+            0.3,
+            0.7
+          ]
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "capacity": [
+            0,
+            1,
+            2
+          ],
+          "probability": [
+            0.2,
+            0.5,
+            0.3
+          ]
+        }
+      }
+    },
+    "arrival_rates": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.5652499999999999
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.513
+      }
+    },
+    "network_load": 0.6369318181818181,
+    "lta": 10.673482,
+    "admissible": true
+  },
+  "4": {
+    "env_params": {
+      "name": "SingleHop, Two Users, Non-admissible arrival rates",
+      "env_type": "SH",
+      "nodes": [
+        1,
+        2,
+        0
+      ],
+      "X_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.6649999999999999
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.3135
+        }
+      },
+      "Y_params": {
+        "1": {
+          "source": 1,
+          "destination": 0,
+          "capacity": [
+            0,
+            1
+          ],
+          "probability": [
+            0.3,
+            0.7
+          ]
+        },
+        "2": {
+          "source": 2,
+          "destination": 0,
+          "capacity": [
+            0,
+            1,
+            2
+          ],
+          "probability": [
+            0.2,
+            0.5,
+            0.3
+          ]
+        }
+      }
+    },
+    "arrival_rates": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.6649999999999999
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.3135
+      }
+    },
+    "network_load": 0.6174999999999999,
+    "lta": 15.331632,
+    "admissible": true
+  }
+}
