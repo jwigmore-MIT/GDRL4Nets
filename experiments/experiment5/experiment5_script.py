@@ -34,7 +34,7 @@ training_envs_ind = args.envs_ind
 
 
 cfg = load_config(full_path= CONFIG_PATH)
-cfg.exp_name = f"Experiment5a_{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
+cfg.exp_name = f"{args.experiment_name}_{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 
 training_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
                    "device": cfg.device,
