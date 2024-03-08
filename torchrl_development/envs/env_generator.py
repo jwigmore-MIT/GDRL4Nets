@@ -232,13 +232,14 @@ class EnvGenerator:
         if ind is None:
             ind = self.seed_generator.choice(self.num_envs)
         try:
-            env_params = self.env_parameters[ind]["env_params"]
+            env_params_ind = list(self.env_parameters.keys())[ind]
+            env_params = self.env_parameters[env_params_ind]["env_params"]
         # if ind is not in the keys
         except KeyError:
             raise ValueError(f"Index {ind} is not in the keys of the environment parameters")
 
         env = make_env(env_params, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
-        env.baseline_lta = self.env_parameters[ind]["lta"]
+        env.baseline_lta = self.env_parameters[env_params_ind]["lta"]
         self.history.append(ind)
         return env
 
