@@ -23,8 +23,8 @@ import argparse
 # how to write this as a script that can be run from the command line and takes in an argument from the command line
 
 parser = argparse.ArgumentParser(description='Run experiment 5')
-parser.add_argument('--envs_ind', nargs = '+', type=int, help='indices of the environments to train on', default=[0,1])
-parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment5a")
+parser.add_argument('--envs_ind', nargs = '+', type=int, help='indices of the environments to train on', default=[0,2])
+parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment5b")
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment5.yaml")
@@ -35,6 +35,7 @@ training_envs_ind = args.envs_ind
 
 cfg = load_config(full_path= CONFIG_PATH)
 cfg.exp_name = f"{args.experiment_name}_{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
+cfg.training_env.envs_ind = training_envs_ind
 
 training_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
                    "device": cfg.device,
