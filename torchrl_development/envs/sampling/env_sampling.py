@@ -66,17 +66,25 @@ We then want to output the key_params and key_ltas and statistics such as the nu
 
 """
 
-def sample_env_params(base_param_file, num_samples, rollout_steps):
+def sample_env_params(base_param_file,
+                      total_admissible_envs,
+                      num_rollouts_per_env,
+                      rollout_steps,
+                      keep_dominated = True):
     env_params = parse_env_json(base_param_file)
     param_dict = {} # will store the parameters and the lta in a dictionary for each set of arrival rates
     max_weight_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
 
     # Loop with plotting
-    pbar = tqdm.tqdm(total=num_samples)
+    pbar = tqdm.tqdm(total=total_admissible_envs)
     all_env_params = []
-
-    for i in range(num_samples):
-        pbar.update(1)
+    num_admissible = 0
+    num_sampled = 0
+    while num_admissible < total_admissible_envs:
+        num_sampled+=1
+        i = num_sampled
+        #update pbar to same num_admissible / num_sampled
+        pbar.set_description(f"Admissible/Sampled environments: {num_admissible}/{num_sampled}")
         new_params, arrival_rates = generate_new_params(env_params)
         param_dict[i] = {"env_params": new_params,
                                             "arrival_rates": arrival_rates,
@@ -84,32 +92,54 @@ def sample_env_params(base_param_file, num_samples, rollout_steps):
                                             "lta": None,
                                             "admissible": None,
                                             }
-        env = make_env(new_params,
-                       seed = 0,
-                       device = "cpu",
-                       terminal_backlog = 100)
+        # get num_envs rollouts per environment to estimate the lta backlog better
+        sampled_env_backlogs = np.zeros([num_rollouts_per_env, rollout_steps])
+        for n in range(num_rollouts_per_env):
+            env = make_env(new_params,
+                           seed = 0,
+                           device = "cpu",
+                           terminal_backlog = 250)
 
-        # Test MaxWeightActor
-        td = env.rollout(policy=max_weight_actor, max_steps = rollout_steps,)
+            # Test MaxWeightActor
+            td = env.rollout(policy=max_weight_actor, max_steps = rollout_steps,)
+            # if the length of td is not equal to rollout_steps, then quit the loop, and set the admissible to False
+            if len(td["backlog"]) != rollout_steps:
+                param_dict[i]["admissible"] = False
+                break
+            else:
+                sampled_env_backlogs[n] = td["backlog"].squeeze()
+                param_dict[i]["admissible"] = True
+                if n == num_rollouts_per_env - 1:
+                    num_admissible += 1
+
+
+
 
         # plot the lta_backlogs
-        backlogs = td["backlog"]
-        lta = compute_lta(backlogs)
-        # convert last element of lta to a float
-        lta_final: float = lta[-1].numpy().tolist()
+        if param_dict[i]["admissible"]:
+            ltas = np.array([compute_lta(backlogs) for backlogs in sampled_env_backlogs])
+            lta = np.mean(ltas, axis = 0)
+            # convert last element of lta to a float
+            lta_final: float = lta[-1]
+            pbar.update(1)
 
-        # add all extra information into the param_dict[i]
-        param_dict[i]["lta"] = lta_final
-        param_dict[i]["admissible"] = lta.shape[0] == rollout_steps
+            # add all extra information into the param_dict[i]
+            param_dict[i]["lta"] = lta_final
+        else:
+            param_dict[i]["lta"] = None
         param_dict[i]["network_load"] = env.network_load
     # Update pbar desc to say getting the admissible rates
-    pbar.set_description("Getting non-dominated (key) rates")
+
     # Get all values of the arrival rates, and if any arrival rate is elementwise less than another arrival rate, then remove it
     admissible_keys = [np.array(k) for k in param_dict.keys() if param_dict[k]["admissible"]]
     admissible_param_dict = {k: param_dict[k] for k in param_dict.keys() if param_dict[k]["admissible"]}
-    #key_rates = remove_dominated_arrays(admissible_keys)
-    # sort all admisssible keys by the network load
-    #key_rates = sorted(key_rates, key = lambda x: param_dict[tuple(x)]["network_load"])
+    if not keep_dominated:
+        raise NotImplementedError("Need to implement the keep_dominated = False case")
+        pbar.set_description("Getting non-dominated (key) rates")
+        key_rates = remove_dominated_arrays(admissible_keys)
+        # sort all admisssible keys by the network load
+        key_rates = sorted(key_rates, key = lambda x: param_dict[tuple(x)]["network_load"])
+
 
     # Sort admisssible_param_dict by the network load
     admissible_param_dict = {k: v for k, v in sorted(admissible_param_dict.items(), key = lambda x: x[1]["network_load"])}
@@ -134,8 +164,8 @@ def sample_env_params(base_param_file, num_samples, rollout_steps):
 
 
     # print the statistics
-    print(f"Number of sampled rates: {num_samples}")
-    print(f"Number of admissible rates: {len(admissible_param_dict)}")
+    print(f"Number of sampled environments: {num_sampled}")
+    print(f"Number of admissible rates: {num_admissible}")
     #print(f"Number of key rates: {len(key_rates)}")
 
     return multi_env_params
@@ -212,7 +242,7 @@ if __name__ == "__main__":
         save_path = f"{save_path.split('.')[0]}_{i}.json"
 
     # Sample the environment parameters
-    multi_env_params =sample_env_params(base_param_file, num_samples, rollout_steps)
+    multi_env_params = sample_env_params(base_param_file, num_samples, rollout_steps, )
 
     # Save environment parameters to a file
     with open(save_path, "w") as f:

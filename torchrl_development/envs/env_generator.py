@@ -228,19 +228,24 @@ class EnvGenerator:
     def clear_history(self):
         self.history = []
 
-    def sample_from_multi(self, ind = None):
-        if ind is None:
-            ind = self.seed_generator.choice(self.num_envs)
+    def sample_from_multi(self, rel_ind = None, true_ind = None):
+        if rel_ind is None and true_ind is None:
+            rel_ind = self.seed_generator.choice(self.num_envs)
+        if rel_ind is not None and true_ind is not None:
+            raise ValueError("Only one of rel_ind or true_ind can be specified")
         try:
-            env_params_ind = list(self.env_parameters.keys())[ind]
+            if rel_ind is not None:
+                env_params_ind = list(self.env_parameters.keys())[rel_ind]
+            if true_ind is not None:
+                env_params_ind = true_ind
             env_params = self.env_parameters[env_params_ind]["env_params"]
         # if ind is not in the keys
         except KeyError:
-            raise ValueError(f"Index {ind} is not in the keys of the environment parameters")
+            raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")
 
         env = make_env(env_params, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
         env.baseline_lta = self.env_parameters[env_params_ind]["lta"]
-        self.history.append(ind)
+        self.history.append(rel_ind)
         return env
 
     def cycle_sample(self):
