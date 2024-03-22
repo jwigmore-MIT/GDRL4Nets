@@ -38,7 +38,8 @@ def make_env(env_params,
              inverse_reward= False,
              terminate_on_convergence = False,
              convergence_threshold = 0.1,
-             stat_window_size = 100000):
+             stat_window_size = 100000,
+             terminate_on_lta_threshold = False,):
     """
     Makes a single environment based on the parameters in env_params
     :param env_params:
@@ -60,6 +61,7 @@ def make_env(env_params,
     env_params["terminate_on_convergence"] = terminate_on_convergence
     env_params["convergence_threshold"] = convergence_threshold
     env_params["stat_window_size"] = stat_window_size
+    env_params["terminate_on_lta_threshold"] = terminate_on_lta_threshold
 
     base_env = SingleHop(env_params, seed, device)
     env = TransformedEnv(
@@ -237,8 +239,8 @@ class EnvGenerator:
 
     def sample_from_multi(self, rel_ind = None, true_ind = None):
         """
-        If given rel_ind, then samples from the context_dicts with the index rel_ind
-        If given true_ind, then samples from the context_dicts with the key true_ind
+        If given rel_ind, then samples the rel_ind-th environment from the context_dicts
+        If given true_ind, then samples the true_ind environment from the context_dicts
         If neither are given, then samples from the context_dicts with a random index uniformly
         :param rel_ind:
         :param true_ind:
@@ -260,8 +262,8 @@ class EnvGenerator:
             raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")
 
         env = make_env(env_params, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
-        env.baseline_lta = self.context_dicts[env_params_ind]["lta"]
-        self.history.append(rel_ind)
+        env.base_env.baseline_lta = self.context_dicts[env_params_ind]["lta"]
+        self.history.append(env_params_ind)
         return env
 
     def cycle_sample(self):
@@ -274,6 +276,7 @@ class EnvGenerator:
     def sample_from_solo(self):
         env = make_env(self.context_dicts, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
         env.baseline_lta = self.baseline_lta
+        self.history.append(0)
         return env
 
 

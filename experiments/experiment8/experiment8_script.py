@@ -18,12 +18,13 @@ import time
 from tensordict import TensorDict
 from tqdm import tqdm
 from torchrl.envs.utils import check_env_specs, ExplorationType, set_exploration_type
+from torchrl_development.MultiEnvSyncDataCollector import MultiEnvSyncDataCollector
 
 import argparse
 # how to write this as a script that can be run from the command line and takes in an argument from the command line
 
 parser = argparse.ArgumentParser(description='Run experiment')
-parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="c")
+parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
 #parser.add_argument('--test_envs_ind', nargs = '+', type=int, help='indices of the environments to test on', default=[4,5])
 parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH2u_context_set_10_03211514.json")
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment8")
@@ -69,7 +70,8 @@ eval_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
                         "stat_window_size": 100000,
                         "terminate_on_convergence": True,
-                        "convergence_threshold": 0.1}
+                        "convergence_threshold": 0.1,
+                        "terminate_on_lta_threshold": True,}
 
 
 
@@ -136,14 +138,16 @@ normalize_advantage=cfg.loss.norm_advantage,
 loss_critic_type="l2"
 )
 #
-collector = SyncDataCollector(
+collector = MultiEnvSyncDataCollector(
 policy=actor,
 create_env_fn=training_env_generator.sample(),
 frames_per_batch=cfg.collector.frames_per_batch,
 total_frames=cfg.collector.total_training_frames,
 device=device,
 storing_device=device,
-reset_at_each_iter=False,
+reset_at_each_iter=True,
+env_generator=training_env_generator.sample,
+
 )
 #
 # # create data buffer
@@ -204,7 +208,9 @@ total_network_updates = (
 
 for i, data in enumerate(collector):
     #actor.train()
+    training_env_id = training_env_generator.history[-1]
     log_info = {}
+    pbar.set_description(f"Finished Training rollout out env id {training_env_id}")
     sampling_time = time.time() - sampling_start
     frames_in_batch = data.numel()
     collected_frames += frames_in_batch * cfg.collector.frame_skip
@@ -218,6 +224,7 @@ for i, data in enumerate(collector):
             "train/mean_episode_reward": mean_episode_reward.item(),
             "train/mean_backlog": mean_backlog.item(),
             "train/num_trajectories": num_trajectories.item(),
+            "train/training_env_id": training_env_id,
         }
     )
     # Save the policy if it has the best mean_episode_reward

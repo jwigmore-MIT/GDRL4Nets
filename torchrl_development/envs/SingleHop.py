@@ -54,6 +54,9 @@ class SingleHop(EnvBase):
         if seed is None:
             seed = torch.empty((), dtype=torch.int64).random_().item()
         self._set_seed(seed)
+
+        self.env_id = net_para.get("env_id", "SingleHop")
+
         # Nodes/Buffers/Queues
         self.nodes = net_para['nodes']
         # Destination - always the last node
@@ -87,6 +90,10 @@ class SingleHop(EnvBase):
 
         # Add baseline lta performance for maxweight
         self.baseline_lta = net_para.get("baseline_lta", None)
+
+        #
+        self.terminate_on_lta_threshold = net_para.get("terminate_on_lta_threshold", False)
+        self.terminal_lta_factor = net_para.get("terminal_lta_factor", 5)
 
         # Tracking running state
         self.time_avg_stats = TimeAverageStatsCalculator(net_para.get("stat_window_size", 10000))
@@ -302,6 +309,9 @@ class SingleHop(EnvBase):
             reward = -100 if truncate else reward
         else:
             truncate = False
+        if self.baseline_lta is not None and self.terminate_on_lta_threshold:
+            if self.time_avg_stats.mean >  self.terminal_lta_factor * self.baseline_lta:
+                truncate = True
 
         # Step 7: Check if the episode should be truncated
         terminated = False

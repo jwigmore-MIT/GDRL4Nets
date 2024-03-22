@@ -29,7 +29,7 @@ collector:
 eval:
   eval_interval: 50000
   num_eval_envs: 3
-  traj_steps: 20000
+  traj_steps: 50000
 
 
 # logger
