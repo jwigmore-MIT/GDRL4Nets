@@ -33,6 +33,10 @@ parser.add_argument('--experiment_name', type=str, help='what the experiment wil
 train_sets =  {"a": {"train": [0,1,2,3,4], "test": [5,6,7,8,9]},
                "b": {"train": [5,6,7,8,9], "test": [0,1,2,3,4]},
                "c": {"train": [0,2,4,6,8], "test": [1,3,5,7,9]},
+               "d": {"train": [0], "test": [5,6,7,8,9]},
+               "e": {"train": [5], "test": [0,1,2,3,4]},
+               "f": {"train": [2], "test": [1, 3, 5, 7, 9]}
+
                }
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))

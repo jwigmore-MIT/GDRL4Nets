@@ -27,7 +27,7 @@ collector:
 
 # eval
 eval:
-  eval_interval: 50000
+  eval_interval: 100000
   num_eval_envs: 3
   traj_steps: 50000
 
