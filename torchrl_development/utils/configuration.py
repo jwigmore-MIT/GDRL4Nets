@@ -1,6 +1,7 @@
 
 import yaml
 import os
+import numpy as np
 CURR_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 TORCHRL_DEVELOPMENT_PATH = os.path.dirname(CURR_FILE_PATH)
 CONFIG_FILE_PATH = os.path.join(TORCHRL_DEVELOPMENT_PATH, "config", "experiments")
@@ -39,6 +40,16 @@ def load_config(yaml_file_path = None, full_path = None, lib_rel_path = None):
 def create_config_from_dict(config_dict):
     return ConfigObject(config_dict)
 
+def make_serializable(input_dict):
+    """Takes a dictionary and makes it json serializable by converting all keys to strings and all np.arrays to list"""
+    new_dict = {}
+    for k, v in input_dict.items():
+        if isinstance(v, dict):
+            v = make_serializable(v)
+        if isinstance(v, np.ndarray):
+            v = v.tolist()
+        new_dict[str(k)] = v
+    return new_dict
 
 if __name__ == "__main__":
     # test the config object

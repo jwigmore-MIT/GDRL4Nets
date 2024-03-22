@@ -278,8 +278,8 @@ for i, data in enumerate(collector):
                     eval_lta_backlog = compute_lta(eval_backlog)
                     lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
-                # get MaxWeight LTA from gen_env_generator.env_parameters[i]["lta]
-                max_weight_lta = eval_env_generator.env_parameters[i]["lta"]
+                # get MaxWeight LTA from gen_env_generator.context_dicts[i]["lta]
+                max_weight_lta = eval_env_generator.context_dicts[i]["lta"]
                 normalized_final_mean_lta_backlogs[i] = final_mean_lta_backlogs[i] / max_weight_lta
             eval_time = time.time() - eval_start
 

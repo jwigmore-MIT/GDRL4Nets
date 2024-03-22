@@ -1,5 +1,5 @@
 import json
-from torchrl_development.envs.env_generator import create_scaled_lambda_generator, EnvGenerator
+from torchrl_development.envs.env_generators import EnvGenerator
 from torchrl_development.utils.configuration import load_config
 from torchrl_development.actors import create_actor_critic
 from datetime import datetime
@@ -22,20 +22,36 @@ from torchrl.envs.utils import check_env_specs, ExplorationType, set_exploration
 import argparse
 # how to write this as a script that can be run from the command line and takes in an argument from the command line
 
-parser = argparse.ArgumentParser(description='Run experiment 5')
-parser.add_argument('--envs_ind', nargs = '+', type=int, help='indices of the environments to train on', default=[0,2])
-parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment5b")
+parser = argparse.ArgumentParser(description='Run experiment')
+parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
+#parser.add_argument('--test_envs_ind', nargs = '+', type=int, help='indices of the environments to test on', default=[4,5])
+parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH2u_context_set_10_03211514.json")
+parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="LSTM_Testing")
+
+
+
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment5.yaml")
+CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment8.yaml")
+
 
 args = parser.parse_args()
-training_envs_ind = args.envs_ind
+
+experiment_name = f"{args.experiment_name}{args.training_set}"
 
 
+training_envs_ind = [0]
+test_envs_ind = []
+
+# add all training_envs_ind to test_envs_ind
+test_envs_ind.extend(training_envs_ind)
+env_json = args.env_json
+
+#
 cfg = load_config(full_path= CONFIG_PATH)
-cfg.exp_name = f"{args.experiment_name}_{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
+cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.training_env.envs_ind = training_envs_ind
+cfg.env_json = env_json
 
 training_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
                    "device": cfg.device,
@@ -48,17 +64,21 @@ eval_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
                         "device": cfg.device,
                         "terminal_backlog": cfg.eval_envs.terminal_backlog,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
-                        }
+                        "stat_window_size": 100000,
+                        "terminate_on_convergence": True,
+                        "convergence_threshold": 0.1}
 
 
 
-all_env_params = json.load(open("experiment5_envs_params.json", 'rb'))
 
+context_set_dict = json.load(open(cfg.env_json, 'rb'))
+all_context_dicts = context_set_dict["context_dicts"]
 training_env_generator_input_params = {"num_envs": len(training_envs_ind),
-                    "all_env_params": {str(i): all_env_params[str(i)] for i in training_envs_ind}}
+                    "context_dicts": {str(i): all_context_dicts[str(i)] for i in training_envs_ind}}
 
-eval_env_generator_input_params = {"num_envs": len(all_env_params.keys()),
-            "all_env_params": all_env_params,}
+
+eval_env_generator_input_params = {"num_envs": len(test_envs_ind),
+            "context_dicts": {str(i): all_context_dicts[str(i)] for i in test_envs_ind}}
 
 training_env_generator = EnvGenerator(training_env_generator_input_params,
                                 training_make_env_parameters,
@@ -67,7 +87,6 @@ training_env_generator = EnvGenerator(training_env_generator_input_params,
 eval_env_generator = EnvGenerator(eval_env_generator_input_params,
                                 eval_make_env_parameters,
                                 env_generator_seed=cfg.eval_envs.env_generator_seed)
-
 
 
 # # Create base env for agent generation
@@ -80,12 +99,12 @@ input_shape = base_env.observation_spec["observation"].shape
 output_shape = base_env.action_spec.space.n
 #
 agent = create_actor_critic(
-input_shape,
-output_shape,
-in_keys=["observation"],
-action_spec=base_env.action_spec,
-temperature=cfg.agent.temperature,
-)
+    input_shape,
+    output_shape,
+    in_keys=["observation"],
+    action_spec=base_env.action_spec,
+    temperature=cfg.agent.temperature,
+    )
 
 # Set device
 device = cfg.device
@@ -156,9 +175,12 @@ cfg_dict = cfg.as_dict()
 with open(os.path.join(logger.experiment.dir, "config.yaml"), "w") as file:
     yaml.dump(cfg_dict, file)
 wandb.save("config.yaml")
+# Save the env_json file
+with open(os.path.join(logger.experiment.dir, cfg.env_json), "w") as file:
+    json.dump(context_set_dict, file)
+wandb.save(cfg.env_json) # this returns a WinError 1314 when running on windows
 
-
-wandb.watch(actor.module[0], log = "all", log_freq=10)
+#wandb.watch(actor.module[0], log = "all", log_freq=10)
 #
 # # Main Loop
 collected_frames = 0
@@ -274,13 +296,13 @@ for i, data in enumerate(collector):
             normalized_final_mean_lta_backlogs = {}
             num_evals = 0
             num_eval_envs = eval_env_generator.num_envs # gen_env_generator.num_envs
-            for i in range(num_eval_envs): # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
+            for i in eval_env_generator.context_dicts.keys(): # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
                 lta_backlogs[i] = []
                 for n in range(cfg.eval.num_eval_envs):
                     num_evals+= 1
                     # update pbar to say that we are evaluating num_evals/gen_env_generator.num_envs*cfg.eval.num_eval_envs
                     pbar.set_description(f"Evaluating {num_evals}/{eval_env_generator.num_envs*cfg.eval.num_eval_envs} eval environment")
-                    eval_env = eval_env_generator.sample(i)
+                    eval_env = eval_env_generator.sample(true_ind = i)
                     eval_td = eval_env.rollout(cfg.eval.traj_steps, actor)
                     eval_backlog = eval_td["next", "backlog"].numpy()
                     eval_lta_backlog = compute_lta(eval_backlog)
@@ -300,15 +322,17 @@ for i, data in enumerate(collector):
 
 
             # log the performanec of the policy on the same environment
-            training_env_lta_backlogs = np.mean([final_mean_lta_backlogs[i] for i in training_envs_ind])
-            log_info.update({f"eval/lta_backlog_training_envs": training_env_lta_backlogs})
-            # add the normalized lta backlog for the same environment
-            normalized_training_mean_lta_backlogs = np.mean([normalized_final_mean_lta_backlogs[i] for i in training_envs_ind])
-            log_info.update({f"eval_normalized/normalized_lta_backlog_training_envs": normalized_training_mean_lta_backlogs})
+            # if all training inds are in test inds then we can do this
+            if all([i in test_envs_ind for i in training_envs_ind]):
+                training_env_lta_backlogs = np.mean([final_mean_lta_backlogs[i] for i in training_envs_ind])
+                log_info.update({f"eval/lta_backlog_training_envs": training_env_lta_backlogs})
+                # add the normalized lta backlog for the same environment
+                normalized_training_mean_lta_backlogs = np.mean([normalized_final_mean_lta_backlogs[i] for i in training_envs_ind])
+                log_info.update({f"eval_normalized/normalized_lta_backlog_training_envs": normalized_training_mean_lta_backlogs})
 
 
             # log the performance of the policy on the non-training environments
-            non_training_inds = [i for i in range(eval_env_generator.num_envs) if i not in training_envs_ind]
+            non_training_inds = [i for i in test_envs_ind if i not in training_envs_ind]
             general_lta_backlogs = np.mean([final_mean_lta_backlogs[i] for i in non_training_inds])
             log_info.update({"eval/lta_backlog_non_training_envs": general_lta_backlogs})
             # add the normalized lta backlog for the general environments
@@ -316,10 +340,10 @@ for i, data in enumerate(collector):
             log_info.update({"eval_normalized/normalized_lta_backlog_non_training_envs": normalized_general_lta_backlogs})
 
             # log the performance of the policy on all environments
-            all_lta_backlogs = np.mean([final_mean_lta_backlogs[i] for i in range(eval_env_generator.num_envs)])
+            all_lta_backlogs = np.mean([final_mean_lta_backlogs[i] for i in test_envs_ind])
             log_info.update({"eval/lta_backlog_all_envs": all_lta_backlogs})
             # add the normalized lta backlog for all environments
-            normalized_all_lta_backlogs = np.mean([normalized_final_mean_lta_backlogs[i] for i in range(eval_env_generator.num_envs)])
+            normalized_all_lta_backlogs = np.mean([normalized_final_mean_lta_backlogs[i] for i in test_envs_ind])
             log_info.update({"eval_normalized/normalized_lta_backlog_all_envs": normalized_all_lta_backlogs})
 
 

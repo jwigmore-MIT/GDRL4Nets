@@ -4,7 +4,7 @@ import json
 
 if __name__ == "__main__":
     # Settings for the sampling loop
-    num_admissible_envs = 10
+    num_admissible_envs = 30
     num_rollouts_per_env = 3
     rollout_steps =  100_000
 

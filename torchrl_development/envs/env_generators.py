@@ -35,7 +35,10 @@ def make_env(env_params,
              device="cpu",
              terminal_backlog=None,
              observation_keys=["Q", "Y"],
-             inverse_reward= False):
+             inverse_reward= False,
+             terminate_on_convergence = False,
+             convergence_threshold = 0.1,
+             stat_window_size = 100000):
     """
     Makes a single environment based on the parameters in env_params
     :param env_params:
@@ -53,6 +56,10 @@ def make_env(env_params,
     if observe_lambda and "lambda":
         env_params["obs_lambda"] = True
         if "lambda" not in observation_keys: observation_keys.append("lambda")
+
+    env_params["terminate_on_convergence"] = terminate_on_convergence
+    env_params["convergence_threshold"] = convergence_threshold
+    env_params["stat_window_size"] = stat_window_size
 
     base_env = SingleHop(env_params, seed, device)
     env = TransformedEnv(
@@ -195,7 +202,7 @@ class EnvGenerator:
                  cycle_sample = False
                  ):
         # if env_params has a key "key_params" then is the parameters of many environments
-        self.env_parameters = None
+        self.context_dicts = None
 
         # set np seed
         self.env_generator_seed = env_generator_seed
@@ -203,10 +210,10 @@ class EnvGenerator:
 
         # check if env_params is a single environment or many
         if "num_envs" in input_params.keys():
-            self.env_parameters = input_params["all_env_params"]
-            # if all keys of env_parameters are str, then convert to int
-            if all([isinstance(key, str) for key in self.env_parameters.keys()]):
-                self.env_parameters = {int(key): value for key, value in self.env_parameters.items()}
+            self.context_dicts = input_params["context_dicts"]
+            # if all keys of context_dicts are str, then convert to int
+            if all([isinstance(key, str) for key in self.context_dicts.keys()]):
+                self.context_dicts = {int(key): value for key, value in self.context_dicts.items()}
             self.num_envs = input_params["num_envs"]
             if not cycle_sample:
                 self.sample = self.sample_from_multi
@@ -214,7 +221,7 @@ class EnvGenerator:
                 self.sample = self.cycle_sample
                 self.last_sample_ind = -1
         else:
-            self.env_parameters = {0: {
+            self.context_dicts = {0: {
                                     "env_params":input_params,
                                    "admissible": None,
                                    "arrival_rates": None,
@@ -229,22 +236,31 @@ class EnvGenerator:
         self.history = []
 
     def sample_from_multi(self, rel_ind = None, true_ind = None):
+        """
+        If given rel_ind, then samples from the context_dicts with the index rel_ind
+        If given true_ind, then samples from the context_dicts with the key true_ind
+        If neither are given, then samples from the context_dicts with a random index uniformly
+        :param rel_ind:
+        :param true_ind:
+        :return:
+        """
+
         if rel_ind is None and true_ind is None:
             rel_ind = self.seed_generator.choice(self.num_envs)
         if rel_ind is not None and true_ind is not None:
             raise ValueError("Only one of rel_ind or true_ind can be specified")
         try:
             if rel_ind is not None:
-                env_params_ind = list(self.env_parameters.keys())[rel_ind]
+                env_params_ind = list(self.context_dicts.keys())[rel_ind]
             if true_ind is not None:
                 env_params_ind = true_ind
-            env_params = self.env_parameters[env_params_ind]["env_params"]
+            env_params = self.context_dicts[env_params_ind]["env_params"]
         # if ind is not in the keys
         except KeyError:
             raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")
 
         env = make_env(env_params, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
-        env.baseline_lta = self.env_parameters[env_params_ind]["lta"]
+        env.baseline_lta = self.context_dicts[env_params_ind]["lta"]
         self.history.append(rel_ind)
         return env
 
@@ -256,7 +272,7 @@ class EnvGenerator:
         return self.sample_from_multi(self.last_sample_ind)
 
     def sample_from_solo(self):
-        env = make_env(self.env_parameters, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
+        env = make_env(self.context_dicts, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
         env.baseline_lta = self.baseline_lta
         return env
 
@@ -264,8 +280,8 @@ class EnvGenerator:
     def create_all_envs(self):
         envs = {}
         for i in range(self.num_envs):
-            key = list(self.env_parameters.keys())[i]
-            env_params = self.env_parameters[key]
+            key = list(self.context_dicts.keys())[i]
+            env_params = self.context_dicts[key]
             if "env_params" in env_params.keys():
                 env_params = env_params["env_params"]
             env = make_env(env_params, **self._make_env_keywords)
@@ -278,7 +294,7 @@ class EnvGenerator:
     def add_env_params(self, env_params, ind = None):
         if ind is None:
             ind = self.num_envs
-        self.env_parameters[ind] = env_params
+        self.context_dicts[ind] = env_params
         self.num_envs += 1
 
 
@@ -293,6 +309,7 @@ class EnvGenerator:
 
 if __name__ == "__main__":
     import json
+    raise Exception("The test code is not up to date. Needs to be updated for context_set_dict and context_dict format")
     env_name = "SH1"
     single_env_params = parse_env_json(f"{env_name}.json")
 
