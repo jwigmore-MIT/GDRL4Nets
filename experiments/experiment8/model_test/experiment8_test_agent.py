@@ -18,7 +18,7 @@ import numpy as np
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment8_model_test.yaml")
 
-experiment_name = "experiment8_model_test"
+experiment_name = "experiment8c_model_test"
 
 # Load all testing contexts
 test_context_set = json.load(open('SH2u_context_set_100_03211523.json'))
@@ -55,7 +55,7 @@ agent = create_actor_critic(
 device = cfg.device
 
 # Load agent
-agent.load_state_dict(torch.load('model_2905000.pt', map_location=device))
+agent.load_state_dict(torch.load('modelc_2305000.pt', map_location=device))
 
 # Set agent to eval mode
 agent.eval()

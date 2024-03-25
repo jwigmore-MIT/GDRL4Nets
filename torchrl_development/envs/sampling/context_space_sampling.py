@@ -1,4 +1,4 @@
-from torchrl_development.envs.env_generator import parse_env_json, make_env
+from torchrl_development.envs.env_generators import parse_env_json, make_env
 from torchrl_development.maxweight import MaxWeightActor
 from torchrl_development.utils.metrics import compute_lta
 import matplotlib.pyplot as plt
@@ -57,6 +57,19 @@ def remove_dominated_params(param_dict):
     new_dict = {k: v for k, v in param_dict.items() if int(k) not in removed_indices}
     return new_dict
 
+
+def create_border_context(base_params, index):
+    """
+    Create a border context with the arrival rate of the index-th node as 0.99*service_rate
+    """
+    new_params = deepcopy(base_params)
+    service_rates = np.array([params["service_rate"] for key, params in new_params["Y_params"].items()])
+    arrival_rates = np.zeros_like(service_rates, dtype = np.float64)
+    arrival_rates[index] = 0.99*service_rates[index]
+    for k, params in new_params["X_params"].items():
+        ind = int(k)-1
+        params["arrival_rate"] = arrival_rates[ind]
+    return new_params, arrival_rates
 
 
 def sample_load_based_arrival_rates(base_params, load_factor = None):
@@ -127,7 +140,8 @@ def sample_context_space(base_param_file,
                       rollout_steps,
                       keep_dominated = True,
                       load_factor = None,
-                      terminal_backlog = 250):
+                      terminal_backlog = 250,
+                       add_borders = False):
     base_env_params = parse_env_json(base_param_file)
     # get the service rates as a numpy array from the Y_params
     service_rates = np.array([params["service_rate"] for key, params in base_env_params["Y_params"].items()])
@@ -145,7 +159,12 @@ def sample_context_space(base_param_file,
         i = num_sampled
         #update pbar to same num_admissible / num_sampled
         pbar.set_description(f"Admissible/Sampled environments: {num_admissible}/{num_sampled}")
-        new_params, arrival_rates = sample_load_based_arrival_rates(base_env_params, load_factor=load_factor)
+        # add some small random noise to the load factor
+        if i < service_rates.shape[0] and add_borders:
+            new_params, arrival_rates = create_border_context(base_env_params, i)
+        else:
+            lf = load_factor + np.random.uniform(-0.2, 0.2)
+            new_params, arrival_rates = sample_load_based_arrival_rates(base_env_params, load_factor=lf)
         if num_admissible > 0:
             if check_dominated(sampled_arrival_rates, arrival_rates):
                 continue
@@ -192,6 +211,31 @@ def sample_context_space(base_param_file,
         else:
             sampled_contexts_dict[i]["lta"] = None
         sampled_contexts_dict[i]["network_load"] = env.network_load
+
+
+    # Add additional contexts that have the arrival_rate = 1-\eps * service rate and all other zeros
+    # if add_borders:
+    #     # get the service rates as a numpy array from the Y_params
+    #     service_rates = np.array([params["service_rate"] for key, params in base_env_params["Y_params"].items()])
+    #     for j in range(service_rates.shape):
+    #         new_params = deepcopy(base_env_params)
+    #         arrival_rates = np.zeros_like(service_rates)
+    #         arrival_rates[j] = 0.99*service_rates[j]
+    #         for k, params in new_params["X_params"].items():
+    #             ind = int(k)-1
+    #             params["arrival_rate"] = arrival_rates[ind]
+    #         # get number of keys in the sampled_contexts_dict
+    #         i = len(sampled_contexts_dict)
+    #         sampled_contexts_dict[i] = {"env_params": new_params,
+    #                                     "arrival_rates": arrival_rates,
+    #                                     "network_load": None,
+    #                                     "lta": None,
+    #                                     "admissible": None,
+    #                                     }
+
+
+
+
 
     # Get all values of the arrival rates, and if any arrival rate is elementwise less than another arrival rate, then remove it
     admissible_contexts_dict = {k: sampled_contexts_dict[k] for k in sampled_contexts_dict.keys() if sampled_contexts_dict[k]["admissible"]}

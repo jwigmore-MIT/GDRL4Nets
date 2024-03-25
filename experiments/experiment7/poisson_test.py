@@ -3,10 +3,11 @@
 # import make_env
 import numpy as np
 from torchrl_development.maxweight import MaxWeightActor
-from torchrl_development.envs.env_generator import make_env, parse_env_json
+from torchrl_development.envs.env_generators import make_env, parse_env_json
 from torchrl_development.utils.metrics import compute_lta
 from copy import deepcopy
 
+print("Running Poisson Test")
 env_params = parse_env_json("SH3.json")
 new_params = deepcopy(env_params)
 
@@ -24,7 +25,7 @@ service_rates = np.array([params["service_rate"] for key, params in Y_params.ite
 #eps = 0.05
 #load  = service_rates.shape[0]/(service_rates.shape[0]-1) + eps
 # load = 4/3+0.05
-load =1.36
+load =1.37
 # Sample a uniform rv of length equal to the number of X_params
 U = np.random.uniform(0, 1, size = len(Y_params))
 
@@ -51,13 +52,18 @@ env = make_env(new_params,
              observe_lambda = False,
              seed=0,
              device="cpu",
-             terminal_backlog=None,
+             terminal_backlog=500,
              observation_keys=["Q", "Y"],
-             inverse_reward= False
+             inverse_reward= False,
+             stat_window_size =  100000,
+             terminate_on_convergence =  True,
+             convergence_threshold = 0.1,
+             terminate_on_lta_threshold =  False,
+
 )
 
 max_weight_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
-
+print("Collecting Max Weight rollout")
 td = env.rollout(policy=max_weight_actor, max_steps = 50000)
 
 #plot backlog

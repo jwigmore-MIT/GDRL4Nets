@@ -48,6 +48,11 @@ def make_serializable(input_dict):
             v = make_serializable(v)
         if isinstance(v, np.ndarray):
             v = v.tolist()
+
+        # convert all np.ints and np floats to python ints and floats
+        types = [np.int64, np.int32, np.float64, np.float32]
+        if type(v) in types:
+            v = v.item()
         new_dict[str(k)] = v
     return new_dict
 

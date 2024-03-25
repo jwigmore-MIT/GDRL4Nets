@@ -147,6 +147,7 @@ class SingleHop(EnvBase):
                 Y_gen.append(create_poisson_rv(self.np_rng, rate = value['service_rate']))
             Y_map[key] = {"source": value['source'], "destination": value['destination']}
             link_rates.append(Y_gen[-1].mean())
+        self.service_rates = link_rates
         self.link_rates = link_rates
         self.Y_map = Y_map
         self.Y_gen = Y_gen
