@@ -10,18 +10,24 @@ from torchrl.envs.utils import check_env_specs, ExplorationType, set_exploration
 from tqdm import tqdm
 from torchrl_development.utils.metrics import compute_lta
 import numpy as np
+import argparse
 
+parser = argparse.ArgumentParser(description='Run experiment')
+parser.add_argument('--model', type=str, help='Model to Test', default="model82a")
 
+args = parser.parse_args()
 
+model = args.model
 
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment8_model_test.yaml")
 
-experiment_name = "experiment8c_model_test"
+experiment_name = "experiment82_model_test"
 
 # Load all testing contexts
-test_context_set = json.load(open('SH2u_context_set_100_03211523.json'))
+#test_context_set = json.load(open('SH2u_context_set_100_03211523.json'))
+test_context_set = json.load(open('SH3_context_set_100_03251626.json'))
 cfg =load_config(full_path= CONFIG_PATH)
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 # Create a generator from test_context_set
@@ -55,7 +61,7 @@ agent = create_actor_critic(
 device = cfg.device
 
 # Load agent
-agent.load_state_dict(torch.load('modelc_2305000.pt', map_location=device))
+agent.load_state_dict(torch.load(f'{model}.pt', map_location=device))
 
 # Set agent to eval mode
 agent.eval()
