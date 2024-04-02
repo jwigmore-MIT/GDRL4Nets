@@ -116,6 +116,8 @@ if args.cfg:
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.training_env.envs_ind = training_envs_ind
 cfg.env_json = env_json
+cfg.train_ids = training_envs_ind
+cfg.test_ids = test_envs_ind
 
 #print out the cfg object
 print("="*20)
