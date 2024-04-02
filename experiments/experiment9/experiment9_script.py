@@ -37,11 +37,12 @@ Findings:
 
 def smart_type(value):
 
-    try:
-        value_list = [float(item) for item in value.split(',')]
-        return np.array(value_list)
-    except ValueError:
-        pass
+    if ',' in value:
+        try:
+            value_list = [float(item) for item in value.split(',')]
+            return np.array(value_list)
+        except ValueError:
+            pass
 
     try:
         return int(value)
@@ -298,10 +299,12 @@ for i, data in enumerate(collector):
     mean_episode_reward = data["next", "reward"].mean()
     mean_backlog = data["next","backlog"].float().mean()
     num_trajectories = data["done"].sum()
+    normalized_backlog = mean_backlog/training_env_generator.context_dicts[training_env_id]["lta"]
     log_info.update(
         {
             "train/mean_episode_reward": mean_episode_reward.item(),
             "train/mean_backlog": mean_backlog.item(),
+            "train/mean_normalized_backlog": normalized_backlog.item(),
             "train/num_trajectories": num_trajectories.item(),
             "train/training_env_id": training_env_id,
         }
