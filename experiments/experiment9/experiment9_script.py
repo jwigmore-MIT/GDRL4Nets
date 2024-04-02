@@ -35,12 +35,40 @@ Findings:
     return to the equally weighted maxweight policy, if the drift term grows too large.  
 """
 
+def smart_type(value):
+
+    try:
+        value_list = [float(item) for item in value.split(',')]
+        return np.array(value_list)
+    except ValueError:
+        pass
+
+    try:
+        return int(value)
+    except ValueError:
+        pass
+
+    try:
+        return float(value)
+    except ValueError:
+        pass
+
+
+    if value.lower() in ['true', 'false']:
+        return value.lower() == 'true'
+
+    return value
 
 parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="c")
 #parser.add_argument('--test_envs_ind', nargs = '+', type=int, help='indices of the environments to test on', default=[4,5])
 parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH3_context_set_100_03251626.json")
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment9")
+parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
+
+
+# make it so that if the user enters --key value, then it will modify the key in the config file
+# if the key is not in the config file, then it will raise an error
 
 
 # train_sets =  {"a": {"train": [0,1,2,3,4], "test": [5,6,7,8,9]},
@@ -74,9 +102,29 @@ env_json = args.env_json
 
 #
 cfg = load_config(full_path= CONFIG_PATH)
+if args.cfg:
+    for key_value in args.cfg:
+        keys, value = key_value
+        keys = keys.split('.')
+        target = cfg
+        for key in keys[:-1]:
+            target = getattr(target, key)
+        setattr(target, keys[-1], value)
+
+
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.training_env.envs_ind = training_envs_ind
 cfg.env_json = env_json
+
+#print out the cfg object
+print("="*20)
+print(f"Experiment {cfg.exp_name}")
+print("-"*20)
+print("CONFIG PARAMETERS")
+print("-"*20)
+for key, value in cfg.as_dict().items():
+    print(f"{key}: {value}")
+print("="*20)
 
 training_make_env_parameters = {"observe_lambda": False,
                    "device": cfg.device,

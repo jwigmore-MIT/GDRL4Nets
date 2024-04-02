@@ -6,10 +6,11 @@ device: cpu
 agent:
   temperature: 10.0
   observe_lambda: True
+  init_weight: 0.25
 
 # environment
 training_env:
-  env_name: "SH2u"
+  env_name: "SH3"
   terminal_backlog: 500
   inverse_reward: True
   env_generator_seed: 531997
@@ -35,7 +36,7 @@ eval:
 # logger
 logger:
   backend: wandb
-  project_name: experiment8
+  project_name: experiment9
   group_name: null
   run_name: ["TrainGen", "PPO"]
 
@@ -44,7 +45,7 @@ logger:
 optim:
   lr:  1.0e-2
   eps: 1.0e-6
-  weight_decay: 0.0001
+  weight_decay: 0.01
   max_grad_norm: 1.0
   anneal_lr: True
   clip_epsilon: False
