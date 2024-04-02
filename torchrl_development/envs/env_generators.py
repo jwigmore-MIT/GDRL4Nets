@@ -1,7 +1,8 @@
 # get directory of torchrl_development
 import os
-from torchrl.envs.transforms import CatTensors, TransformedEnv, SymLogTransform, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, InverseReward
+from torchrl.envs.transforms import CatTensors, TransformedEnv, SymLogTransform, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, InverseReward, UnsqueezeTransform
 from torchrl_development.envs.SingleHop import SingleHop
+from torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from copy import deepcopy
 import numpy as np
 
@@ -30,6 +31,7 @@ def parse_env_json(json_path, config_args = None):
 
 
 def make_env(env_params,
+             graph= False,
              observe_lambda = False,
              seed=0,
              device="cpu",
@@ -62,8 +64,10 @@ def make_env(env_params,
     env_params["convergence_threshold"] = convergence_threshold
     env_params["stat_window_size"] = stat_window_size
     env_params["terminate_on_lta_threshold"] = terminate_on_lta_threshold
-
-    base_env = SingleHop(env_params, seed, device)
+    if graph:
+        base_env = SingleHopGraph(env_params, seed, device)
+    else:
+        base_env = SingleHop(env_params, seed, device)
     env = TransformedEnv(
         base_env,
         Compose(
@@ -74,6 +78,11 @@ def make_env(env_params,
             StepCounter()
         )
     )
+    if graph:
+        "Create x key from concatentation of observation keys and do symlog transform"
+        env = TransformedEnv(env, UnsqueezeTransform(in_keys = observation_keys, out_keys = observation_keys, unsqueeze_dim = -1))
+        env = TransformedEnv(env, CatTensors(in_keys=observation_keys, out_key="x", del_keys=False, dim = 1))
+        env = TransformedEnv(env, SymLogTransform(in_keys=["x"], out_keys=["x"]))
     if inverse_reward:
         env = TransformedEnv(env, InverseReward())
     else:

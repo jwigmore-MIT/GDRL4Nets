@@ -6,8 +6,10 @@ from torchrl_development.maxweight import MaxWeightActor
 from torchrl.data import CompositeSpec
 from torchrl.envs import ExplorationType
 from tensordict.nn import TensorDictModule, TensorDictModuleWrapper
-from torchrl.modules import Actor, MLP, ProbabilisticActor, ValueOperator, MaskedOneHotCategorical, ActorCriticWrapper, MaskedCategorical
+from torchrl.modules import Actor, MLP, ProbabilisticActor, ValueOperator, MaskedOneHotCategorical, ActorCriticWrapper, MaskedCategorical, OneHotCategorical
 import torch
+import torch.nn as nn
+from tensordict import TensorDict
 
 def create_ia_actor(input_shape,
                     output_shape,
@@ -132,6 +134,107 @@ def create_actor_critic(input_shape,
     return actor_critic
 
 
+
+def create_maxweight_actor_critic(input_shape,
+                output_shape,
+                in_keys,
+                action_spec,
+                temperature = 1.0,
+                device="cpu",
+                init_weights = None):
+    weight_size = input_shape[-1]//2
+    actor_network = MaxWeightNetwork(weight_size, temperature=temperature, weights=init_weights)
+    actor_module = NN_Actor(module=actor_network, in_keys=["Q", "Y"], out_keys=["logits"])
+
+    actor_module = ProbabilisticActor(
+        actor_module,
+        distribution_class=MaskedOneHotCategoricalTemp,
+        in_keys=["logits", "mask"],
+        distribution_kwargs={"grad_method": ReparamGradientStrategy.RelaxedOneHot,
+                             "temperature": temperature},  # {"temperature": 0.5},
+        spec=CompositeSpec(action=action_spec),
+        return_log_prob=True,
+        default_interaction_type=ExplorationType.RANDOM,
+    )
+    # input = TensorDict({"Q": torch.ones(1,weight_size), "Y": torch.ones(1,weight_size),
+    #                     "mask": torch.Tensor([[1,0,0,0,0,0]]).bool()}, batch_size=(1,))
+
+    # actor_output = actor_module(input)
+
+
+    critic_mlp = MLP(in_features=input_shape[-1],
+                     activation_class=torch.nn.ReLU,
+                     out_features=1,
+                     )
+
+
+    # Create Value Module
+    value_module = ValueOperator(
+        module=critic_mlp,
+        in_keys=in_keys,
+    )
+
+    #
+    actor_critic = ActorCriticWrapper(actor_module, value_module)
+
+    return actor_critic
+
+
+class NN_Actor(TensorDictModule):
+
+    def __init__(self, module, in_keys = ["Q", "Y"], out_keys = ["action"]):
+        super().__init__(module= module, in_keys = in_keys, out_keys=out_keys)
+
+    def forward(self, td):
+        #x = torch.cat([td[in_key] for in_key in self.in_keys]).unsqueeze(0)
+        td["logits"] = self.module(td["Q"], td["Y"])
+        return td
+
+
+class MaxWeightNetwork(nn.Module):
+    def __init__(self, weight_size, temperature=1.0, weights = None):
+        super(MaxWeightNetwork, self).__init__()
+        # randomly initialize the weights to be gaussian with mean 1 and std 0.1
+        if weights is None:
+            self.weights = nn.Parameter(torch.randn(weight_size)) #torch.ones(weight_size)*
+        else:
+            self.weights = nn.Parameter(weights)
+        self.temperature = temperature
+    def forward(self, Q, Y):
+        # split x into Q and Y
+        #Q = x[:, :x.shape[1]//2]
+        #Y = x[:, x.shape[1]//2:]
+        z = Y * Q * self.weights
+        # add a column of 0.1 to z
+
+        #z = z.squeeze() if z.dim() > 1 else z
+        if z.dim() == 1:
+            z = torch.cat([torch.ones(1), z], dim=0)
+        else:
+            z = torch.cat([torch.ones(z.shape[0],1), z], dim=1)
+        # # make the first element of z to be one and move the rest to the right
+        # if z.shape.__len__() > 1:
+        #     z = torch.cat([torch.ones(z.shape[0],1), z], dim=1)
+        # else:
+        #     z = torch.cat([torch.ones(1), z], dim=0)
+
+       # z = torch.cat([torch.ones((z.shape)), z], dim=1)
+        #z = torch.cat([torch.zeros((z.shape[0],1)), z], dim=1)
+        # normalize z
+        #z = z / z.sum(dim=1).unsqueeze(1)
+        if self.training:
+            A = z
+            #A = torch.nn.functional.softmax(z/self.temperature, dim=-1)
+        else:
+            A = torch.zeros_like(z)
+            if z.dim() == 1:
+                A[torch.argmax(z)] = 1
+            else:
+                A[torch.arange(z.shape[0]), torch.argmax(z, dim=-1)] = 1
+        #A_one_hot = F.one_hot(A, num_classes=z.shape[1] + 1)
+        return A
+
+
 from typing import Optional, Union, Sequence
 from torchrl.modules import ReparamGradientStrategy
 from torchrl.modules.distributions.discrete import _one_hot_wrapper
@@ -235,14 +338,17 @@ class MaskedOneHotCategoricalTemp(MaskedCategorical):
 
     def log_prob(self, value: torch.Tensor) -> torch.Tensor:
         # this calls the log_prob method of the MaskedCategorical class
-        return super().log_prob(value.argmax(dim=-1))
+        log_prob = super().log_prob(value.argmax(dim=-1, keepdim=False))
+        # if value.shape[0] > 1:
+        #     log_prob = log_prob.unsqueeze(-1)
+        return log_prob
 
     @property
     def mode(self) -> torch.Tensor:
         if hasattr(self, "logits"):
             # get the argmax of the logits
             argmax = self.logits.argmax()
-            argmax_one_hot = torch.zeros_like(self.logits)
+            argmax_one_hot = torch.zeros_like(self.logits).squeeze()
             argmax_one_hot[argmax] = 1
             return argmax_one_hot.to(torch.long)
 
