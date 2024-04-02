@@ -80,7 +80,7 @@ parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, he
 #                "f": {"train": [2], "test": [1, 3, 5, 7, 9]}
 #                }
 
-train_sets = {"a": {"train": [22], "test": []}, # lta backlog = 135.10
+train_sets = {"a": {"train": [0,10, 30, 40, 50], "test": [20, 21, 22, 23, 24]}, # lta backlog = 135.10
               "b": {"train": [23], "test": [20,21, 22, 24, 25]}, # 53.94
               "c": {"train": [24], "test": [20, 21, 22, 23, 25]},} # 12.048
 
