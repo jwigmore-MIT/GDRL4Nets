@@ -66,7 +66,12 @@ def get_module_error_rate(module, td, inputs = ["Q", "Y"]):
     return error_rate, error
 
 
-def maxweight_nn_training_test(env_id=31, rollout_length=10000, training_epochs=10000):
+def maxweight_nn_training_test(env_id=31, context_set_path = None, model_path = None, rollout_length=10000, training_epochs=10000):
+
+    if context_set_path is None:
+        context_set_path = 'SH2u_context_set_100_03211523.json'
+    if model_path is None:
+        model_path = 'model_2905000.pt'
 
     print(f"Running experiment8_test_agent.py for env_id {env_id}")
     SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -75,7 +80,8 @@ def maxweight_nn_training_test(env_id=31, rollout_length=10000, training_epochs=
     experiment_name = "experiment8_model_test"
 
     # Load all testing contexts
-    test_context_set = json.load(open('SH2u_context_set_100_03211523.json'))
+    test_context_set = json.load(open(context_set_path, 'rb'))
+
     # Create a generator from test_context_set
     make_env_parameters = {"observe_lambda": True,
                             "device": "cpu",
@@ -107,7 +113,7 @@ def maxweight_nn_training_test(env_id=31, rollout_length=10000, training_epochs=
     device = "cpu"
 
     # Load agent
-    agent.load_state_dict(torch.load('model_2905000.pt', map_location=device))
+    agent.load_state_dict(torch.load(model_path, map_location=device))
     mw_agent = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
     print("Collecting trajectories using agent and maxweight policy")
     # generator a trajectory from the agent
@@ -273,7 +279,8 @@ def maxweight_nn_training_test(env_id=31, rollout_length=10000, training_epochs=
     env_id = {env_id}
     arrival_rates = {arrival_rates_formatted}
     mw_nn_error_rate = {mw_nn_error_rate_formatted}
-    MW NN Weights = {w_normalized}
+    MW NN Weights = {w}
+    Normalized Weights = {w_normalized}
     """
     plt.subplots_adjust(hspace=0.5, bottom=0.2)
 
@@ -315,10 +322,18 @@ def maxweight_nn_training_test(env_id=31, rollout_length=10000, training_epochs=
 
 
 if __name__ == "__main__":
+    import pickle
     results = {}
+    #test_context_set_path = 'SH2u_context_set_100_03211523.json'
+    test_context_set_path = 'SH3_context_set_100_03251626.json'
+    #model_path = 'model_2905000.pt'
+    model_path = 'model82b.pt'
 
-    for env_id in range(20, 30):
-        results[env_id] = maxweight_nn_training_test(env_id=env_id)
+    for env_id in range(0,100):
+        results[env_id] = maxweight_nn_training_test(env_id=env_id, context_set_path= test_context_set_path, model_path= model_path)
+    with open(f"mw_policy_fitting_results_4_1.pkl", 'wb') as f:
+        pickle.dump(results, f)
 
 
-
+    # Get mean of all results for all keys
+    mean_results = {key: np.mean([results[env_id][key] for env_id in results.keys()], axis = 0) for key in results[0].keys()}

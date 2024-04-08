@@ -1,7 +1,7 @@
 import json
 from torchrl_development.envs.env_generators import EnvGenerator
 from torchrl_development.utils.configuration import load_config
-from torchrl_development.actors import create_maxweight_actor_critic
+from torchrl_development.actors import create_actor_critic, create_maxweight_actor_critic
 from datetime import datetime
 from torchrl_development.utils.metrics import compute_lta
 import numpy as np
@@ -19,57 +19,29 @@ from tensordict import TensorDict
 from tqdm import tqdm
 from torchrl.envs.utils import check_env_specs, ExplorationType, set_exploration_type
 from torchrl_development.MultiEnvSyncDataCollector import MultiEnvSyncDataCollector
+
 import argparse
+# how to write this as a script that can be run from the command line and takes in an argument from the command line
 
-""" EXPERIMENT 9
-This script is for training on a single environment using the MaxWeight Actor. The max weight actor attempts to learn weights w_i 
-for a maxweight policy where the action is argmax_i w_i Q_i y_i. 
 
-Findings:
-1. It is possible to learn a maxweight policy that outperforms equally weighted max weights for a single environment
-    Testing on non-training environments was not tested. However, from the maxweight fitting experiments, its likely
-    that the learned weighted policy will not generalize as well as the standard MLP architecture. 
-2. It is possible to train online as we can start with an equally weighted maxweight policy.  However, we need to ensure that
-    that the policy remains stable.  Stability can be improved by using a small learning rate and taking conservative updates, 
-    but it will be difficult to ensure that the policy remains stable. One idea is to add a drift term that will make the policy
-    return to the equally weighted maxweight policy, if the drift term grows too large.  
+""" EXPERIMENT 10
+This script is for the first experiment for training GNN based agents using DRL.  The goal here, is to train on a single 
+environment, and test on multple environments all with the same state and action space.  
+
+Need to :
+1. Modify the make_env function to work with the SingleHopGraphEnv
+
+
 """
 
-def smart_type(value):
-
-    if ',' in value:
-        try:
-            value_list = [float(item) for item in value.split(',')]
-            return np.array(value_list)
-        except ValueError:
-            pass
-
-    try:
-        return int(value)
-    except ValueError:
-        pass
-
-    try:
-        return float(value)
-    except ValueError:
-        pass
 
 
-    if value.lower() in ['true', 'false']:
-        return value.lower() == 'true'
-
-    return value
 
 parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
 #parser.add_argument('--test_envs_ind', nargs = '+', type=int, help='indices of the environments to test on', default=[4,5])
 parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH3_context_set_100_03251626.json")
-parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment9")
-parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
-
-
-# make it so that if the user enters --key value, then it will modify the key in the config file
-# if the key is not in the config file, then it will raise an error
+parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment10")
 
 
 # train_sets =  {"a": {"train": [0,1,2,3,4], "test": [5,6,7,8,9]},
@@ -80,13 +52,13 @@ parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, he
 #                "f": {"train": [2], "test": [1, 3, 5, 7, 9]}
 #                }
 
-train_sets = {"a": {"train": [0,10, 30, 40, 50], "test": [20, 21, 22, 23, 24]}, # lta backlog = 135.10
-              "b": {"train": [23], "test": [20,21, 22, 24, 25]}, # 53.94
-              "c": {"train": [24], "test": [20, 21, 22, 23, 25]},} # 12.048
+train_sets = {"a": {"train": [22], "test": [0,20, 40, 60, 80]}, # lta backlog = 135.10
+              "b": {"train": [23], "test": []}, #53.94
+              "c": {"train": [24], "test": [0,20, 40, 60, 80]},} # 12.048
 
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment9.yaml")
+CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment10.yaml")
 
 
 args = parser.parse_args()
@@ -103,40 +75,22 @@ env_json = args.env_json
 
 #
 cfg = load_config(full_path= CONFIG_PATH)
-if args.cfg:
-    for key_value in args.cfg:
-        keys, value = key_value
-        keys = keys.split('.')
-        target = cfg
-        for key in keys[:-1]:
-            target = getattr(target, key)
-        setattr(target, keys[-1], value)
-
-
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.training_env.envs_ind = training_envs_ind
 cfg.env_json = env_json
-cfg.train_ids = training_envs_ind
-cfg.test_ids = test_envs_ind
 
-#print out the cfg object
-print("="*20)
-print(f"Experiment {cfg.exp_name}")
-print("-"*20)
-print("CONFIG PARAMETERS")
-print("-"*20)
-for key, value in cfg.as_dict().items():
-    print(f"{key}: {value}")
-print("="*20)
-
-training_make_env_parameters = {"observe_lambda": False,
+training_make_env_parameters = {
+                   "graph": True,
+                   "observe_lambda": False,
                    "device": cfg.device,
                    "terminal_backlog": cfg.training_env.terminal_backlog,
                    "inverse_reward": cfg.training_env.inverse_reward,
                    }
 
 # creating eval env_generators
-eval_make_env_parameters = {"observe_lambda": False,
+eval_make_env_parameters = {
+                        "graph": True,
+                        "observe_lambda": False,
                         "device": cfg.device,
                         "terminal_backlog": cfg.eval_envs.terminal_backlog,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
@@ -172,20 +126,18 @@ training_env_generator.clear_history()
 check_env_specs(base_env)
 #
 # # Create agent
-input_shape = base_env.observation_spec["observation"].shape
+input_shape = base_env.observation_spec["x"].shape
 output_shape = base_env.action_spec.space.n
 #
 
-init_weights = torch.ones(base_env.observation_spec["Q"].shape)*.25
+### Initialize the actor
+from torch_geometric.nn import GraphSAGE, summary
+from torch_geometric_development.gnn_modules import GNNTensorDictModule, GNN_Critic, create_GNN_Actor_Critic
 
-agent = create_maxweight_actor_critic(
-    input_shape,
-    output_shape,
-    in_keys=["observation"],
-    action_spec=base_env.action_spec,
-    temperature=cfg.agent.temperature,
-    init_weights=init_weights,
-    )
+actor_network = GraphSAGE(input_shape[1], hidden_channels=32, num_layers=2, out_channels=1, aggr = 'max')
+critic_network = GNN_Critic(input_shape[1], out_channels=1, hidden_channels=32)
+agent = create_GNN_Actor_Critic(actor_network, critic_network, in_keys = ["x", "edge_index"],
+                                action_spec = base_env.action_spec, temperature=cfg.agent.temperature)
 
 # Set device
 device = cfg.device
@@ -256,7 +208,7 @@ logger_name="..\\logs",
 experiment_name=getattr(cfg, "exp_name", None),
 wandb_kwargs={
     "config": cfg.as_dict(),
-    "project": 'Experiment9',
+    "project": 'Experiment10',
 },
 )
 # # Save the cfg as a yaml file and upload to wandb
@@ -269,7 +221,8 @@ with open(os.path.join(logger.experiment.dir, cfg.env_json), "w") as file:
     json.dump(context_set_dict, file)
 wandb.save(cfg.env_json) # this returns a WinError 1314 when running on windows
 
-#wandb.watch(actor.module[0], log = "all", log_freq=10)
+wandb.watch(actor.module[0], log = "all", log_freq=10)
+wandb.watch(critic.module, log = "all", log_freq=10)
 #
 # # Main Loop
 collected_frames = 0
@@ -290,6 +243,7 @@ total_network_updates = (
 
 for i, data in enumerate(collector):
     #actor.train()
+    data["action"] = data["action"].squeeze()
     training_env_id = training_env_generator.history[-1]
     log_info = {}
     pbar.set_description(f"Finished Training rollout out env id {training_env_id}")
@@ -301,12 +255,10 @@ for i, data in enumerate(collector):
     mean_episode_reward = data["next", "reward"].mean()
     mean_backlog = data["next","backlog"].float().mean()
     num_trajectories = data["done"].sum()
-    normalized_backlog = mean_backlog/training_env_generator.context_dicts[training_env_id]["lta"]
     log_info.update(
         {
             "train/mean_episode_reward": mean_episode_reward.item(),
             "train/mean_backlog": mean_backlog.item(),
-            "train/mean_normalized_backlog": normalized_backlog.item(),
             "train/num_trajectories": num_trajectories.item(),
             "train/training_env_id": training_env_id,
         }
@@ -317,6 +269,22 @@ for i, data in enumerate(collector):
     training_start = time.time()
     losses = TensorDict({}, batch_size=[cfg.loss.ppo_epochs, num_mini_batches])
 
+    # What if I convert x and edge_index into the batch format, then convert it back to the tensor dict format
+    # from torch_geometric_development.conversions import tensor_dict_to_data, data_to_tensor_dict, lazy_stacked_tensor_dict_to_batch
+    # batch = lazy_stacked_tensor_dict_to_batch(TensorDict({"x": data["x"], "edge_index": data["edge_index"]}, batch_size = data.batch_size))
+    # # iterate through batch and add all attributes to data["batch"]
+    # data["batch"] = TensorDict({}, batch_size=[])
+    # for key in batch.keys():
+    #     if key == "ptr":
+    #         continue
+    #     data["batch"][key] = batch[key].unsqueeze(0)
+
+    # data["x"] = batch["x"]
+    # data["edge_index"] = batch["edge_index"]
+    # data["batch"] = batch["batch"]
+    # data["ptr"] = batch["ptr"]
+
+
     for j in range(cfg.loss.ppo_epochs):
 
         # Compute GAE
@@ -325,6 +293,7 @@ for i, data in enumerate(collector):
         data_reshape = data.reshape(-1)
         # Update the data buffer
         data_buffer.extend(data_reshape)
+        # data["sample_log_prob"] = data["sample_log_prob"].squeeze()
 
         for k, batch in enumerate(data_buffer):
             # Linearly decrease the learning rate and clip epsilon
@@ -336,19 +305,18 @@ for i, data in enumerate(collector):
 
 
             num_network_updates += 1
-
-            batch["sample_log_prob"] = batch["sample_log_prob"].squeeze()
-
             # Get a data batch
             batch = batch.to(device, non_blocking=True)
-
+            batch["sample_log_prob"] = batch["sample_log_prob"].squeeze()
             # Forward pass PPO loss
             loss = loss_module(batch)
             losses[j, k] = loss.select(
                 "loss_critic", "loss_entropy", "loss_objective", "entropy", "ESS"
             )
+            # loss["loss_objective"] = - loss["loss_objective"] #WRONG DONT USE
+
             loss_sum = (
-                    loss["loss_critic"] + loss["loss_objective"] + loss["loss_entropy"]
+                    loss["loss_critic"] + loss["loss_objective"] + loss["loss_entropy"] # - loss[objective?]
             )
             # Backward pass
             loss_sum.backward()
@@ -369,12 +337,19 @@ for i, data in enumerate(collector):
 
     # Get training losses and times
     training_time = time.time() - training_start
-    # losses_mean = losses.apply(lambda x: x.float().mean(), batch_size=[])
+    # losses_stats = losses.apply(lambda x: x.float().sum() if x.key has "loss" in it otherwise .mean(), batch_size=[])
+    # take the sum of loss[key] if key has "loss" in it, otherwise take the mean
+    # losses_stats = losses.apply(lambda x: x.float().sum() if "loss" in x.key else x.float().mean(), batch_size=[])
+
+    # losses_stats = losses.apply(lambda x: x.float().mean(), batch_size=[])
     for key, value in loss.items():
         if key not in ["loss_critic", "loss_entropy", "loss_objective"]:
             log_info.update({f"train/{key}": value.mean().item()})
         else:
             log_info.update({f"train/{key}": value.sum().item()})
+    # log critic error
+    critic_error = (data["state_value"] - data["value_target"]).abs().mean()
+    log_info.update({"train/critic_error": critic_error.item()})
     log_info.update(
         {
             "train/lr": alpha*cfg.optim.lr,
@@ -384,10 +359,10 @@ for i, data in enumerate(collector):
     )
 
     # get the weights from the actor
-    actor_weights = actor.state_dict()
-    for key, value in actor_weights.items():
-        for e, log_val in enumerate(value.tolist()):
-            log_info.update({f"actor_weights/{e+1}": log_val})
+    # actor_weights = actor.state_dict()
+    # for key, value in actor_weights.items():
+    #     for e, log_val in enumerate(value.tolist()):
+    #         log_info.update({f"actor_weights/{e+1}": log_val})
 
 
 

@@ -15,10 +15,13 @@ class NN_Actor(TensorDictModule):
 
 
 class MaxWeightNetwork(nn.Module):
-    def __init__(self, weight_size, temperature=1.0):
+    def __init__(self, weight_size, temperature=1.0, weights = None):
         super(MaxWeightNetwork, self).__init__()
         # randomly initialize the weights to be gaussian with mean 1 and std 0.1
-        self.weights = nn.Parameter(torch.randn(weight_size)*0.1) #torch.ones(weight_size)*
+        if weights is not None:
+            self.weights = nn.Parameter(weights)
+        else:
+            self.weights = nn.Parameter(torch.randn(weight_size)*0.1) #torch.ones(weight_size)*
         self.temperature = temperature
     def forward(self, x):
         # split x into Q and Y

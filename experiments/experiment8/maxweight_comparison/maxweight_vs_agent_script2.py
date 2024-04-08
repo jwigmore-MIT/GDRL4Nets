@@ -57,6 +57,8 @@ def train_module(module, td, in_keys = ["Q", "Y"], num_training_epochs=1000, lr=
                     break
         # stop training if loss converges
 
+        # stop training if loss converges
+
 
 def get_module_error_rate(module, td, inputs = ["Q", "Y"]):
     module.eval()
@@ -78,7 +80,7 @@ if __name__ == "__main__":
     experiment_name = "experiment8_model_test"
 
     # Load all testing contexts
-    test_context_set = json.load(open('SH2u_context_set_100_03211523.json'))
+    test_context_set = json.load(open('SH3_context_set_100_03251626.json'))
     # Create a generator from test_context_set
     make_env_parameters = {"observe_lambda": True,
                             "device": "cpu",
@@ -108,10 +110,9 @@ if __name__ == "__main__":
 
     # Set device
     device = "cpu"
-    # count the number of parameters in the agent
-    num_params = sum(p.numel() for p in agent.get_policy_operator().parameters())
+
     # Load agent
-    agent.load_state_dict(torch.load('model_2905000.pt', map_location=device))
+    agent.load_state_dict(torch.load('model82b.pt', map_location=device))
     mw_agent = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
     print("Collecting trajectories using agent and maxweight policy")
     # generator a trajectory from the agent
@@ -144,6 +145,9 @@ if __name__ == "__main__":
     mw_actions.plot(kind='bar', ax=ax[1])
     ax[0].set_title("Agent Action Frequencies")
     ax[1].set_title("MaxWeight Action Frequencies")
+    # use the same y-axis for both plots
+    ax[0].set_ylim(0, 0.7)
+    ax[1].set_ylim(0, 0.7)
     plt.tight_layout()
     plt.show()
 
