@@ -4,7 +4,7 @@ device: cpu
 
 # agent
 agent:
-  temperature: 10
+  temperature: 1
   observe_lambda: False
   init_weight: 0.25
 
