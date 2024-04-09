@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from tensordict.nn import TensorDictModule
+from tensordict import TensorDict
 
 class NN_Actor(TensorDictModule):
 
@@ -24,23 +25,20 @@ class MaxWeightNetwork(nn.Module):
             self.weights = nn.Parameter(torch.randn(weight_size)*0.1) #torch.ones(weight_size)*
         self.temperature = temperature
     def forward(self, x):
-        # split x into Q and Y
-        Q = x[:, :x.shape[1]//2]
-        Y = x[:, x.shape[1]//2:]
-        z = Y * Q * self.weights
-        # add a column of 0.1 to z
-        z = torch.cat([torch.ones((z.shape[0],1)), z], dim=1)
-        #z = torch.cat([torch.zeros((z.shape[0],1)), z], dim=1)
-        # normalize z
-        #z = z / z.sum(dim=1).unsqueeze(1)
+        Q, Y = x.split(x.shape[1] // 2, dim=1)
+        z = (Y * Q * self.weights).squeeze(dim=0)
+
+        z = torch.cat([torch.ones((z.shape[0], 1)), z], dim=-1)
+
         if self.training:
-            #A = z
-            A = torch.nn.functional.softmax(z/self.temperature, dim=-1)
+            A = torch.nn.functional.softmax(z / self.temperature, dim=-1)
         else:
             A = torch.zeros_like(z)
             A[torch.arange(z.shape[0]), torch.argmax(z, dim=-1)] = 1
-        #A_one_hot = F.one_hot(A, num_classes=z.shape[1] + 1)
+
         return A
+
+
 
 class LinearNetwork(nn.Module):
     '''Simple linear network where each output is a linear combination of the inputs'''
