@@ -30,7 +30,7 @@ collector:
 eval:
   eval_interval: 100000
   num_eval_envs: 3
-  traj_steps: 50000
+  traj_steps: 10000
 
 
 # logger
@@ -43,7 +43,7 @@ logger:
 
 # Optim
 optim:
-  lr:  1.0e-2
+  lr:  1.0e-3
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
