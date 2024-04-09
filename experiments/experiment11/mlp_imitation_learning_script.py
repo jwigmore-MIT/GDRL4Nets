@@ -106,12 +106,14 @@ if __name__ == "__main__":
     num_rollouts = 3
     training_epochs = 100
 
+    new_mdp_trajectories = True
+
     actor_depth = 2
     actor_cells = 32
 
     results = {}
     test_context_set_path = 'SH1_context_set.json'
-    mdp_path = "MDP_Solver/saved_mdps/SH1_0_MDP.p"
+    mdp_path = "MDP_Solver/saved_mdps/4_9_pm_SH1/SH1_0_MDP.p"
 
     # Load all testing contexts
     context_set_path = 'SH1_context_set.json'
@@ -127,7 +129,7 @@ if __name__ == "__main__":
                            "convergence_threshold": 0.1,
                            "terminate_on_lta_threshold": False, }
 
-    env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=111)
+    env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=456)
 
     base_env = env_generator.sample(env_id)
     env_generator.clear_history()
