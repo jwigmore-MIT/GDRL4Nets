@@ -4,7 +4,7 @@ device: cpu
 
 # agent
 agent:
-  temperature: 1
+  temperature: 10
   observe_lambda: False
   init_weight: 0.25
 
@@ -43,7 +43,7 @@ logger:
 
 # Optim
 optim:
-  lr:  1.0e-3
+  lr:  1.0e-2
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
