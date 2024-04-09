@@ -223,7 +223,7 @@ frames_per_batch=cfg.collector.frames_per_batch,
 total_frames=cfg.collector.total_training_frames,
 device=device,
 storing_device=device,
-reset_at_each_iter=True,
+reset_at_each_iter=cfg.collector.reset_at_each_iter,
 env_generator=training_env_generator.sample,
 
 )
