@@ -53,14 +53,14 @@ cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')
 cfg.training_env.envs_ind = training_envs_ind
 cfg.env_json = env_json
 
-training_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
+training_make_env_parameters = {"observe_lambda": cfg.mdp_agent.observe_lambda,
                    "device": cfg.device,
                    "terminal_backlog": cfg.training_env.terminal_backlog,
                    "inverse_reward": cfg.training_env.inverse_reward,
                    }
 
 # creating eval env_generators
-eval_make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
+eval_make_env_parameters = {"observe_lambda": cfg.mdp_agent.observe_lambda,
                         "device": cfg.device,
                         "terminal_backlog": cfg.eval_envs.terminal_backlog,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
@@ -103,7 +103,7 @@ agent = create_actor_critic(
     output_shape,
     in_keys=["observation"],
     action_spec=base_env.action_spec,
-    temperature=cfg.agent.temperature,
+    temperature=cfg.mdp_agent.temperature,
     )
 
 # Set device

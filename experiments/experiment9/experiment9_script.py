@@ -183,7 +183,7 @@ agent = create_maxweight_actor_critic(
     output_shape,
     in_keys=["observation"],
     action_spec=base_env.action_spec,
-    temperature=cfg.agent.temperature,
+    temperature=cfg.mdp_agent.temperature,
     init_weights=init_weights,
     )
 

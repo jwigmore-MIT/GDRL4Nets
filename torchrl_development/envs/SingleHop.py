@@ -59,6 +59,7 @@ class SingleHop(EnvBase):
 
         # Nodes/Buffers/Queues
         self.nodes = net_para['nodes']
+        self.N = len(self.nodes)-1
         # Destination - always the last node
         self.destination = 0
         # Initialize the buffers for each node
@@ -188,6 +189,11 @@ class SingleHop(EnvBase):
     def get_backlog(self):
         return np.sum(self.Q)
 
+    def set_state(self, state_array: np.array):
+        # Sets the Q and Y state based on the input array
+        self.Q = np.concatenate([np.zeros(1), state_array[:self.N]])
+        self.Y = np.concatenate([np.zeros(1), state_array[self.N:]])
+
     def _get_reward(self):
         return -self.get_backlog()
 
@@ -203,13 +209,13 @@ class SingleHop(EnvBase):
                 low = 0,
                 high = 100_000,
                 shape = (len(self.nodes)-1,),
-                dtype = torch.int
+                dtype = torch.float
             ),
             Y = BoundedTensorSpec(
                 low=0,
                 high=100_000,
                 shape = (len(self.nodes)-1,),
-                dtype = torch.int
+                dtype = torch.float
             ),
             backlog = BoundedTensorSpec(
                 low = 0,
@@ -278,6 +284,8 @@ class SingleHop(EnvBase):
         if np.sum(action) != 1:
             raise ValueError("Action must be a one-hot vector")
 
+        # make sure the action is the same shape as Y
+
 
         # Step 1: Get the corresponding reward
         reward = self._get_reward()
@@ -325,8 +333,8 @@ class SingleHop(EnvBase):
 
 
         out = TensorDict(
-                {"Q": torch.tensor(self.get_Q_out(), dtype = torch.int),
-                "Y": torch.tensor(self.get_Y_out(), dtype = torch.int),
+                {"Q": torch.tensor(self.get_Q_out(), dtype = torch.float),
+                "Y": torch.tensor(self.get_Y_out(), dtype = torch.float),
                 "truncated": torch.tensor(truncate, dtype = torch.bool),
                 "terminated": torch.tensor(terminated, dtype = torch.bool),
                 "reward": torch.tensor(reward, dtype = torch.float),
@@ -345,8 +353,8 @@ class SingleHop(EnvBase):
         # make value =0 for all keys in self.q_state
         self.Q = np.zeros((len(self.nodes),))
         self._gen_link_states()
-        out = TensorDict({"Q": torch.tensor(self.get_Q_out(), dtype = torch.int),
-                "Y": torch.tensor(self.get_Y_out(), dtype = torch.int),
+        out = TensorDict({"Q": torch.tensor(self.get_Q_out(), dtype = torch.float),
+                "Y": torch.tensor(self.get_Y_out(), dtype = torch.float),
                 "done": torch.tensor(False, dtype = torch.bool),
                 "terminated": torch.tensor(False, dtype = torch.bool),
                 "truncated": torch.tensor(False, dtype = torch.bool),
@@ -357,6 +365,7 @@ class SingleHop(EnvBase):
         if self.obs_lambda:
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
         if self.track_stdev:
+            self.time_avg_stats.reset()
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
         return out
 
@@ -448,6 +457,9 @@ class SingleHop(EnvBase):
         if self.obs_links:
             temp = self.get_buffers() * self.get_cap()
             return temp
+
+
+
     # def get_mask(self, state = None):
     #     """
     #     Cases:

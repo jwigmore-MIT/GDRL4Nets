@@ -31,7 +31,7 @@ test_context_set = json.load(open('SH3_context_set_100_03251626.json'))
 cfg =load_config(full_path= CONFIG_PATH)
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 # Create a generator from test_context_set
-make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
+make_env_parameters = {"observe_lambda": cfg.mdp_agent.observe_lambda,
                         "device": cfg.device,
                         "terminal_backlog": cfg.eval_envs.terminal_backlog,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
@@ -54,7 +54,7 @@ agent = create_actor_critic(
     output_shape,
     in_keys=["observation"],
     action_spec=base_env.action_spec,
-    temperature=cfg.agent.temperature,
+    temperature=cfg.mdp_agent.temperature,
     )
 
 # Set device

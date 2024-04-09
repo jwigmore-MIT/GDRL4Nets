@@ -81,10 +81,12 @@ class SingleHopMDP(MDP):
         return self.state_list
 
     def get_transitions(self, state, action):
-        key = deepcopy(state)
-        key.extend(action.tolist())
-        tx_dict = self.tx_matrix[tuple(key)]
-        transitions = list(zip(list(tx_dict.keys()), list(tx_dict.values())))
+        key = state + action.tolist()
+        transitions = list(self.tx_matrix[tuple(key)].items())
+        # key = deepcopy(state)
+        # key.extend(action.tolist())
+        # tx_dict = self.tx_matrix[tuple(key)]
+        # transitions = list(zip(list(tx_dict.keys()), list(tx_dict.values())))
 
         return transitions
 
@@ -96,13 +98,16 @@ class SingleHopMDP(MDP):
             return -np.sum(next_buffers)
 
     def get_actions(self, state):
-        # get all valid actions given the state
         self.env.base_env.set_state(state)
         mask = self.env.get_mask()
-        # get index of True indices
-        valid_action_index = np.where(mask == True)[0]
-        valid_actions = self.actions[valid_action_index]
-        return valid_actions
+        return self.actions[mask]
+        # # get all valid actions given the state
+        # self.env.base_env.set_state(state)
+        # mask = selfv.get_mask()
+        #         # # get index of True indices
+        #         # valid_action_index = np.where(mask == True)[0]
+        #         # valid_actions = self.actions[valid_action_index]
+        #         # return valid_actions.en
 
 
     def get_initial_state(self):
@@ -121,6 +126,10 @@ class SingleHopMDP(MDP):
         if self.tx_matrix is None:
             raise ValueError("Transition Matrix must be estimated before running VI")
         value_table = TabularValueFunction()
+        if hasattr(self, "value_table"):
+            value_table.value_table = self.value_table
+
+
         ValueIteration(self, value_table).value_iteration(max_iterations, theta)
         policy = value_table.extract_policy(self)
         policy_table = dict(policy.policy_table)
@@ -149,6 +158,7 @@ class SingleHopMDP(MDP):
             return self.vi_policy[tuple(state)]
         else: # return the closest match
             # get the closest state in the policy table
+            print("State not in policy table")
             closest_state = min(self.vi_policy.keys(), key=lambda x: np.linalg.norm(np.array(x) - np.array(state)))
             return self.vi_policy[closest_state]
 

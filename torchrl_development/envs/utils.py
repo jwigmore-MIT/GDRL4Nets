@@ -57,6 +57,10 @@ class BernRV:
     def max(self):
         return self.num
 
+    def dist(self):
+        # return a discrete distribution as two lists, one for the values and one for the probabilities
+        return {0: 1 - self.prob, self.num: self.prob}
+
 class CatRV:
 
     def __init__(self, rng, nums = [0,1], probs = None):
@@ -75,6 +79,9 @@ class CatRV:
 
     def max(self):
         return np.max(self.nums)
+
+    def dist(self):
+        return {self.nums[i]: self.probs[i] for i in range(len(self.nums))}
 
 
 class CircularBuffer:
@@ -196,3 +203,7 @@ class TimeAverageStatsCalculator:
 
     def coefVar(self):
         return self.time_average_stats_calculator.sampleStdev / self.time_average_stats_calculator.mean
+
+    def reset(self):
+        self.running_stats_calculator = RunningStatsCalculator(self.running_stats_calculator.circularBuffer.buffer_size)
+        self.time_average_stats_calculator = RunningStatsCalculator(1000)

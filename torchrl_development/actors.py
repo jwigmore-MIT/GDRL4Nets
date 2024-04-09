@@ -88,11 +88,15 @@ def create_actor_critic(input_shape,
              in_keys,
              action_spec,
              temperature = 1.0,
-             device="cpu"):
-
+             device="cpu",
+                        actor_depth = 2,
+                        actor_cells = 32,):
     actor_mlp = MLP(in_features=input_shape[-1],
                     activation_class=torch.nn.ReLU,
                     out_features=output_shape,
+                    depth=actor_depth,
+                    num_cells=actor_cells,
+
                     )
     actor_mlp_output = actor_mlp(torch.ones(input_shape))
     actor_module = TensorDictModule(

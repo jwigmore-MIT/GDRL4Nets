@@ -137,7 +137,7 @@ from torch_geometric_development.gnn_modules import GNNTensorDictModule, GNN_Cri
 actor_network = GraphSAGE(input_shape[1], hidden_channels=32, num_layers=2, out_channels=1, aggr = 'max')
 critic_network = GNN_Critic(input_shape[1], out_channels=1, hidden_channels=32)
 agent = create_GNN_Actor_Critic(actor_network, critic_network, in_keys = ["x", "edge_index"],
-                                action_spec = base_env.action_spec, temperature=cfg.agent.temperature)
+                                action_spec = base_env.action_spec, temperature=cfg.mdp_agent.temperature)
 
 # Set device
 device = cfg.device

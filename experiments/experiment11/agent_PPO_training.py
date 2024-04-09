@@ -1,7 +1,7 @@
 import json
 from torchrl_development.envs.env_generators import EnvGenerator
 from torchrl_development.utils.configuration import load_config
-from torchrl_development.actors import create_actor_critic
+from torchrl_development.actors import create_maxweight_actor_critic, create_actor_critic
 from datetime import datetime
 from torchrl_development.utils.metrics import compute_lta
 import numpy as np
@@ -19,33 +19,63 @@ from tensordict import TensorDict
 from tqdm import tqdm
 from torchrl.envs.utils import check_env_specs, ExplorationType, set_exploration_type
 from torchrl_development.MultiEnvSyncDataCollector import MultiEnvSyncDataCollector
-
 import argparse
-# how to write this as a script that can be run from the command line and takes in an argument from the command line
+
+""" PPO Training Script
+This script is used to train either a PPO agent or MLP agent on the SH1 contexts using PPO algorithm
+
+"""
+
+def smart_type(value):
+
+    if ',' in value:
+        try:
+            value_list = [float(item) for item in value.split(',')]
+            return np.array(value_list)
+        except ValueError:
+            pass
+
+    try:
+        return int(value)
+    except ValueError:
+        pass
+
+    try:
+        return float(value)
+    except ValueError:
+        pass
+
+
+    if value.lower() in ['true', 'false']:
+        return value.lower() == 'true'
+
+    return value
 
 parser = argparse.ArgumentParser(description='Run experiment')
-parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
-#parser.add_argument('--test_envs_ind', nargs = '+', type=int, help='indices of the environments to test on', default=[4,5])
-parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH2u_context_set_10_03211514.json")
-parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment8")
+parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
+parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
+parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH1_context_set.json")
+parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment11")
+parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
 
-train_sets =  {"a": {"train": [0,1,2,3,4], "test": [5,6,7,8,9]},
-               "b": {"train": [5,6,7,8,9], "test": [0,1,2,3,4]},
-               "c": {"train": [0,2,4,6,8], "test": [1,3,5,7,9]},
-               "d": {"train": [0], "test": [5,6,7,8,9]},
-               "e": {"train": [5], "test": [0,1,2,3,4]},
-               "f": {"train": [2], "test": [1, 3, 5, 7, 9]}
+# make it so that if the user enters --key value, then it will modify the key in the config file
+# if the key is not in the config file, then it will raise an error
 
-               }
+
+
+
+train_sets = {"a": {"train": [0], "test": [1,2]}, # lta backlog = 135.10
+              "b": {"train": [1], "test": [0,2]}, # 53.94
+              "c": {"train": [2], "test": [0,1]},} # 12.048
+
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(SCRIPT_PATH, "experiment8.yaml")
 
 
 args = parser.parse_args()
 
-experiment_name = f"{args.experiment_name}{args.training_set}"
+experiment_name = f"{args.experiment_name}_{args.agent_type}_{args.training_set}"
 
 
 training_envs_ind = train_sets[args.training_set]["train"]
@@ -54,21 +84,47 @@ test_envs_ind = train_sets[args.training_set]["test"]
 # add all training_envs_ind to test_envs_ind
 test_envs_ind.extend(training_envs_ind)
 env_json = args.env_json
+if args.agent_type == "MLP":
+    CONFIG_PATH = os.path.join(SCRIPT_PATH, "PPO_MLP_training_params.yaml")
+else:
+    CONFIG_PATH = os.path.join(SCRIPT_PATH, "PPO_MW_NN_training_params.yaml")
 
-#
+
 cfg = load_config(full_path= CONFIG_PATH)
+if args.cfg:
+    for key_value in args.cfg:
+        keys, value = key_value
+        keys = keys.split('.')
+        target = cfg
+        for key in keys[:-1]:
+            target = getattr(target, key)
+        setattr(target, keys[-1], value)
+
+cfg.agent_type = args.agent_type
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.training_env.envs_ind = training_envs_ind
 cfg.env_json = env_json
+cfg.train_ids = training_envs_ind
+cfg.test_ids = test_envs_ind
 
-training_make_env_parameters = {"observe_lambda": cfg.mdp_agent.observe_lambda,
+#print out the cfg object
+print("="*20)
+print(f"Experiment {cfg.exp_name}")
+print("-"*20)
+print("CONFIG PARAMETERS")
+print("-"*20)
+for key, value in cfg.as_dict().items():
+    print(f"{key}: {value}")
+print("="*20)
+
+training_make_env_parameters = {"observe_lambda": False,
                    "device": cfg.device,
                    "terminal_backlog": cfg.training_env.terminal_backlog,
                    "inverse_reward": cfg.training_env.inverse_reward,
                    }
 
 # creating eval env_generators
-eval_make_env_parameters = {"observe_lambda": cfg.mdp_agent.observe_lambda,
+eval_make_env_parameters = {"observe_lambda": False,
                         "device": cfg.device,
                         "terminal_backlog": cfg.eval_envs.terminal_backlog,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
@@ -107,12 +163,30 @@ check_env_specs(base_env)
 input_shape = base_env.observation_spec["observation"].shape
 output_shape = base_env.action_spec.space.n
 #
-agent = create_actor_critic(
-    input_shape,
-    output_shape,
-    in_keys=["observation"],
-    action_spec=base_env.action_spec,
-    temperature=cfg.mdp_agent.temperature,
+
+
+# Create agents
+if args.agent_type == "MW_NN":
+    init_weights = torch.ones(base_env.observation_spec["Q"].shape)*.25
+
+    agent = create_maxweight_actor_critic(
+        input_shape,
+        output_shape,
+        in_keys=["observation"],
+        action_spec=base_env.action_spec,
+        temperature=cfg.agent.temperature,
+        init_weights=init_weights,
+        )
+else:
+
+    agent = create_actor_critic(
+        input_shape,
+        output_shape,
+        in_keys=["observation"],
+        action_spec=base_env.action_spec,
+        temperature=cfg.agent.temperature,
+        actor_depth=cfg.agent.actor_depth,
+        actor_cells=cfg.agent.actor_hidden_size
     )
 
 # Set device
@@ -162,13 +236,19 @@ sampler=sampler,
 batch_size=cfg.loss.mini_batch_size, # amount of samples to be sampled when sample is called
 )
 #
-# # Create optimizer
+# Create optimizer
 optim = torch.optim.Adam(
 loss_module.parameters(),
 lr=cfg.optim.lr,
 weight_decay=cfg.optim.weight_decay,
 eps=cfg.optim.eps,
 )
+# optim= torch.optim.AdamW(
+# loss_module.parameters(),
+# lr=cfg.optim.lr,
+# weight_decay=cfg.optim.weight_decay,
+# eps=cfg.optim.eps,
+# )
 #
 # # Create logger
 #
@@ -178,7 +258,7 @@ logger_name="..\\logs",
 experiment_name=getattr(cfg, "exp_name", None),
 wandb_kwargs={
     "config": cfg.as_dict(),
-    "project": cfg.logger.project_name,
+    "project": 'Experiment9',
 },
 )
 # # Save the cfg as a yaml file and upload to wandb
@@ -223,10 +303,12 @@ for i, data in enumerate(collector):
     mean_episode_reward = data["next", "reward"].mean()
     mean_backlog = data["next","backlog"].float().mean()
     num_trajectories = data["done"].sum()
+    normalized_backlog = mean_backlog/training_env_generator.context_dicts[training_env_id]["lta"]
     log_info.update(
         {
             "train/mean_episode_reward": mean_episode_reward.item(),
             "train/mean_backlog": mean_backlog.item(),
+            "train/mean_normalized_backlog": normalized_backlog.item(),
             "train/num_trajectories": num_trajectories.item(),
             "train/training_env_id": training_env_id,
         }
@@ -235,6 +317,8 @@ for i, data in enumerate(collector):
 
 
     training_start = time.time()
+    losses = TensorDict({}, batch_size=[cfg.loss.ppo_epochs, num_mini_batches])
+
     for j in range(cfg.loss.ppo_epochs):
 
         # Compute GAE
@@ -243,7 +327,6 @@ for i, data in enumerate(collector):
         data_reshape = data.reshape(-1)
         # Update the data buffer
         data_buffer.extend(data_reshape)
-        losses = TensorDict({}, batch_size=[cfg.loss.ppo_epochs, num_mini_batches])
 
         for k, batch in enumerate(data_buffer):
             # Linearly decrease the learning rate and clip epsilon
@@ -255,6 +338,9 @@ for i, data in enumerate(collector):
 
 
             num_network_updates += 1
+
+            batch["sample_log_prob"] = batch["sample_log_prob"].squeeze()
+
             # Get a data batch
             batch = batch.to(device, non_blocking=True)
 
@@ -285,9 +371,12 @@ for i, data in enumerate(collector):
 
     # Get training losses and times
     training_time = time.time() - training_start
-    losses_mean = losses.apply(lambda x: x.float().mean(), batch_size=[])
-    for key, value in losses_mean.items():
-        log_info.update({f"train/{key}": value.item()})
+    # losses_mean = losses.apply(lambda x: x.float().mean(), batch_size=[])
+    for key, value in loss.items():
+        if key not in ["loss_critic", "loss_entropy", "loss_objective"]:
+            log_info.update({f"train/{key}": value.mean().item()})
+        else:
+            log_info.update({f"train/{key}": value.sum().item()})
     log_info.update(
         {
             "train/lr": alpha*cfg.optim.lr,
@@ -295,6 +384,16 @@ for i, data in enumerate(collector):
             "train/training_time": training_time,
         }
     )
+
+    # get the weights from the actor
+    if args.agent_type == "MW_NN":
+        actor_weights = actor.state_dict()
+        for key, value in actor_weights.items():
+            for e, log_val in enumerate(value.tolist()):
+                log_info.update({f"actor_weights/{e+1}": log_val})
+
+
+
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
         if ((
                     i - 1) * frames_in_batch * cfg.collector.frame_skip) // cfg.eval.eval_interval < (

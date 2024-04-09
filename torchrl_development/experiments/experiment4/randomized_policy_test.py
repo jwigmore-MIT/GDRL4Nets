@@ -32,7 +32,7 @@ input_params = {"num_envs": len(all_env_params.keys()),
                 "all_env_params": all_env_params,}
 
 # creating eval env_generators
-make_env_parameters = {"observe_lambda": cfg.agent.observe_lambda,
+make_env_parameters = {"observe_lambda": cfg.mdp_agent.observe_lambda,
                             "device": cfg.device,
                             "terminal_backlog": cfg.eval_envs.terminal_backlog,
                             "inverse_reward": cfg.eval_envs.inverse_reward,
@@ -62,7 +62,7 @@ agent = create_actor_critic(
     output_shape,
     in_keys=["observation"],
     action_spec=base_env.action_spec,
-    temperature=cfg.agent.temperature,
+    temperature=cfg.mdp_agent.temperature,
 )
 
 # Set device

@@ -18,6 +18,7 @@ from torch.optim import Adam
 from torchrl_development.mdp_actors import MDP_actor, MDP_module
 from MDP_Solver.SingleHopMDP import SingleHopMDP
 import sys
+from torchrl.data.replay_buffers import ReplayBuffer, ListStorage, LazyTensorStorage, SamplerWithoutReplacement
 
 
 from experiments.experiment8.maxweight_comparison.CustomNNs import FeedForwardNN, LinearNetwork, MaxWeightNetwork, NN_Actor
@@ -48,8 +49,7 @@ def train_module(module, td, in_keys = ["Q", "Y"], num_training_epochs=1000, lr=
     for epoch in pbar:
         optimizer.zero_grad()
         x = torch.cat([td[key] for key in in_keys], dim=1)
-        # Q = td["Q"].clone().float().detach().requires_grad_(True)
-        # Y = td["Y"].clone().float().detach().requires_grad_(True)
+
         A = module(x)
         loss = loss_fn(A.float(), td["action"].float())
         loss.backward()
@@ -63,6 +63,30 @@ def train_module(module, td, in_keys = ["Q", "Y"], num_training_epochs=1000, lr=
                     break
         # stop training if loss converges
 
+def train_module2(module, replay_buffer, in_keys = ["Q", "Y"], num_training_epochs=5, lr=0.0001,
+                 loss_fn = nn.BCEWithLogitsLoss(), weight_decay = 1e-5):
+    loss_fn = loss_fn
+    optimizer = Adam(module.parameters(), lr=lr, weight_decay=weight_decay)
+    pbar = tqdm(range(num_training_epochs), desc=f"Training {module.__class__.__name__}")
+    last_n_losses = []
+    for epoch in pbar:
+
+        for mb, td in enumerate(replay_buffer):
+            optimizer.zero_grad()
+            td["Q"] = td["Q"].float()
+            td["Y"] = td["Y"].float()
+            A = module(td)
+            loss = loss_fn(A['action'].float(), td["true_action"].float())
+            loss.backward()
+            optimizer.step()
+            if mb % 10 == 0:
+                last_n_losses.append(loss.item())
+                pbar.set_postfix({f"Epoch": epoch, 'mb': mb,  f"Loss": loss.item()})
+                if len(last_n_losses) > 10:
+                    last_n_losses.pop(0)
+                    if np.std(last_n_losses) < 1e-6:
+                        break
+        # stop training if loss converges
 
 def get_module_error_rate(module, td, inputs = ["Q", "Y"]):
     module.eval()
@@ -315,15 +339,216 @@ def maxweight_nn_training_test(env_id=31, context_set_path = None, mdp_path = No
 
 if __name__ == "__main__":
     import pickle
+    env_id = 0
+    rollout_length = 5000
+    num_rollouts = 3
+
     results = {}
     test_context_set_path = 'SH1_context_set.json'
     #model_path = 'model_2905000.pt'
-    mdp_path = "MDP_Solver/saved_mdps/SH1_2_MDP.p"
-
-
-    maxweight_nn_training_test(env_id=2, context_set_path= test_context_set_path, mdp_path= mdp_path)
+    mdp_path = "MDP_Solver/saved_mdps/SH1_0_MDP.p"
+    # ------------------------------- #
+    #maxweight_nn_training_test(env_id=env_id, context_set_path= test_context_set_path, mdp_path= mdp_path)
     # with open(f"mw_policy_fitting_results_4_1.pkl", 'wb') as f:
     #     pickle.dump(results, f)
+    # ------------------------------- #
+
+
+
+    context_set_path = 'SH1_context_set.json'
+
+    # Load all testing contexts
+    test_context_set = json.load(open(context_set_path, 'rb'))
+
+    # Create a generator from test_context_set
+    make_env_parameters = {"observe_lambda": True,
+                           "device": "cpu",
+                           "seed": 111,
+                           "terminal_backlog": 5000,
+                           "inverse_reward": True,
+                           "stat_window_size": 100000,
+                           "terminate_on_convergence": False,
+                           "convergence_threshold": 0.1,
+                           "terminate_on_lta_threshold": False, }
+
+    env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=111)
+
+    base_env = env_generator.sample(env_id)
+    env_generator.clear_history()
+
+    input_shape = torch.Tensor([base_env.observation_spec["Q"].shape[0] + base_env.observation_spec["Y"].shape[0]]).int()
+    output_shape = base_env.action_spec.space.n
+
+    # Create agent
+    mdp = pickle.load(open(os.path.join(PROJECT_DIR, mdp_path), 'rb'))
+    mdp_module = MDP_module(mdp)
+    agent = MDP_actor(mdp_module)
+
+    # Load agent
+    # agent.load_state_dict(torch.load(model_path, map_location=device))
+    mw_agent = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
+    print("Collecting trajectories using agent and maxweight policy")
+    # generator a trajectory from the agent
+
+    with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
+        env = env_generator.sample(env_id)
+        env.reset()
+        try:
+            td = pickle.load(open("tds.pkl", 'rb'))
+            print("Loaded td")
+        except FileNotFoundError:
+            tds = []
+            for n in range(num_rollouts):
+                print(f"Collecting trajectory {n} from MDP agent")
+                td = env.rollout(policy=agent, max_steps=rollout_length)
+                env.reset()
+                tds.append(td)
+            pickle.dump(tds, open("tds.pkl", 'wb'))
+
+        try:
+            mw_td = pickle.load(open("mw_td.pkl", 'rb'))
+            print("Loaded mw_td")
+        except FileNotFoundError:
+            print("Collect trajectory for maxweight policy")
+            mw_td = env.rollout(policy=mw_agent, max_steps=rollout_length)
+            pickle.dump(mw_td, open("mw_td.pkl", 'wb'))
+            env.reset()
+    # compare the lta of the two trajectories
+    agenta_lta = compute_lta(td["backlog"])
+    mw_lta = compute_lta(mw_td["backlog"])
+
+    # plot the lta of the all trajectories
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    ax.plot(agenta_lta, label="MDP Agent")
+    ax.plot(mw_lta, label="MaxWeight")
+    ax.set_ylim(0, mw_lta.max() * 1.1)
+    ax.legend()
+    ax.set_title("MDP Agent Performance")
+    fig.show()
+
+    # Create the training dataset by modifying the td to have a "true_action" key
+    td["true_action"] = td["action"].clone()
+
+    # Create Replay Buffer
+    replay_buffer = ReplayBuffer(storage=LazyTensorStorage(max_size = td.shape[0]),
+                                 batch_size = int(td.shape[0]/100),
+                                 sampler = SamplerWithoutReplacement())
+    replay_buffer.extend(td)
+    sample = replay_buffer.sample()
+
+    # Create an MLP agent
+    MLP_agent = create_actor_critic(
+        input_shape,
+        output_shape,
+        in_keys=["Q", "Y"],
+        action_spec=base_env.action_spec,
+        temperature=0.1,
+    )
+
+    policy_mlp = MLP_agent.get_policy_operator()
+
+    # Train the MLP agent
+    train_module2(policy_mlp, replay_buffer, num_training_epochs=training_epochs, lr=0.0001, loss_fn=nn.BCELoss())
+    # generator a trajectory from the MLP agent agent
+    with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
+        mlp_nn_tds = []
+        for n in range(num_rollouts):
+            print(f"Collecting trajectory {n} from MLP agent")
+            env = env_generator.sample(env_id)
+            env.reset()
+            mlp_nn_td = env.rollout(policy=MLP_agent, max_steps=rollout_length)
+            mlp_nn_tds.append(mlp_nn_td)
+            env.reset()
+
+
+    # Plot the LTA for all agents
+    arrival_rates = env.base_env.arrival_rates
+    # mw_nn_lta = compute_lta(mw_nn_td["backlog"])
+    mlp_nn_lta = compute_lta(mlp_nn_td["backlog"])
+    fig, ax = plt.subplots(2, 1, figsize=(10, 10))
+    # plot the arrival rates as a bar chart
+    ax[0].bar(range(1, len(arrival_rates) + 1), arrival_rates)
+    ax[0].set_title("Arrival Rates")
+    ax[0].set_xlabel("Node")
+    # Plot LTA for all trajectories
+    ax[1].plot(agenta_lta, label="MDP Agent")
+    ax[1].plot(mw_lta, label="MaxWeight")
+    # ax[1].plot(mw_nn_lta, label=f"MW NN Agent")
+    ax[1].plot(mlp_nn_lta, label=f"MLP NN Agent")
+    ax[1].set_ylim(0, mw_lta.max() * 2)
+    ax[1].legend()
+    ax[1].set_title("LTA")
+    arrival_rates_formatted = [float(f"{x:.2f}") for x in arrival_rates]
+    # mw_nn_error_rate_formatted = f"{mw_nn_error_rate:.4f}"
+    # w_normalized = [float(f"{x:.4f}") for x in w_normalized]
+
+    fig.suptitle(f"MW NN training comparison for env_id {env_id}")
+    fig.show()
+
+    if False:
+
+        # Create MaxWeight NN
+        MW_NN = MaxWeightNetwork(td["Q"].shape[1])
+        MW_NN_agent = NN_Actor(module=MW_NN, in_keys=["Q", "Y"], out_keys=["action"])
+
+        # Train MaxWeight NN
+        train_module2(MW_NN_agent, replay_buffer, num_training_epochs=training_epochs, lr=0.0001, loss_fn = nn.BCELoss())
+
+        # Compute error on the training data
+        MW_NN.eval()
+        mw_nn_error_rate, mw_nn_error = get_module_error_rate(MW_NN, td)
+
+        # Collect the learned weights
+        w = MW_NN.weights.detach().numpy()
+        w_normalized = w / np.sum(w)
+
+        # Create a MW_NN actor
+
+        # generator a trajectory from the MW_NN agent
+        with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
+            mw_nn_tds = []
+            for n in range(num_rollouts):
+                print(f"Collecting trajectory {n} from trained MW_NN agent")
+                env.reset()
+                mw_nn_td = env.rollout(policy=MW_NN_agent, max_steps=rollout_length)
+                mw_nn_tds.append(mw_nn_td)
+
+
+        mw_nn_ltas = [compute_lta(mw_nn_td["backlog"]) for mw_nn_td in mw_nn_tds]
+        mw_nn_mean_lta = np.mean(mw_nn_ltas, axis=0)
+        mw_nn_std_lta = np.std(mw_nn_ltas, axis=0)
+
+
+
+
+
+        # Plot the LTA for all agents
+        arrival_rates = env.base_env.arrival_rates
+        mw_nn_lta = compute_lta(mw_nn_td["backlog"])
+        mlp_nn_lta = compute_lta(mlp_nn_td["backlog"])
+        fig, ax = plt.subplots(2, 1, figsize=(10, 10))
+        # plot the arrival rates as a bar chart
+        ax[0].bar(range(1, len(arrival_rates) + 1), arrival_rates)
+        ax[0].set_title("Arrival Rates")
+        ax[0].set_xlabel("Node")
+        # Plot LTA for all trajectories
+        ax[1].plot(agenta_lta, label="MDP Agent")
+        ax[1].plot(mw_lta, label="MaxWeight")
+        ax[1].plot(mw_nn_mean_lta, label=f"MW NN Agent")
+        ax[1].fill_between(range(len(mw_nn_mean_lta)), mw_nn_mean_lta - mw_nn_std_lta, mw_nn_mean_lta + mw_nn_std_lta, alpha=0.5)
+        ax[1].plot(mlp_nn_lta, label=f"MLP NN Agent")
+        ax[1].set_ylim(0, mw_lta.max() * 2)
+        ax[1].legend()
+        ax[1].set_title("LTA")
+        arrival_rates_formatted = [float(f"{x:.2f}") for x in arrival_rates]
+        mw_nn_error_rate_formatted = f"{mw_nn_error_rate:.4f}"
+        w_normalized = [float(f"{x:.4f}") for x in w_normalized]
+
+        fig.suptitle(f"MW NN training comparison for env_id {env_id}")
+        fig.show()
+
+
+
 
 
     # Get mean of all results for all keys

@@ -25,17 +25,38 @@ class MaxWeightNetwork(nn.Module):
             self.weights = nn.Parameter(torch.randn(weight_size)*0.1) #torch.ones(weight_size)*
         self.temperature = temperature
     def forward(self, x):
+        """
+            This method is responsible for the forward pass of the MaxWeightNetwork.
+
+            Parameters:
+            x (torch.Tensor): The input tensor. It is expected to contain the values of Q and Y concatenated along the second dimension.
+
+            Returns:
+            A (torch.Tensor): The output tensor after the forward pass. It represents the action to be taken.
+            """
+
+        # Split the input tensor into two equal halves along the second dimension.
+        # The first half represents Q and the second half represents Y.
         Q, Y = x.split(x.shape[1] // 2, dim=1)
+
+        # Perform element-wise multiplication of Q, Y and the weights of the network.
+        # The result is then squeezed to remove any singleton dimensions.
         z = (Y * Q * self.weights).squeeze(dim=0)
 
+        # Concatenate a tensor of ones with the tensor z along the last dimension.
         z = torch.cat([torch.ones((z.shape[0], 1)), z], dim=-1)
 
+        # If the network is in training mode, apply the softmax function to z divided by the temperature.
+        # This is done along the last dimension.
+        # If the network is not in training mode, create a tensor of zeros with the same shape as z.
+        # Then, for each row in this tensor, set the element at the index of the maximum value in the corresponding row of z to 1.
         if self.training:
             A = torch.nn.functional.softmax(z / self.temperature, dim=-1)
         else:
             A = torch.zeros_like(z)
             A[torch.arange(z.shape[0]), torch.argmax(z, dim=-1)] = 1
 
+        # Return the resulting tensor.
         return A
 
 
