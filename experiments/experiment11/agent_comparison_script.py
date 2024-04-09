@@ -21,6 +21,7 @@ import sys
 from torchrl.data.replay_buffers import ReplayBuffer, ListStorage, LazyTensorStorage, SamplerWithoutReplacement
 import tensordict
 from tensordict import TensorDict
+from torchrl_development.actors import create_actor_critic, create_maxweight_actor_critic
 
 from experiments.experiment8.maxweight_comparison.CustomNNs import FeedForwardNN, LinearNetwork, MaxWeightNetwork, NN_Actor
 
@@ -34,12 +35,11 @@ if __name__ == "__main__":
     env_id = 0
     rollout_length = 10000
     num_rollouts = 3
-    training_epochs = 100
 
     new_mdp_trajectories = True
 
     actor_depth = 2
-    actor_cells = 32
+    actor_cells = 64
 
     results = {}
     test_context_set_path = 'SH1_context_set.json'
@@ -78,17 +78,48 @@ if __name__ == "__main__":
     old_tds = pickle.load(open("tds_old_mdp.pkl", 'rb'))
     mw_tds = pickle.load(open("mw_tds.pkl", 'rb'))
 
+    # Create MW_NN agent
+    mw_nn_agent = create_maxweight_actor_critic(input_shape, output_shape,
+                                                action_spec=base_env.action_spec,
+                                                in_keys=["Q", "Y"])
+    mw_nn_agent.load_state_dict(torch.load("mw_nn_model_605000.pt"))
+
+    # Create MLP agent
+    mlp_agent = create_actor_critic(input_shape, output_shape,
+                                    action_spec=base_env.action_spec,
+                                    in_keys=["observation"],
+                                    actor_depth = actor_depth,
+                                    actor_cells= actor_cells)
+
+    mlp_agent.load_state_dict(torch.load("mlp_model_605000.pt"))
+
     # Collect Trajectories from new MDP agent
-    tds = []
+    mdp_tds = []
     for n in range(num_rollouts):
         print(f"Collecting trajectory {n} from MDP agent")
         env = env_generator.sample(env_id)
         td = env.rollout(policy=mdp_agent, max_steps=rollout_length)
-        tds.append(td)
+        mdp_tds.append(td)
+    with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
+        # Collect Trajectories from MW_NN agent
+        mw_nn_tds = []
+        for n in range(num_rollouts):
+            print(f"Collecting trajectory {n} from MW_NN agent")
+            env = env_generator.sample(env_id)
+            td = env.rollout(policy=mw_nn_agent, max_steps=rollout_length)
+            mw_nn_tds.append(td)
+
+        # Collect Trajectories from MLP agent
+        mlp_tds = []
+        for n in range(num_rollouts):
+            print(f"Collecting trajectory {n} from MLP agent")
+            env = env_generator.sample(env_id)
+            td = env.rollout(policy=mlp_agent, max_steps=rollout_length)
+            mlp_tds.append(td)
 
     #
     # Compute the mean lta for the mdp agent and mw agent's trajectories
-    mdp_ltas = [compute_lta(td["backlog"]) for td in tds]
+    mdp_ltas = [compute_lta(td["backlog"]) for td in mdp_tds]
     mdp_mean_lta = np.mean(mdp_ltas, axis=0)
     mdp_std_lta = np.std(mdp_ltas, axis=0)
 
@@ -100,6 +131,15 @@ if __name__ == "__main__":
     mw_mean_lta = np.mean(mw_ltas, axis=0)
     mw_std_lta = np.std(mw_ltas, axis=0)
 
+    mw_nn_ltas = [compute_lta(td["backlog"]) for td in mw_nn_tds]
+    mw_nn_mean_lta = np.mean(mw_nn_ltas, axis=0)
+    mw_nn_std_lta = np.std(mw_nn_ltas, axis=0)
+
+    mlp_ltas = [compute_lta(td["backlog"]) for td in mlp_tds]
+    mlp_mean_lta = np.mean(mlp_ltas, axis=0)
+    mlp_std_lta = np.std(mlp_ltas, axis=0)
+
+
 
     # plot the lta of the mdp agent and the maxweight policy
     fig, ax = plt.subplots(1, 1, figsize=(15, 10))
@@ -109,8 +149,24 @@ if __name__ == "__main__":
     ax.fill_between(range(len(old_mdp_mean_lta)), old_mdp_mean_lta - old_mdp_std_lta, old_mdp_mean_lta + old_mdp_std_lta, alpha=0.5)
     ax.plot(mw_mean_lta, label="MaxWeight")
     ax.fill_between(range(len(mw_mean_lta)), mw_mean_lta - mw_std_lta, mw_mean_lta + mw_std_lta, alpha=0.2)
+    ax.plot(mw_nn_mean_lta, label="MW_NN")
+    ax.fill_between(range(len(mw_nn_mean_lta)), mw_nn_mean_lta - mw_nn_std_lta, mw_nn_mean_lta + mw_nn_std_lta, alpha=0.2)
+    ax.plot(mlp_mean_lta, label="MLP")
+    ax.fill_between(range(len(mlp_mean_lta)), mlp_mean_lta - mlp_std_lta, mlp_mean_lta + mlp_std_lta, alpha=0.2)
     ax.set_ylim(0, mw_mean_lta.max() * 2)
     ax.legend()
     ax.set_title("LTA Comparison between MDP Agent and MaxWeight Policy")
+    fig.show()
+
+    # plot the ratio of the mdp_mean_lta to the mw_mean_lta
+    fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+    ax.plot(mdp_mean_lta / mw_mean_lta, label="New MDP Agent")
+    ax.plot(old_mdp_mean_lta / mw_mean_lta, label="Old MDP Agent")
+    ax.hlines(1, 0, len(mdp_mean_lta), color='r', linestyle='-', label="MaxWeight")
+    ax.plot(mw_nn_mean_lta / mw_mean_lta, label="MW_NN")
+    ax.plot(mlp_mean_lta / mw_mean_lta, label="MLP")
+    ax.set_ylim(0, 2)
+    ax.legend()
+    ax.set_title("LTA Ratio between MDP Agent and MaxWeight Policy")
     fig.show()
 

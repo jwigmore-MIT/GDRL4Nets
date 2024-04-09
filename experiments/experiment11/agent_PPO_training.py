@@ -172,7 +172,7 @@ if args.agent_type == "MW_NN":
     agent = create_maxweight_actor_critic(
         input_shape,
         output_shape,
-        in_keys=["observation"],
+        in_keys=["Q", "Y"],
         action_spec=base_env.action_spec,
         temperature=cfg.agent.temperature,
         init_weights=init_weights,
