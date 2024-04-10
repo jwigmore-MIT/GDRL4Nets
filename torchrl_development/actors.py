@@ -226,6 +226,10 @@ class MaxWeightNetwork(nn.Module):
         #A_one_hot = F.one_hot(A, num_classes=z.shape[1] + 1)
         return z
 
+    def get_weights(self):
+        "returns a copy of bias_0 and weights as a single vector"
+        return torch.cat([self.bias_0.detach(), self.weights.detach()])
+
 
 from typing import Optional, Union, Sequence
 from torchrl.modules import ReparamGradientStrategy
