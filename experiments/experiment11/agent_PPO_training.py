@@ -387,10 +387,9 @@ for i, data in enumerate(collector):
 
     # get the weights from the actor
     if args.agent_type == "MW_NN":
-        actor_weights = actor.state_dict()
-        for key, value in actor_weights.items():
-            for e, log_val in enumerate(value.tolist()):
-                log_info.update({f"actor_weights/{e+1}": log_val})
+        actor_weights = actor.module[0].module.get_weights()
+        for e, value in enumerate(actor_weights):
+            log_info.update({f"actor_weights/{e}": value.item()})
 
 
 
