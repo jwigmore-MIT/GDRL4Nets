@@ -10,9 +10,9 @@ import torch
 Main idea is to create a context dictionary from the SH1NA environments.
 """
 env_name_list = ["SH1_NA", "SH1_NA2", "SH1_NA3"]
-scale_parameters = [0.9]
+scale_parameters = [0.95]
 num_rollouts_per_env = 3
-max_steps = 50000
+max_steps =50000
 
 
 def estimate_lta_backlog(env_params,
@@ -23,7 +23,7 @@ def estimate_lta_backlog(env_params,
     max_weight_ltas = []
     Q_maxs = []
     for i in range(num_rollouts_per_env):
-        env = make_env(env_params, seed = i,  **make_env_kwargs)
+        env = make_env(env_params, seed = int(i+10),  **make_env_kwargs)
         td = env.rollout(policy=max_weight_actor, max_steps = max_rollout_steps)
         # get largest Q value from the rollout
         Q_maxs.append(td["Q"].max(dim = 0).values)
@@ -35,7 +35,7 @@ def estimate_lta_backlog(env_params,
     Q_max = torch.stack(Q_maxs).max(dim = 0).values.numpy()
     network_load = env.base_env.network_load
     final_ltas = np.array([lta[-1] for lta in max_weight_ltas])
-    if False:
+    if True:
         import matplotlib.pyplot as plt
         fig, axes = plt.subplots(1,1, figsize = (15,10))
         for i in range(num_rollouts_per_env):
@@ -59,8 +59,8 @@ context_set_dict["network_loads"] = []
 pbar = tqdm(total=len(env_name_list)*num_rollouts_per_env)
 make_env_keywords = {
     "stat_window_size": 100000,
-    "terminate_on_convergence": True,
-    "convergence_threshold": 0.1
+    "terminate_on_convergence": False,
+    "convergence_threshold": 0.01
 
 }
 
@@ -87,6 +87,6 @@ for e, env_name in enumerate(env_name_list):
         pbar.update(3)
 
 serial_context_set_dictionary = make_serializable(context_set_dict)
-with open("SH1_context_set.json", "w") as f:
+with open("SH1_context_set_095.json", "w") as f:
     json.dump(serial_context_set_dictionary, f)
 

@@ -69,7 +69,7 @@ def get_module_error_rate(module, td, inputs = ["Q", "Y"]):
 
 if __name__ == "__main__":
     import pickle
-    env_id = 1
+    env_id = 0
     rollout_length = 10000
     num_rollouts = 5
     training_epochs = 500
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     mlp_agent = create_actor_critic(input_shape=input_shape, output_shape=output_shape, in_keys=["observation"],
                                      action_spec=base_env.action_spec, temperature=0.1, actor_depth=actor_depth,
                                      actor_cells=actor_cells)
-    mlp_agent.load_state_dict(torch.load("env1_mlp_model_2905000.pt"))
+    mlp_agent.load_state_dict(torch.load("env0_mlp_model_2905000.pt"))
 
     # Create MW NN Agent
     mw_nn_agent = create_maxweight_actor_critic(input_shape=input_shape, output_shape=output_shape,
@@ -186,7 +186,11 @@ if __name__ == "__main__":
     #   Merging all the mlp_trajectories in tds into a single tensor dict
     #   modifying the td to have a "true_action" key
     # Merge all tensordicts in tds into a single tensordict
-    td = torch.cat(mlp_tds)
+    full_td = torch.cat(mlp_tds)
+    # drop all indices where mask is [True, False, False]
+    td = full_td[~(full_td["mask"]== torch.Tensor([True, False, False])).all(dim=1)]
+
+
     td["target_action"] = td["action"].clone().long()
     td["target_logits"] = td["logits"].detach().clone()
 

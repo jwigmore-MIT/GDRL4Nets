@@ -37,7 +37,7 @@ eval:
 # logger
 logger:
   backend: wandb
-  project_name: experiment11
+  project_name: experiment12
   group_name: null
   run_name: ["TrainGen", "PPO"]
 

@@ -4,9 +4,10 @@ device: cpu
 
 # agent
 agent:
-  temperature: 5
+  temperature: 0.1
   observe_lambda: False
-  init_weight: 0.25
+  actor_depth: 2
+  actor_hidden_size: 64
 
 # environment
 training_env:
@@ -37,14 +38,14 @@ eval:
 # logger
 logger:
   backend: wandb
-  project_name: experiment11
+  project_name: experiment12
   group_name: null
   run_name: ["TrainGen", "PPO"]
 
 
 # Optim
 optim:
-  lr:  1.0e-2
+  lr:  3.0e-4
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0

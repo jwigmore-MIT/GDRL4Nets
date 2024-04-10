@@ -53,9 +53,9 @@ def smart_type(value):
 
 parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
-parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MW_NN")
-parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH1_context_set_095.json")
-parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment11")
+parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
+parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH3_context_set_100_03251626.json")
+parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment12")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
 
@@ -130,7 +130,7 @@ eval_make_env_parameters = {"observe_lambda": False,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
                         "stat_window_size": 100000,
                         "terminate_on_convergence": True,
-                        "convergence_threshold": 0.01,
+                        "convergence_threshold": 0.1,
                         "terminate_on_lta_threshold": True,}
 
 
@@ -410,7 +410,9 @@ for i, data in enumerate(collector):
             num_eval_envs = eval_env_generator.num_envs # gen_env_generator.num_envs
             for i in eval_env_generator.context_dicts.keys(): # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
                 lta_backlogs[i] = []
+                eval_env_generator.reseed()
                 for n in range(cfg.eval.num_eval_envs):
+                    # reset eval_env_generator
                     num_evals+= 1
                     # update pbar to say that we are evaluating num_evals/gen_env_generator.num_envs*cfg.eval.num_eval_envs
                     pbar.set_description(f"Evaluating {num_evals}/{eval_env_generator.num_envs*cfg.eval.num_eval_envs} eval environment")
