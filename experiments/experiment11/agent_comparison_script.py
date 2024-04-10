@@ -59,10 +59,13 @@ if __name__ == "__main__":
                            "convergence_threshold": 0.1,
                            "terminate_on_lta_threshold": False, }
 
-    env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=3134)
+    env_generator_seed = 531997
+    mw_env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=env_generator_seed)
+    mlp_env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=env_generator_seed)
+    mdp_env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=env_generator_seed)
 
-    base_env = env_generator.sample(env_id)
-    env_generator.clear_history()
+    base_env = mw_env_generator.sample(env_id)
+    mw_env_generator.clear_history()
 
     input_shape = torch.Tensor([base_env.observation_spec["Q"].shape[0] + base_env.observation_spec["Y"].shape[0]]).int()
     output_shape = base_env.action_spec.space.n
@@ -81,8 +84,8 @@ if __name__ == "__main__":
     # Create MW_NN agent
     mw_nn_agent = create_maxweight_actor_critic(input_shape, output_shape,
                                                 action_spec=base_env.action_spec,
-                                                in_keys=["Q", "Y"])
-    mw_nn_agent.load_state_dict(torch.load("mw_nn_model_605000.pt"))
+                                                in_keys=["observation"])
+    mw_nn_agent.load_state_dict(torch.load("mw_nn_model_2905000.pt"))
 
     # Create MLP agent
     mlp_agent = create_actor_critic(input_shape, output_shape,
@@ -91,21 +94,13 @@ if __name__ == "__main__":
                                     actor_depth = actor_depth,
                                     actor_cells= actor_cells)
 
-    mlp_agent.load_state_dict(torch.load("mlp_model_605000.pt"))
-
-    # Collect Trajectories from new MDP agent
-    mdp_tds = []
-    for n in range(num_rollouts):
-        print(f"Collecting trajectory {n} from MDP agent")
-        env = env_generator.sample(env_id)
-        td = env.rollout(policy=mdp_agent, max_steps=rollout_length)
-        mdp_tds.append(td)
+    mlp_agent.load_state_dict(torch.load("mlp_model_2905000.pt"))
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
         # Collect Trajectories from MW_NN agent
         mw_nn_tds = []
         for n in range(num_rollouts):
             print(f"Collecting trajectory {n} from MW_NN agent")
-            env = env_generator.sample(env_id)
+            env = mw_env_generator.sample(env_id)
             td = env.rollout(policy=mw_nn_agent, max_steps=rollout_length)
             mw_nn_tds.append(td)
 
@@ -113,9 +108,17 @@ if __name__ == "__main__":
         mlp_tds = []
         for n in range(num_rollouts):
             print(f"Collecting trajectory {n} from MLP agent")
-            env = env_generator.sample(env_id)
+            env = mlp_env_generator.sample(env_id)
             td = env.rollout(policy=mlp_agent, max_steps=rollout_length)
             mlp_tds.append(td)
+
+    # Collect Trajectories from new MDP agent
+    mdp_tds = []
+    for n in range(num_rollouts):
+        print(f"Collecting trajectory {n} from MDP agent")
+        env = mdp_env_generator.sample(env_id)
+        td = env.rollout(policy=mdp_agent, max_steps=rollout_length)
+        mdp_tds.append(td)
 
     #
     # Compute the mean lta for the mdp agent and mw agent's trajectories

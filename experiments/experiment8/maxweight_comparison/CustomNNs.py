@@ -39,12 +39,18 @@ class MaxWeightNetwork(nn.Module):
         # The first half represents Q and the second half represents Y.
         Q, Y = x.split(x.shape[1] // 2, dim=1)
 
+        # The first element of z is 1-the sum of Q*Y
+        # The remaining elements of z are the element-wise multiplication of Q,Y, and the weights of the network.
+        z1 = 1 - torch.sum(Q * Y, dim=1, keepdim=True)
+        z2 = Q * Y * self.weights
+        z = torch.cat([z1, z2], dim=1)
+
         # Perform element-wise multiplication of Q, Y and the weights of the network.
         # The result is then squeezed to remove any singleton dimensions.
-        z = (Y * Q * self.weights).squeeze(dim=0)
+        # z = (Y * Q * self.weights).squeeze(dim=0)
 
         # Concatenate a tensor of ones with the tensor z along the last dimension.
-        z = torch.cat([torch.ones((z.shape[0], 1)), z], dim=-1)
+        # z = torch.cat([torch.ones((z.shape[0], 1)), z], dim=-1)
 
         # If the network is in training mode, apply the softmax function to z divided by the temperature.
         # This is done along the last dimension.

@@ -200,43 +200,31 @@ class MaxWeightNetwork(nn.Module):
         super(MaxWeightNetwork, self).__init__()
         # randomly initialize the weights to be gaussian with mean 1 and std 0.1
         if weights is None:
-            self.weights = nn.Parameter(torch.randn(weight_size)) #torch.ones(weight_size)*
+            self.weights = nn.Parameter(1+torch.randn(weight_size)/10**0.5) #torch.ones(weight_size)*
         else:
             self.weights = nn.Parameter(weights)
+        self.bias_0 = nn.Parameter(torch.ones(1))
         self.temperature = temperature
     def forward(self, Q, Y):
         # split x into Q and Y
-        #Q = x[:, :x.shape[1]//2]
-        #Y = x[:, x.shape[1]//2:]
-        z = Y * Q * self.weights
-        # add a column of 0.1 to z
+        # The first element of z is 1-the sum of Q*Y
+        # The remaining elements of z are the element-wise multiplication of Q,Y, and the weights of the network.
+        z_0 = self.bias_0 - (Q * Y).sum(dim=-1, keepdim=True)
+        z_i = Y * Q * self.weights
+        z = torch.cat([z_0, z_i], dim=-1)
 
-        #z = z.squeeze() if z.dim() > 1 else z
-        if z.dim() == 1:
-            z = torch.cat([torch.ones(1), z], dim=0)
-        else:
-            z = torch.cat([torch.ones(z.shape[0],1), z], dim=1)
-        # # make the first element of z to be one and move the rest to the right
-        # if z.shape.__len__() > 1:
-        #     z = torch.cat([torch.ones(z.shape[0],1), z], dim=1)
+        # #  During imitation style learning, we want to learn the deterministic S \mapsto {0,1}^{n+1}
+        # #  z is the logits of the distribution over {0,1}^{n+1}
+        # if self.training:
+        #     A = z
         # else:
-        #     z = torch.cat([torch.ones(1), z], dim=0)
-
-       # z = torch.cat([torch.ones((z.shape)), z], dim=1)
-        #z = torch.cat([torch.zeros((z.shape[0],1)), z], dim=1)
-        # normalize z
-        #z = z / z.sum(dim=1).unsqueeze(1)
-        if self.training:
-            A = z
-            #A = torch.nn.functional.softmax(z/self.temperature, dim=-1)
-        else:
-            A = torch.zeros_like(z)
-            if z.dim() == 1:
-                A[torch.argmax(z)] = 1
-            else:
-                A[torch.arange(z.shape[0]), torch.argmax(z, dim=-1)] = 1
+        #     A = torch.zeros_like(z)
+        #     if z.dim() == 1:
+        #         A[torch.argmax(z)] = 1
+        #     else:
+        #         A[torch.arange(z.shape[0]), torch.argmax(z, dim=-1)] = 1
         #A_one_hot = F.one_hot(A, num_classes=z.shape[1] + 1)
-        return A
+        return z
 
 
 from typing import Optional, Union, Sequence

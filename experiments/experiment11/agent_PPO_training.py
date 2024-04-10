@@ -54,7 +54,7 @@ def smart_type(value):
 parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
 parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MW_NN")
-parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH1_context_set.json")
+parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH1_context_set_095.json")
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment11")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
@@ -130,7 +130,7 @@ eval_make_env_parameters = {"observe_lambda": False,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
                         "stat_window_size": 100000,
                         "terminate_on_convergence": True,
-                        "convergence_threshold": 0.1,
+                        "convergence_threshold": 0.01,
                         "terminate_on_lta_threshold": True,}
 
 

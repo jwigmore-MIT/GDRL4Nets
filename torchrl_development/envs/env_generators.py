@@ -246,6 +246,12 @@ class EnvGenerator:
     def clear_history(self):
         self.history = []
 
+    def reseed(self, seed = None):
+        if seed is None:
+            seed = self.env_generator_seed
+        self.seed_generator = np.random.default_rng(seed)
+        self.env_generator_seed = seed
+
     def sample_from_multi(self, rel_ind = None, true_ind = None):
         """
         If given rel_ind, then samples the rel_ind-th environment from the context_dicts

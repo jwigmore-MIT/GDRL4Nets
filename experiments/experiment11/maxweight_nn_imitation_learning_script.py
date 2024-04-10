@@ -371,7 +371,8 @@ if __name__ == "__main__":
                            "convergence_threshold": 0.1,
                            "terminate_on_lta_threshold": False, }
 
-    env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=111)
+    env_generator_seed = 531997
+    env_generator = EnvGenerator(test_context_set, make_env_parameters, env_generator_seed=env_generator_seed)
 
     base_env = env_generator.sample(env_id)
     env_generator.clear_history()
