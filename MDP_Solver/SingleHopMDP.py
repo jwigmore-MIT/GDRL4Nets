@@ -7,7 +7,7 @@ import tensordict
 import torch
 from DP.value_iteration import ValueIteration
 from DP.tabular_value_function import TabularValueFunction
-
+import os
 
 class SingleHopMDP(MDP):
 
@@ -69,6 +69,9 @@ class SingleHopMDP(MDP):
         return self.tx_matrix
 
     def save_tx_matrix(self, save_path, name = "tx_matrix.pkl"):
+        # if the save_path does not exist, create it
+        if not path.exists(save_path):
+            os.makedirs(save_path)
         pickle.dump(self.Tx_matrix.__as_dict__(), open(path.join(save_path, name), "wb"))
     def load_tx_matrix(self, path):
         tx_matrix_dict = pickle.load(open(path, "rb"))
