@@ -354,7 +354,7 @@ class SingleHop(EnvBase):
                 "arrivals": torch.tensor(arrivals, dtype = torch.float),
                 "truncated": torch.tensor(truncate, dtype = torch.bool),
                 "terminated": torch.tensor(terminated, dtype = torch.bool),
-                "reward": torch.tensor(reward, dtype = torch.float),
+                "reward": torch.tensor([reward], dtype = torch.float),
                 "backlog": torch.tensor(next_backlog, dtype = torch.int).reshape(1),
                 "mask": torch.tensor(self.get_mask(), dtype = torch.bool),
                 }, batch_size=[])

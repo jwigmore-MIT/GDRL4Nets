@@ -157,7 +157,7 @@ eval_env_generator = EnvGenerator(eval_env_generator_input_params,
 # # Create base env for agent generation
 base_env= training_env_generator.sample()
 training_env_generator.clear_history()
-check_env_specs(base_env)
+# check_env_specs(base_env)
 #
 # # Create agent
 input_shape = base_env.observation_spec["observation"].shape
