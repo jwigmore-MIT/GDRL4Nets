@@ -14,6 +14,9 @@ def create_discrete_rv(rng, nums, probs):
 def create_poisson_rv(rng, rate):
     return PoissonRV(rng, rate)
 
+def create_uniform_rv(rng, high, low = 0):
+    return UniformRv(rng, high, low)
+
 class PoissonRV:
 
     def __init__(self, rng, rate):
@@ -25,6 +28,21 @@ class PoissonRV:
 
     def mean(self):
         return self.rate
+
+class UniformRv:
+
+    def __init__(self, rng, high, low = 0):
+        self.rng = rng
+        self.high = high
+        self.low = low
+
+    def sample(self):
+        return self.rng.uniform(self.low, self.high)
+
+    def mean(self):
+        return (self.high + self.low) / 2
+
+
 
 class FakeRV:
     def __init__(self, num):

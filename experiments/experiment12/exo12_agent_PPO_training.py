@@ -54,7 +54,7 @@ def smart_type(value):
 parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
 parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
-parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH3_context_set_100_03251626.json")
+parser.add_argument('--env_json', type=str, help='json file that contains the set of environment context parameters', default="SH1_poisson_context_set.json")
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment12")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
@@ -157,7 +157,7 @@ eval_env_generator = EnvGenerator(eval_env_generator_input_params,
 # # Create base env for agent generation
 base_env= training_env_generator.sample()
 training_env_generator.clear_history()
-check_env_specs(base_env)
+# check_env_specs(base_env)
 #
 # # Create agent
 input_shape = base_env.observation_spec["observation"].shape

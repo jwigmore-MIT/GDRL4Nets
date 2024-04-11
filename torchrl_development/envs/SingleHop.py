@@ -12,7 +12,7 @@ from torchrl.data import BoundedTensorSpec, CompositeSpec, OneHotDiscreteTensorS
 from torchrl.envs import (
     EnvBase,
 )
-from torchrl_development.envs.utils import TimeAverageStatsCalculator, create_discrete_rv, create_poisson_rv, FakeRV
+from torchrl_development.envs.utils import TimeAverageStatsCalculator, create_discrete_rv, create_poisson_rv, FakeRV, create_uniform_rv
 
 # ignore UserWarnings
 import warnings
@@ -68,15 +68,8 @@ class SingleHop(EnvBase):
         self.terminal_backlog = net_para.get("terminal_backlog", None) # if the sum of the queues is greater than this, the episode is terminated with a large negative reward
 
         # Check if net_para has 'arrival_distribution' and 'service_distribution' keys
-        if 'arrival_distribution' in net_para.keys():
-            self.arrival_distribution = net_para['arrival_distribution']
-        else:
-            self.arrival_distribution = 'discrete'
-        if 'service_distribution' in net_para.keys():
-            self.service_distribution = net_para['service_distribution']
-        else:
-            self.service_distribution = 'discrete'
-
+        self.arrival_distribution = net_para.get('arrival_distribution', 'discrete')
+        self.service_distribution = net_para.get('service_distribution', 'discrete')
 
         # Extract X_gen and X_map
         self._extract_X_gen(net_para['X_params'])
@@ -119,6 +112,8 @@ class SingleHop(EnvBase):
                 X_gen.append(create_discrete_rv(self.np_rng, nums = value["arrival"], probs = value['probability']))
             elif self.arrival_distribution == 'poisson':
                 X_gen.append(create_poisson_rv(self.np_rng, rate = value['arrival_rate']))
+            elif self.arrival_distribution == 'uniform':
+                X_gen.append(create_uniform_rv(self.np_rng, high = value['arrival_rate']*2))
             X_map[key] = {"source": value['source'], "destination": value['destination']}
             self.arrival_rates.append(X_gen[-1].mean())
         self.X_map = X_map
@@ -133,7 +128,7 @@ class SingleHop(EnvBase):
         X = np.array([gen.sample() for gen in self.X_gen])
         # Increment the corresponding buffer
         self.Q = np.add(self.Q, X)
-        return X.sum()
+        return X
 
 
     def _extract_Y_gen(self, Y_params):
@@ -146,6 +141,8 @@ class SingleHop(EnvBase):
                 Y_gen.append(create_discrete_rv(self.np_rng, nums = value['capacity'], probs = value['probability']))
             elif self.service_distribution == 'poisson':
                 Y_gen.append(create_poisson_rv(self.np_rng, rate = value['service_rate']))
+            elif self.service_distribution == 'uniform':
+                Y_gen.append(create_uniform_rv(self.np_rng, high = value['service_rate']*2))
             Y_map[key] = {"source": value['source'], "destination": value['destination']}
             link_rates.append(Y_gen[-1].mean())
         self.service_rates = link_rates
@@ -214,6 +211,18 @@ class SingleHop(EnvBase):
             Y = BoundedTensorSpec(
                 low=0,
                 high=100_000,
+                shape = (len(self.nodes)-1,),
+                dtype = torch.float
+            ),
+            departures = BoundedTensorSpec(
+                low = 0,
+                high = 100_000,
+                shape = (len(self.nodes)-1,),
+                dtype = torch.float
+            ),
+            arrivals = BoundedTensorSpec(
+                low = 0,
+                high = 100_000,
                 shape = (len(self.nodes)-1,),
                 dtype = torch.float
             ),
@@ -290,6 +299,9 @@ class SingleHop(EnvBase):
         # Step 1: Get the corresponding reward
         reward = self._get_reward()
 
+        # Record current self.Q to compute difference after applying action
+        old_Q = self.Q.copy()
+
         # Step 1: Apply the action
         if action[0] is True:
             # idle
@@ -300,9 +312,12 @@ class SingleHop(EnvBase):
         if (self.Q < 0).any():
             raise ValueError("Queue length cannot be negative")
 
+        # Measure departures from the queues
+        departures = (self.Q - old_Q)[1:]
+
 
         # Step 3: Generate New Arrivals
-        n_arrivals = self._gen_arrivals()
+        arrivals = self._gen_arrivals()[1:]
 
         # Step 4: Generate new capacities
         self._gen_link_states()
@@ -335,6 +350,8 @@ class SingleHop(EnvBase):
         out = TensorDict(
                 {"Q": torch.tensor(self.get_Q_out(), dtype = torch.float),
                 "Y": torch.tensor(self.get_Y_out(), dtype = torch.float),
+                "departures": torch.tensor(departures, dtype = torch.float),
+                "arrivals": torch.tensor(arrivals, dtype = torch.float),
                 "truncated": torch.tensor(truncate, dtype = torch.bool),
                 "terminated": torch.tensor(terminated, dtype = torch.bool),
                 "reward": torch.tensor(reward, dtype = torch.float),
@@ -353,8 +370,11 @@ class SingleHop(EnvBase):
         # make value =0 for all keys in self.q_state
         self.Q = np.zeros((len(self.nodes),))
         self._gen_link_states()
-        out = TensorDict({"Q": torch.tensor(self.get_Q_out(), dtype = torch.float),
+        out = TensorDict(
+        {"Q": torch.tensor(self.get_Q_out(), dtype = torch.float),
                 "Y": torch.tensor(self.get_Y_out(), dtype = torch.float),
+                "departures": torch.tensor(np.zeros(len(self.nodes)-1), dtype = torch.float),
+                "arrivals": torch.tensor(np.zeros(len(self.nodes)-1), dtype = torch.float),
                 "done": torch.tensor(False, dtype = torch.bool),
                 "terminated": torch.tensor(False, dtype = torch.bool),
                 "truncated": torch.tensor(False, dtype = torch.bool),
