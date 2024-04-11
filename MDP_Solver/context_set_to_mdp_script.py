@@ -51,7 +51,9 @@ for i in [0, 1,2]:
     mdp.compute_tx_matrix(save_path = "saved_tx_matrices")
     # mdp.load_tx_matrix("saved_tx_matrices/SH1_1_MDP_qmax60_discount0.99_computed_tx_matrix.pkl")
     mdp.do_VI(max_iterations = max_iterations, theta = 0.1)
-
+    # check of the saved_mdps directory exists, if it doesn't create it
+    if not os.path.exists("saved_mdps"):
+        os.makedirs("saved_mdps")
     save_path = os.path.join("saved_mdps", f"SH1_Poisson_{i}_MDP.p")
     # check if the save_path already exists, if it does add a number to the end of the file name
     if os.path.exists(save_path):
