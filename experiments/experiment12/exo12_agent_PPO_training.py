@@ -130,8 +130,8 @@ eval_make_env_parameters = {"observe_lambda": False,
                         "inverse_reward": cfg.eval_envs.inverse_reward,
                         "stat_window_size": 100000,
                         "terminate_on_convergence": True,
-                        "convergence_threshold": 0.1,
-                        "terminate_on_lta_threshold": True,}
+                        "convergence_threshold": 0.01,
+                        "terminate_on_lta_threshold": False,}
 
 
 
