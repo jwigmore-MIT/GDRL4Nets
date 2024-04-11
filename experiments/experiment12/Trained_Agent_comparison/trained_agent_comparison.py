@@ -69,7 +69,7 @@ file_dict = {"Poisson": {  # context type
         1: "poisson1_mlp_model_2905000.pt",
         2: "poisson2_mlp_model_1605000.pt"
     } ,
-    "MW_NN": {
+    "MWN": {
        0: "poisson0_mwnn_model_1105000.pt",
        1: "poisson1_mwnn_model_2905000.pt",
        2: "poisson2_mwnn_model_1605000.pt"
@@ -95,7 +95,7 @@ for context_type in file_dict.keys():
                 )
                 agent.load_state_dict(torch.load(os.path.join(PROJECT_DIR, "experiments/experiment12/Trained_Agent_comparison/trained_agents", file_dict[context_type][agent_type][context_num])))
                 agents[context_type][agent_type][context_num] = agent
-            elif agent_type == "MW_NN":
+            elif agent_type == "MWN":
                 agent = create_maxweight_actor_critic(
                     input_shape=input_shape,
                     output_shape=output_shape,

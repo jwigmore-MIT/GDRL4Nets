@@ -293,7 +293,7 @@ def form_transition_matrix2(env, state_list, action_list, max_samples=1000, min_
                     new_key = np.array(list(x_key)) + state_prime
                     new_dist[tuple(new_key)] = x_value
                     # check that the new dist sums to 1
-                if np.abs(np.sum(list(new_dist.values())) - 1) > 0.001:
+                if np.abs(np.sum(list(new_dist.values())) - 1) > 0.01:
                     raise ValueError("Transition Probabilities do not sum to one")
                 tx_matrix[tuple(key)] = new_dist
             else:
@@ -378,7 +378,7 @@ class CombinedMultiDiscreteDistribution:
                 key.extend(key2)
                 self.dist_dict[tuple(key)] = value1*value2
         # check to make sure that all probabilities sum to 1
-        if np.abs(np.sum(list(self.dist_dict.values())) - 1) > 0.001:
+        if np.abs(np.sum(list(self.dist_dict.values())) - 1) > 0.01:
             raise ValueError("Transition Probabilities do not sum to one")
 
 if __name__ == "__main__":

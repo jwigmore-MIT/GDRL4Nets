@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.stats import poisson
 
 
 def create_discrete_rv(rng, nums, probs):
@@ -28,6 +28,14 @@ class PoissonRV:
 
     def mean(self):
         return self.rate
+
+    def max(self):
+        # return where the cdf is less than 0.999
+        return poisson.ppf(0.999, self.rate)
+
+    def dist(self):
+        # enumerate the distribution up to the 99.9th percentile
+        return {i: poisson.pmf(i, self.rate) for i in range(int(self.max()+1))}
 
 class UniformRv:
 
