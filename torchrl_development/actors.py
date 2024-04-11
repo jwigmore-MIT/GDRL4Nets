@@ -213,18 +213,8 @@ class MaxWeightNetwork(nn.Module):
         z_i = Y * Q * self.weights
         z = torch.cat([z_0, z_i], dim=-1)
 
-        # #  During imitation style learning, we want to learn the deterministic S \mapsto {0,1}^{n+1}
-        # #  z is the logits of the distribution over {0,1}^{n+1}
-        # if self.training:
-        #     A = z
-        # else:
-        #     A = torch.zeros_like(z)
-        #     if z.dim() == 1:
-        #         A[torch.argmax(z)] = 1
-        #     else:
-        #         A[torch.arange(z.shape[0]), torch.argmax(z, dim=-1)] = 1
-        #A_one_hot = F.one_hot(A, num_classes=z.shape[1] + 1)
-        return z
+
+        return torch.relu(z)
 
     def get_weights(self):
         "returns a copy of bias_0 and weights as a single vector"
