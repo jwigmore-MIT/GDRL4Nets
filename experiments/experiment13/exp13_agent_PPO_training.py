@@ -87,7 +87,6 @@ test_envs_ind = train_sets[args.training_set]["test"]
 
 # add all training_envs_ind to test_envs_ind
 test_envs_ind.extend(training_envs_ind)
-env_json = args.env_json
 if args.agent_type == "MLP":
     CONFIG_PATH = os.path.join(SCRIPT_PATH, "PPO_MLP_training_params.yaml")
 else:
@@ -107,9 +106,9 @@ if args.cfg:
 cfg.agent_type = args.agent_type
 cfg.exp_name = f"{experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.training_env.envs_ind = training_envs_ind
-cfg.env_json = env_json
 cfg.train_ids = training_envs_ind
 cfg.test_ids = test_envs_ind
+cfg.context_set = context_set_json
 
 
 #print out the cfg object
@@ -272,9 +271,9 @@ with open(os.path.join(logger.experiment.dir, "config.yaml"), "w") as file:
     yaml.dump(cfg_dict, file)
 wandb.save("config.yaml")
 # Save the env_json file
-with open(os.path.join(logger.experiment.dir, cfg.env_json), "w") as file:
+with open(os.path.join(logger.experiment.dir, cfg.context_set), "w") as file:
     json.dump(context_set_dict, file)
-wandb.save(cfg.env_json) # this returns a WinError 1314 when running on windows
+wandb.save(cfg.context_set) # this returns a WinError 1314 when running on windows
 
 #wandb.watch(actor.module[0], log = "all", log_freq=10)
 #
