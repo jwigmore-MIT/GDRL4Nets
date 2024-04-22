@@ -6,7 +6,7 @@ from MDP_Solver.SingleHopMDP import SingleHopMDP
 from torchrl_development.actors import MDP_module, MDP_actor
 import torch
 import os
-os.chdir(os.path.realpath("C:\\Users\\Jerrod\\PycharmProjects\\GDRL4Nets\\experiments\\experiment14"))
+# os.chdir(os.path.realpath("C:\\Users\\Jerrod\\PycharmProjects\\GDRL4Nets\\experiments\\experiment14"))
 
 
 """
