@@ -53,7 +53,7 @@ def smart_type(value):
 
 parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
-parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
+parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MW_NN")
 parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH3") # or SH2u
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment13")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')

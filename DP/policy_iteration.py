@@ -1,6 +1,6 @@
-from tabular_value_function import TabularValueFunction
-from tabular_value_function import TabularValueFunction
-
+from DP.tabular_value_function import TabularValueFunction
+from DP.qtable import QTable
+from tqdm import tqdm
 
 class PolicyIteration:
     def __init__(self, mdp, policy):
@@ -8,7 +8,7 @@ class PolicyIteration:
         self.policy = policy
 
     def policy_evaluation(self, policy, values, theta=0.001):
-
+        pbar = tqdm(range(1))
         while True:
             delta = 0.0
             new_values = TabularValueFunction()
@@ -18,12 +18,13 @@ class PolicyIteration:
                 new_value = values.get_q_value(self.mdp, state, policy.select_action(state))
                 values.update(state, new_value)
                 delta = max(delta, abs(old_value - new_value))
+                pbar.update_description(f"Policy Evaluation Phase: Delta: {delta}")
 
             # terminate if the value function has converged
             if delta < theta:
                 break
 
-        return values
+        return values, delta
 
     """ Implmentation of policy iteration iteration. Returns the number of iterations exected """
 
@@ -31,10 +32,11 @@ class PolicyIteration:
 
         # create a value function to hold details
         values = TabularValueFunction()
+        pbar = tqdm(range(int(max_iterations)))
 
-        for i in range(1, max_iterations + 1):
+        for i in pbar:
             policy_changed = False
-            values = self.policy_evaluation(self.policy, values, theta)
+            values, delta = self.policy_evaluation(self.policy, values, theta)
             for state in self.mdp.get_states():
                 old_action = self.policy.select_action(state)
 
@@ -51,6 +53,7 @@ class PolicyIteration:
                 policy_changed = (
                     True if new_action is not old_action else policy_changed
                 )
+            pbar.set_description(f"Delta: {delta}")
 
             if not policy_changed:
                 return i

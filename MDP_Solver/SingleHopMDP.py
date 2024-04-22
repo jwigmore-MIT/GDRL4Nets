@@ -5,9 +5,12 @@ import pickle
 import os.path as path
 import tensordict
 import torch
+#from DP.policy_iteration import PolicyIteration
 from DP.value_iteration import ValueIteration
 from DP.tabular_value_function import TabularValueFunction
 import os
+from DP.tabular_policy import TabularPolicy
+from DP.policy_iteration import PolicyIteration
 
 class SingleHopMDP(MDP):
 
@@ -23,7 +26,7 @@ class SingleHopMDP(MDP):
 
     class TX_Matrix:
 
-        def __init__(self, tx_matrix, n_tx_samples = None, num_s_a_pairs = None):
+        def __init__(self, tx_matrix = None, n_tx_samples = None, num_s_a_pairs = None):
             self.tx_matrix = tx_matrix
             self.n_tx_samples = n_tx_samples
             self.num_s_a_pairs = num_s_a_pairs
@@ -73,6 +76,15 @@ class SingleHopMDP(MDP):
         if not path.exists(save_path):
             os.makedirs(save_path)
         pickle.dump(self.Tx_matrix.__as_dict__(), open(path.join(save_path, name), "wb"))
+    def save_mdp(self, save_path, name = None):
+        self.env = None
+        if name is None:
+            name = f"{self.name}_MDP.pkl"
+        if not path.exists(save_path):
+            os.makedirs(save_path)
+        pickle.dump(self, open(path.join(save_path, name), "wb"))
+
+
     def load_tx_matrix(self, path):
         tx_matrix_dict = pickle.load(open(path, "rb"))
         self.TX_Matrix = self.TX_Matrix(**tx_matrix_dict)
@@ -125,6 +137,31 @@ class SingleHopMDP(MDP):
     def get_goal_states(self):
         return None
 
+    def do_PI(self, max_iterations=100, theta=0.1):
+        self.pi_policy = TabularPolicy(default_action=self.actions[1])
+        # Need to to initialize the policy with a default action that is valid
+        # for each state in the transition matrix
+        for state in self.state_list:
+            valid_actions = self.get_actions(state)
+            self.pi_policy.update(state, valid_actions[0])
+        policy_iteration = PolicyIteration(self, self.pi_policy)
+        policy_iteration.policy_iteration(max_iterations, theta)
+        print("Policy Iteration Complete, updated mdp.pi_policy")
+
+    def save_pi_policy(self, path):
+        if self.pi_policy is None:
+            raise ValueError("Policy must be estimated before saving it")
+        with open(path, 'wb') as f:
+            pickle.dump(self.pi_policy.policy_table, f)
+
+    def load_pi_policy(self, path):
+        with open(path, 'rb') as f:
+            policy_table = pickle.load(f)
+        self.pi_policy = TabularPolicy(default_action=self.actions[1])
+        self.pi_policy.policy_table = policy_table
+
+
+
     def do_VI(self, max_iterations=100, theta=0.1):
         if self.tx_matrix is None:
             raise ValueError("Transition Matrix must be estimated before running VI")
@@ -140,6 +177,24 @@ class SingleHopMDP(MDP):
         self.vi_policy = policy_table
         self.value_table = value_table
 
+    def save_VI(self, path):
+        """
+        Saves self.vi_policy and self.value_table to the specified path as a dictionary
+        """
+        if self.vi_policy is None or self.value_table is None:
+            raise ValueError("VI must be run before saving the policy and value table")
+        save_dict = {"vi_policy": self.vi_policy, "value_table": self.value_table}
+        with open(path, 'wb') as f:
+            pickle.dump(save_dict, f)
+
+    def load_VI(self, path):
+        with open(path, 'rb') as f:
+            save_dict = pickle.load(f)
+        self.vi_policy = save_dict["vi_policy"]
+        self.value_table = save_dict["value_table"]
+
+
+
     def get_VI_policy(self):
         if self.value_table is None:
             raise ValueError("Value Table must be estimated before getting policy")
@@ -148,12 +203,11 @@ class SingleHopMDP(MDP):
         self.vi_policy = policy_table
 
     def save_MDP(self, path):
-        import pickle
         self.env = None
         with open(path, 'wb') as f:
             pickle.dump(self, f)
 
-    def use_policy(self, state):
+    def use_vi_policy(self, state):
         if self.vi_policy is None:
             raise ValueError("Policy must be estimated before using it")
         # check if the state is in the policy table
@@ -164,6 +218,18 @@ class SingleHopMDP(MDP):
             print("State not in policy table")
             closest_state = min(self.vi_policy.keys(), key=lambda x: np.linalg.norm(np.array(x) - np.array(state)))
             return self.vi_policy[closest_state]
+
+    def use_pi_policy(self, state):
+        if self.pi_policy is None:
+            raise ValueError("Policy must be estimated before using it")
+        # check if the state is in the policy table
+        if tuple(state) in self.pi_policy.policy_table.keys():
+            return self.pi_policy.policy_table[tuple(state)]
+        else:
+            # return the closest match
+            print("State not in policy table")
+            closest_state = min(self.pi_policy.policy_table.keys(), key=lambda x: np.linalg.norm(np.array(x) - np.array(state)))
+            return self.pi_policy.policy_table[closest_state]
 
     def _get_state_list(self, env, q_max):
         """

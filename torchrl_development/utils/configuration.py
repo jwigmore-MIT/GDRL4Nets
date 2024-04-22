@@ -56,6 +56,31 @@ def make_serializable(input_dict):
         new_dict[str(k)] = v
     return new_dict
 
+def smart_type(value):
+
+    if ',' in value:
+        try:
+            value_list = [float(item) for item in value.split(',')]
+            return np.array(value_list)
+        except ValueError:
+            pass
+
+    try:
+        return int(value)
+    except ValueError:
+        pass
+
+    try:
+        return float(value)
+    except ValueError:
+        pass
+
+
+    if value.lower() in ['true', 'false']:
+        return value.lower() == 'true'
+
+    return value
+
 if __name__ == "__main__":
     # test the config object
     cfg = load_config("scaled_lambda_experiments.yaml")

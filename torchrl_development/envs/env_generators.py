@@ -235,9 +235,9 @@ class EnvGenerator:
             self.context_dicts = {0: {
                                     "env_params":input_params,
                                    "admissible": None,
-                                   "arrival_rates": None,
-                                   "lta": None,
-                                   "network_load": None}}
+                                   "arrival_rates": input_params.get("arrival_rates", None),
+                                   "lta": input_params.get("lta", None),
+                                   "network_load": input_params.get("network_load", None)}}
             self.num_envs = 1
             self.sample = self.sample_from_multi
         self._make_env_keywords = make_env_keywords
