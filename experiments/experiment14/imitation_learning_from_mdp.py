@@ -66,7 +66,7 @@ def sec_order_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_ep
 
 def supervised_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_epochs=5, lr=0.0001,
                  loss_fn = nn.CrossEntropyLoss(), weight_decay = 1e-5, lr_decay = False, reduce_on_plateau = False,
-                plot_losses = True, suptitle = "",all_losses = None, all_lrs = None, all_weights = None):
+                to_plot = ["all_losses"], suptitle = "",all_losses = None, all_lrs = None, all_weights = None):
     loss_fn = loss_fn
     # optimizer = Adam(module.parameters(), lr=lr, weight_decay=weight_decay)
     optimizer = Adam(module.parameters(), lr=lr, weight_decay=weight_decay)
@@ -110,31 +110,31 @@ def supervised_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_e
                     last_n_losses.pop(0)
                     if np.std(last_n_losses) < 1e-6:
                         break
-    if plot_losses:
+    if len(to_plot) > 0:
         # check if all_weights is empty
-        def plot_data(all_losses, all_lrs, all_weights=None, suptitle=""):
-            num_plots = 3 if all_weights is not None else 2
-            fig, ax = plt.subplots(num_plots, 1, sharex=True, figsize=(10, 10))
+        def plot_data(plots, suptitle=""):
+            num_plots = len(plots)
+            fig, axes = plt.subplots(num_plots, 1, sharex=True, figsize=(10, 10))
+            if num_plots == 1:
+                axes = [axes]
 
-            plots = [(all_losses, "Loss", "Training Loss"),
-                     (all_lrs, "Learning Rate", "Learning Rate Schedule")]
 
             if all_weights is not None:
                 plots.append((all_weights, "Weights", "MaxWeightNetwork Weights"))
 
-            for i, (data, ylabel, title) in enumerate(plots):
+            for i, ((data, ylabel, title), ax) in enumerate(zip(plots, axes)):
                 if title == "MaxWeightNetwork Weights":
                     data = torch.stack(data).squeeze().detach().numpy()
                     print("Weights shape: ", data.shape)
                     for j in range(data.shape[1]):
                         if j == 0:
                             continue
-                        ax[i].plot(data[:, j], label=f"W{j}")
-                    ax[i].legend()
+                        ax.plot(data[:, j], label=f"W{j}")
+                    ax.legend()
                 else:
-                    ax[i].plot(data)
-                ax[i].set_ylabel(ylabel)
-                ax[i].set_title(title)
+                    ax.plot(data)
+                ax.set_ylabel(ylabel)
+                ax.set_title(title)
 
             if num_plots == 2:
                 ax[1].set_xlabel("Minibatch")
@@ -142,10 +142,15 @@ def supervised_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_e
             fig.suptitle(suptitle)
             fig.tight_layout()
             fig.show()
-        if all_weights.__len__() > 0:
-            plot_data(all_losses, all_lrs, all_weights, suptitle)
-        else:
-            plot_data(all_losses, all_lrs, None, suptitle)
+
+        plots = []
+        if "all_losses" in to_plot:
+            plots.append((all_losses, "Loss", "Training Loss"))
+        if "all_lrs" in to_plot:
+            plots.append((all_lrs, "Learning Rate", "Learning Rate Schedule"))
+        if "all_weights" in to_plot:
+            plots.append((all_weights, "Weights", "MaxWeightNetwork Weights"))
+        plot_data(plots, suptitle=suptitle)
     return all_losses, all_lrs, all_weights
         # stop training if loss converges
 
@@ -252,7 +257,8 @@ supervised_train(mlp_agent,
                  num_training_epochs=num_training_epochs,
                  lr=lr,
                  loss_fn=nn.CrossEntropyLoss(),
-                 weight_decay=0)
+                 weight_decay=0,
+                 to_plot=["all_losses"])
 results["MLP"] = eval_agent(mlp_agent, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
 pickle.dump(mlp_agent.state_dict(), open(f"SH1B_trained_agents/imitation_mlp.pkl", "wb"))
 
@@ -314,7 +320,7 @@ fig.show()
 # %% Plot Specific Policies
 fig, ax = plt.subplots(1,1)
 for agent_name, policy_results in results.items():
-    if agent_name not in ["MDP", "MaxWeight", "MLP", "PPO_MLP"]:
+    if agent_name not in ["MDP", "MaxWeight", "MLP"]:
         continue
     if agent_name == "MDP":
         agent_name = "VI"

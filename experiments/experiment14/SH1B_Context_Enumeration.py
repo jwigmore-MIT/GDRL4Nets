@@ -5,6 +5,8 @@ from torchrl_development.utils.metrics import compute_lta
 from MDP_Solver.SingleHopMDP import SingleHopMDP
 from torchrl_development.actors import MDP_module, MDP_actor
 import torch
+import os
+os.chdir(os.path.realpath("C:\\Users\\Jerrod\\PycharmProjects\\GDRL4Nets\\experiments\\experiment14"))
 
 
 """
@@ -18,8 +20,8 @@ $\lambda_i$ and Bernoulli capacities with rate $\mu_i$.
 param_key = "c"
 
 rollout_length = 10000
-q_max = 50
-max_vi_iterations = 300
+q_max = 60
+max_vi_iterations = 500
 vi_theta = 0.1
 eval_rollouts = 3
 eval_seeds = [1,2,3]
@@ -84,7 +86,7 @@ base_env_params["Y_params"]['2']['probability'] = param_dict[param_key]["Y_param
 
 
 # Make Environment
-env = make_env(base_env_params)
+env = make_env(base_env_params, terminal_backlog=100)
 
 # Create MaxWeight Actor
 mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
@@ -116,7 +118,11 @@ try:
 except:
     mdp.compute_tx_matrix(f"tx_matrices")
 try:
+    print("Loading VI dict...")
     mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+    print("Continuing VI from loaded VI dict...")
+    mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
+    mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 except:
     mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
     mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
@@ -126,7 +132,7 @@ mdp_actor = MDP_actor(MDP_module(mdp))
 
 # %% evaluate both the MaxWeight and MDP policies over three different rollouts/seeds
 results = {}
-for policy_name, actor in {"MaxWeight":mw_actor, "MDP": mdp_actor}.items():
+for policy_name, actor in {"MDP": mdp_actor}.items():
     policy_results = {}
     for seed in eval_seeds:
         env = make_env(base_env_params, seed = seed)

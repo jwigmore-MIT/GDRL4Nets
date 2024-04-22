@@ -215,7 +215,7 @@ class SingleHopMDP(MDP):
             return self.vi_policy[tuple(state)]
         else: # return the closest match
             # get the closest state in the policy table
-            print("State not in policy table")
+            #print("State not in policy table")
             closest_state = min(self.vi_policy.keys(), key=lambda x: np.linalg.norm(np.array(x) - np.array(state)))
             return self.vi_policy[closest_state]
 
