@@ -196,7 +196,7 @@ supervised_train(mlp_agent,
                  loss_fn=nn.CrossEntropyLoss(),
                  weight_decay=0)
 results["MLP"] = eval_agent(mlp_agent, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
-
+pickle.dump(mlp_agent.state_dict(), open(f"SH1B_trained_agents/imitation_mlp.pkl", "wb"))
 
 # %% Train MaxWeightNetwork Agent
 mwn_lr = 0.001
@@ -207,6 +207,9 @@ supervised_train(mwn_agent,
                  loss_fn=nn.CrossEntropyLoss(),
                  reduce_on_plateau = False,
                  weight_decay=0)
+
+pickle.dump(mwn_agent.state_dict(), open(f"SH1B_trained_agents/imitation_mwn.pkl", "wb"))
+
 # %% Evaluate MWN Agent
 results["MWN"] = eval_agent(mwn_agent, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
 
@@ -217,7 +220,7 @@ mwn_agent2 = create_maxweight_actor_critic(input_shape=[input_shape], output_sha
                                                 temperature=10
                                                 )
 losses = sec_order_train(mwn_agent2, replay_buffer, num_training_epochs=num_training_epochs)
-
+pickle.dump(mwn_agent2.state_dict(), open(f"SH1B_trained_agents/imitation_2ndOrder_mwn.pkl", "wb"))
 #%% Evaluate MWN Agent2
 results["MWN2"] = eval_agent(mwn_agent2, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
 
