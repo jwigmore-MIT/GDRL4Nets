@@ -292,8 +292,12 @@ def train_ppo_agent(agent,
         prev_frames_processed = (i - 1) * frames_in_batch * cfg.collector.frame_skip
         curr_frames_processed = i * frames_in_batch * cfg.collector.frame_skip
         if i > 0 and (prev_frames_processed // cfg.eval.eval_interval) < (curr_frames_processed // cfg.eval.eval_interval):
-            eval_log_info = (evaluate_ppo_agent(agent, eval_env_generator, cfg, device=device))
-            # add eval_log_info to log_info
+            eval_log_info = (evaluate_ppo_agent(agent,
+                                                eval_env_generator,
+                                                [training_env_id],
+                                                pbar,
+                                                cfg,
+                                                device=device))
             log_info.update(eval_log_info)
 
             # Save the current agent, as model_{training_steps}
