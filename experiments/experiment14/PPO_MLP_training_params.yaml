@@ -31,8 +31,8 @@ collector:
 # eval
 eval:
   eval_interval: 100000
-  num_eval_envs: 1
-  traj_steps: 100
+  num_eval_envs: 3
+  traj_steps: 10000
   evaluate_before_training: True
 
 
