@@ -17,8 +17,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # Load Arguments from Commmand Line
 parser = argparse.ArgumentParser(description='Run experiment')
 # parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
-parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MWN")
-# parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH3") # or SH2u
+parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
+parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH1B") # or SH2u
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment14")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
@@ -58,9 +58,9 @@ print("="*20)
 # Make Environment Generators
 
 ## Load Environment Params
+cfg.context_set = args.context_set
 
-env_params = parse_env_json("SH1B.json")
-cfg.context_set = "SH1B"
+env_params = parse_env_json(f"{cfg.context_set}.json")
 
 training_make_env_parameters = {"observe_lambda": False,
                    "device": cfg.device,

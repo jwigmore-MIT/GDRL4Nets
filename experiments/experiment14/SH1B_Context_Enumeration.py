@@ -5,6 +5,7 @@ from torchrl_development.utils.metrics import compute_lta
 from MDP_Solver.SingleHopMDP import SingleHopMDP
 from torchrl_development.actors import MDP_module, MDP_actor
 import torch
+import numpy as np
 import os
 # os.chdir(os.path.realpath("C:\\Users\\Jerrod\\PycharmProjects\\GDRL4Nets\\experiments\\experiment14"))
 
@@ -17,14 +18,14 @@ $\lambda_i$ and Bernoulli capacities with rate $\mu_i$.
 """
 #%%
 # Settings
-param_key = "c"
+param_key = "d"
 
-rollout_length = 10000
+rollout_length = 20000
 q_max = 60
 max_vi_iterations = 500
 vi_theta = 0.1
-eval_rollouts = 3
-eval_seeds = [1,2,3]
+eval_rollouts = 5
+eval_seeds = np.arange(1, eval_rollouts+1)
 
 # Configure Base Params
 base_env_params = parse_env_json("SH1B.json")
@@ -66,6 +67,18 @@ param_dict = {
         "Y_params":
             {
                 "1": {"capacity": [0, 1], "probability": [0.6, 0.4]},
+                "2": {"capacity": [0, 3], "probability": [0.7, 0.3]}
+            }
+        },
+    "d": {
+        "X_params":
+            {
+                "1": {"arrival": [0, 1], "probability": [0.7, 0.3]},
+                "2": {"arrival": [0, 1], "probability": [0.3, 0.7]}
+            },
+        "Y_params":
+            {
+                "1": {"capacity": [0, 1], "probability": [0.55, 0.45]},
                 "2": {"capacity": [0, 3], "probability": [0.7, 0.3]}
             }
         }
@@ -110,6 +123,39 @@ ax.set_title(f"Environment: SH1B{param_key}")
 ax.legend()
 fig.show()
 
+#%% Get and plot MW results
+results = {}
+for policy_name, actor in {"MW": mw_actor}.items():
+    policy_results = {}
+    for seed in eval_seeds:
+        env = make_env(base_env_params, seed = seed)
+        td = env.rollout(policy=actor, max_steps = rollout_length)
+        lta = compute_lta(td["backlog"])
+        print(f"Actor: {policy_name}, Seed: {seed}, LTA: {lta[-1]}")
+        policy_results[seed] = {"td": td, "lta": lta}
+    results[policy_name] = policy_results
+
+for policy_name, policy_results in results.items():
+    all_ltas = torch.stack([torch.tensor(policy_results[seed]["lta"]) for seed in eval_seeds])
+    mean_lta = all_ltas.mean(dim = 0)
+    std_lta = all_ltas.std(dim = 0)
+    results[policy_name]["mean_lta"] = mean_lta
+    results[policy_name]["std_lta"] = std_lta
+
+fig, ax = plt.subplots(1,1)
+for policy_name, policy_results in results.items():
+    mean_lta = policy_results["mean_lta"]
+    std_lta = policy_results["std_lta"]
+    ax.plot(policy_results["mean_lta"], label = f"{policy_name} Policy")
+    ax.fill_between(range(len(mean_lta)), mean_lta - std_lta, mean_lta + std_lta, alpha = 0.1)
+ax.set_xlabel("Time")
+ax.set_ylabel("Backlog")
+ax.legend()
+fig.show()
+
+
+
+
 #%% Now create an MDP from the generated environment
 mdp = SingleHopMDP(env, name = mdp_name, q_max = q_max)
 # check if tx_matrix exists
@@ -132,7 +178,7 @@ mdp_actor = MDP_actor(MDP_module(mdp))
 
 # %% evaluate both the MaxWeight and MDP policies over three different rollouts/seeds
 results = {}
-for policy_name, actor in {"MDP": mdp_actor}.items():
+for policy_name, actor in {"MW": mw_actor,"MDP": mdp_actor}.items():
     policy_results = {}
     for seed in eval_seeds:
         env = make_env(base_env_params, seed = seed)
