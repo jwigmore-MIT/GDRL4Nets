@@ -140,7 +140,6 @@ def create_actor_critic(input_shape,
 
 
 def create_maxweight_actor_critic(input_shape,
-                output_shape,
                 in_keys,
                 action_spec,
                 temperature = 1.0,

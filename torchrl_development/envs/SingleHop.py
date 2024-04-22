@@ -288,7 +288,8 @@ class SingleHop(EnvBase):
 
     def _step(self, tensordict: TensorDict):
 
-        action = tensordict["action"].numpy()
+        action = tensordict["action"].squeeze().numpy()
+
         # see if action is invalid by checking if the sum == 1
         if np.sum(action) != 1:
             raise ValueError("Action must be a one-hot vector")

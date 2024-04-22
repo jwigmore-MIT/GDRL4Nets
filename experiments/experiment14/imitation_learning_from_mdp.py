@@ -21,7 +21,8 @@ from torchrl.envs.utils import ExplorationType, set_exploration_type
 
 # %%
 
-def sec_order_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_epochs=5, lr = 1):
+def sec_order_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_epochs=5, lr = 1,
+                    plot_losses = True):
     """
     Second order optimization for training a module with replay buffer
     :param module:
@@ -33,6 +34,7 @@ def sec_order_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_ep
     """
 
     loss_values = []
+
     def closure(td, loss_fn):
         optimizer.zero_grad()
         td["Q"] = td["Q"].float()
@@ -52,23 +54,36 @@ def sec_order_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_ep
             optimizer.step(lambda: closure(td, nn.CrossEntropyLoss()))
             if mb % 10 == 0:
                 pbar.set_postfix({f"Epoch": epoch, 'mb': mb, "Loss": loss_values[-1]})
+    if plot_losses:
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(loss_values)
+        ax.set_xlabel("Minibatch")
+        ax.set_ylabel("Loss")
+        fig.show()
     return loss_values
 
 
 
 def supervised_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_epochs=5, lr=0.0001,
-                 loss_fn = nn.CrossEntropyLoss(), weight_decay = 1e-5, reduce_on_plateau = False):
+                 loss_fn = nn.CrossEntropyLoss(), weight_decay = 1e-5, lr_decay = False, reduce_on_plateau = False,
+                plot_losses = True, suptitle = "",all_losses = None, all_lrs = None, all_weights = None):
     loss_fn = loss_fn
     # optimizer = Adam(module.parameters(), lr=lr, weight_decay=weight_decay)
     optimizer = Adam(module.parameters(), lr=lr, weight_decay=weight_decay)
     if reduce_on_plateau:
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-2, verbose=True)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-4, verbose=True)
 
     pbar = tqdm(range(num_training_epochs), desc=f"Training {module.__class__.__name__}")
+    if all_losses is None:
+        all_losses = []
+    if all_lrs is None:
+        all_lrs = []
+    if all_weights is None:
+        all_weights = []
     last_n_losses = []
     for epoch in pbar:
         # add learning rate decay
-        if not reduce_on_plateau:
+        if not reduce_on_plateau and lr_decay:
             alpha = 1 - (epoch / num_training_epochs)
             for group in optimizer.param_groups:
                 group["lr"] = lr * alpha
@@ -81,6 +96,11 @@ def supervised_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_e
             loss = loss_fn(td['logits'], td["target_action"])
             loss.backward(retain_graph = False)
             optimizer.step()
+            all_losses.append(loss.detach().item())
+            all_lrs.append(optimizer.param_groups[0]["lr"])
+            if module.get_policy_operator().module[0].module.__str__() == "MaxWeightNetwork()":
+                actor_weights = module.get_policy_operator().module[0].module.get_weights()
+                all_weights.append(actor_weights)
             if reduce_on_plateau:
                 scheduler.step(loss)
             if mb % 10 == 0:
@@ -90,6 +110,43 @@ def supervised_train(module, replay_buffer, in_keys = ["Q", "Y"], num_training_e
                     last_n_losses.pop(0)
                     if np.std(last_n_losses) < 1e-6:
                         break
+    if plot_losses:
+        # check if all_weights is empty
+        def plot_data(all_losses, all_lrs, all_weights=None, suptitle=""):
+            num_plots = 3 if all_weights is not None else 2
+            fig, ax = plt.subplots(num_plots, 1, sharex=True, figsize=(10, 10))
+
+            plots = [(all_losses, "Loss", "Training Loss"),
+                     (all_lrs, "Learning Rate", "Learning Rate Schedule")]
+
+            if all_weights is not None:
+                plots.append((all_weights, "Weights", "MaxWeightNetwork Weights"))
+
+            for i, (data, ylabel, title) in enumerate(plots):
+                if title == "MaxWeightNetwork Weights":
+                    data = torch.stack(data).squeeze().detach().numpy()
+                    print("Weights shape: ", data.shape)
+                    for j in range(data.shape[1]):
+                        if j == 0:
+                            continue
+                        ax[i].plot(data[:, j], label=f"W{j}")
+                    ax[i].legend()
+                else:
+                    ax[i].plot(data)
+                ax[i].set_ylabel(ylabel)
+                ax[i].set_title(title)
+
+            if num_plots == 2:
+                ax[1].set_xlabel("Minibatch")
+
+            fig.suptitle(suptitle)
+            fig.tight_layout()
+            fig.show()
+        if all_weights.__len__() > 0:
+            plot_data(all_losses, all_lrs, all_weights, suptitle)
+        else:
+            plot_data(all_losses, all_lrs, None, suptitle)
+    return all_losses, all_lrs, all_weights
         # stop training if loss converges
 
 def eval_agent(agent, env_generator, num_rollouts = 3, rollout_length = 10000):
@@ -112,7 +169,7 @@ num_rollouts = 3
 env_generator_seed = 5031997
 
 # Configure training params
-num_training_epochs = 300
+num_training_epochs = 500
 lr = 0.0001
 pickle_string = f"IL_SH1b_nr{num_rollouts}_rl{rollout_length}"
 
@@ -183,7 +240,8 @@ mlp_agent = create_actor_critic(
 # %% Create MaxWeightNetwork Agent
 mwn_agent = create_maxweight_actor_critic(input_shape=[input_shape], output_shape=output_shape,
                                                 action_spec=base_env.action_spec, in_keys=["Q", "Y"],
-                                                temperature=10
+                                                temperature=10,
+                                                init_weights= torch.ones([1,2])
                                                 )
 # %% Create MaxWeight Actor
 mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
@@ -198,15 +256,21 @@ supervised_train(mlp_agent,
 results["MLP"] = eval_agent(mlp_agent, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
 pickle.dump(mlp_agent.state_dict(), open(f"SH1B_trained_agents/imitation_mlp.pkl", "wb"))
 
+# %% For retraining and plotting over all lrs and losses
+mwn_tr_dict = {"all_losses": None, "all_lrs": None, "all_weights": None}
 # %% Train MaxWeightNetwork Agent
-mwn_lr = 0.001
-supervised_train(mwn_agent,
+mwn_lr = 0.01
+mwn_tr_dict["all_losses"], mwn_tr_dict["all_lrs"], mwn_tr_dict["all_weights"] = supervised_train(mwn_agent,
                  replay_buffer,
                  num_training_epochs=num_training_epochs,
-                 lr=lr,
+                 lr=mwn_lr,
                  loss_fn=nn.CrossEntropyLoss(),
                  reduce_on_plateau = False,
-                 weight_decay=0)
+                 weight_decay=0,
+                 plot_losses = True,
+                 all_losses = mwn_tr_dict["all_losses"],
+                 all_lrs = mwn_tr_dict["all_lrs"],
+                 all_weights = mwn_tr_dict["all_weights"],)
 
 pickle.dump(mwn_agent.state_dict(), open(f"SH1B_trained_agents/imitation_mwn.pkl", "wb"))
 
@@ -224,6 +288,19 @@ pickle.dump(mwn_agent2.state_dict(), open(f"SH1B_trained_agents/imitation_2ndOrd
 #%% Evaluate MWN Agent2
 results["MWN2"] = eval_agent(mwn_agent2, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
 
+#%% Load and test PPO MLP agent
+ppo_mlp_agent = create_actor_critic(
+        [input_shape],
+        output_shape,
+        in_keys=["observation"],
+        action_spec=base_env.action_spec,
+        temperature=0.1,
+        actor_depth=actor_params["actor_depth"],
+        actor_cells=actor_params["actor_cells"],
+    )
+ppo_mlp_agent.load_state_dict(torch.load("SH1B_trained_agents/ppo_mlp.pt"))
+results["PPO_MLP"] = eval_agent(ppo_mlp_agent, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
+
 # %% Plot the results
 fig, ax = plt.subplots(1,1)
 for agent_name, policy_results in results.items():
@@ -237,11 +314,19 @@ fig.show()
 # %% Plot Specific Policies
 fig, ax = plt.subplots(1,1)
 for agent_name, policy_results in results.items():
-    if agent_name not in ["MDP", "MaxWeight"]:
+    if agent_name not in ["MDP", "MaxWeight", "MLP", "PPO_MLP"]:
         continue
     if agent_name == "MDP":
         agent_name = "VI"
-    ax.plot(policy_results["mean_lta"], label = f"{agent_name} Policy")
+        color = "tab:blue"
+    if agent_name == "MLP":
+        agent_name = "Imitation MLP"
+        color = "tab:green"
+    if agent_name == "MaxWeight":
+        color = "tab:orange"
+    if agent_name == "PPO_MLP":
+        color = "tab:olive" # something close to green
+    ax.plot(policy_results["mean_lta"], label = f"{agent_name} Policy", color = color)
     ax.fill_between(range(len(policy_results["mean_lta"])), policy_results["mean_lta"] - policy_results["std_lta"], policy_results["mean_lta"] + policy_results["std_lta"], alpha = 0.1)
 ax.set_xlabel("Time")
 ax.set_ylabel("Backlog")

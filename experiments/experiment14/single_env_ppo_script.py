@@ -17,7 +17,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # Load Arguments from Commmand Line
 parser = argparse.ArgumentParser(description='Run experiment')
 # parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
-parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
+parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MWN")
 # parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH3") # or SH2u
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment14")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
@@ -27,8 +27,8 @@ args = parser.parse_args()
 # Load Config
 if args.agent_type == "MLP":
     CONFIG_PATH = os.path.join(SCRIPT_PATH, "PPO_MLP_training_params.yaml")
-else:
-    CONFIG_PATH = os.path.join(SCRIPT_PATH, "PPO_MW_NN_training_params.yaml")
+elif args.agent_type == "MWN":
+    CONFIG_PATH = os.path.join(SCRIPT_PATH, "PPO_MWN_training_params.yaml")
 cfg = load_config(full_path= CONFIG_PATH)
 
 if args.cfg:
@@ -99,6 +99,14 @@ if args.agent_type == "MLP":
         temperature=cfg.agent.temperature,
         actor_depth=cfg.agent.actor_depth,
         actor_cells=cfg.agent.actor_hidden_size
+    )
+elif args.agent_type == "MWN":
+    agent = create_maxweight_actor_critic(
+        input_shape=base_env.observation_spec["observation"].shape,
+        in_keys=["Q", "Y"],
+        action_spec=base_env.action_spec,
+        temperature=cfg.agent.temperature,
+        init_weights=torch.ones([1,2])
     )
 
 trained_agent = train_ppo_agent(agent, training_env_generator, eval_env_generator, cfg, device =device)

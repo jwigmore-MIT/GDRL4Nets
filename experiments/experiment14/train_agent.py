@@ -185,7 +185,7 @@ def train_ppo_agent(agent,
         # actor.train()
         training_env_id = env_generator.history[-1]
         log_info = {}
-        if i == 0 and cfg.eval.evaluate_before_training:
+        if i == 0 and getattr(cfg.eval, "evaluate_before_training", False):
             pbar.set_description("Evaluating Agent before Training")
             eval_log_info = (evaluate_ppo_agent(agent,
                                                 eval_env_generator,
@@ -286,7 +286,7 @@ def train_ppo_agent(agent,
         # get the weights from the actor
         if actor.module[0].module.__str__() == "MaxWeightNetwork()":
             actor_weights = actor.module[0].module.get_weights()
-            for e, value in enumerate(actor_weights):
+            for e, value in enumerate(actor_weights.squeeze()):
                 log_info.update({f"actor_weights/{e}": value.item()})
 
         prev_frames_processed = (i - 1) * frames_in_batch * cfg.collector.frame_skip
