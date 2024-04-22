@@ -23,7 +23,7 @@ eval_envs:
 # collector per env
 collector:
   total_training_frames: 3000000
-  frames_per_batch: 5000
+  frames_per_batch: 500
   frame_skip: 1
   reset_at_each_iter: False
 
@@ -31,7 +31,7 @@ collector:
 eval:
   eval_interval: 100000
   num_eval_envs: 3
-  traj_steps: 500
+  traj_steps: 10000
   evaluate_before_training: True
 
 
@@ -39,7 +39,7 @@ eval:
 # logger
 logger:
   backend: wandb
-  project_name: experiment13
+  project_name: experiment14
   group_name: null
   run_name: ["TrainGen", "PPO"]
 
@@ -50,7 +50,7 @@ optim:
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
-  anneal_lr: True
+  anneal_lr: False
   clip_epsilon: False
   alpha: 0.99
 
