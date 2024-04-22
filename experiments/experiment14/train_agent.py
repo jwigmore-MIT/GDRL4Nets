@@ -238,7 +238,7 @@ def train_ppo_agent(agent,
                 num_network_updates += 1
 
                 batch["sample_log_prob"] = batch["sample_log_prob"].squeeze()
-
+                # batch["action"] = batch["action"].squeeze()
                 # Get a data batch
                 batch = batch.to(device, non_blocking=True)
 

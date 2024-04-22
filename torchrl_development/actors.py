@@ -221,7 +221,7 @@ class MaxWeightNetwork(nn.Module):
         z = torch.cat([z_0, z_i], dim=-1)
 
 
-        return torch.relu(z)
+        return torch.relu(z).squeeze()
 
     def get_weights(self):
         "returns a copy of bias_0 and weights as a single vector"
