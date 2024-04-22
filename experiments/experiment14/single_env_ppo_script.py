@@ -106,7 +106,7 @@ elif args.agent_type == "MWN":
         in_keys=["Q", "Y"],
         action_spec=base_env.action_spec,
         temperature=cfg.agent.temperature,
-        init_weights=torch.ones([1,2]*cfg.agent.init_weight)
+        init_weights=torch.ones([1,2])*cfg.agent.init_weight
     )
 
 trained_agent = train_ppo_agent(agent, training_env_generator, eval_env_generator, cfg, device =device)
