@@ -15,11 +15,11 @@ $\lambda_i$ and Bernoulli capacities with rate $\mu_i$.
 """
 #%%
 # Settings
-param_key = "b"
+param_key = "c"
 
 rollout_length = 10000
 q_max = 50
-max_vi_iterations = 200
+max_vi_iterations = 300
 vi_theta = 0.1
 eval_rollouts = 3
 eval_seeds = [1,2,3]
@@ -43,7 +43,7 @@ param_dict = {
                 }
         },
 
-    "b": {
+    "b": { # The optimal policy is to serve the second queue if it has a backlog, and the first queue otherwise
         "X_params":
             {
                 "1": {"arrival": [0, 1], "probability": [0.5, 0.5]},
@@ -55,6 +55,18 @@ param_dict = {
                 "2": {"capacity": [0, 3], "probability": [0.3, 0.7]}
             }
     },
+    "c": {
+        "X_params":
+            {
+                "1": {"arrival": [0, 1], "probability": [0.7, 0.3]},
+                "2": {"arrival": [0, 1], "probability": [0.3, 0.7]}
+            },
+        "Y_params":
+            {
+                "1": {"capacity": [0, 1], "probability": [0.6, 0.4]},
+                "2": {"capacity": [0, 3], "probability": [0.7, 0.3]}
+            }
+        }
 }
 
 
