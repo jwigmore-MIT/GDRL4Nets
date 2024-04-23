@@ -7,7 +7,10 @@ from torchrl_development.actors import MDP_module, MDP_actor
 import torch
 import numpy as np
 import os
-os.chdir(os.path.realpath("C:\\Users\\Jerrod\\PycharmProjects\\GDRL4Nets\\experiments\\experiment14"))
+# os.chdir(os.path.realpath("C:\\Users\\Jerrod\\PycharmProjects\\GDRL4Nets\\experiments\\experiment14"))
+
+# set the working directory to the parent directory using only the relative path
+#os.chdir(os.path.join(os.getcwd()))
 
 
 """
