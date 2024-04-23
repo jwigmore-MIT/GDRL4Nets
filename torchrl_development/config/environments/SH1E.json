@@ -1,0 +1,36 @@
+{
+  "problem_instance": {
+    "name": "SingleHop1D",
+    "env_type": "SH",
+    "nodes": [1, 2, 0],
+    "lta": 9.0319,
+    "X_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.67
+      },
+      "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.67
+      }
+    },
+    "Y_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "capacity": [0,1, 2],
+        "probability": [0.4, 0.3, 0.3]
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "capacity": [0, 1, 2],
+        "probability": [0.2, 0.5, 0.3]
+      }
+    }
+  }
+}
