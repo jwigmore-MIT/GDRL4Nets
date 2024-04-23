@@ -23,7 +23,7 @@ eval_envs:
 # collector per env
 collector:
   total_training_frames: 3000000
-  frames_per_batch: 500
+  frames_per_batch: 2000
   frame_skip: 1
   reset_at_each_iter: False
 
