@@ -22,7 +22,7 @@ param_key = "e"
 do =["MW"]
 rollout_length = 20000
 q_max = 60
-eval_rollouts = 3
+eval_rollouts = 5
 eval_seeds = np.arange(3, eval_rollouts+3)
 
 # Configure Base Params

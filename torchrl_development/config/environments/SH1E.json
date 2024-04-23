@@ -3,7 +3,7 @@
     "name": "SingleHop1D",
     "env_type": "SH",
     "nodes": [1, 2, 0],
-    "lta": 9.0319,
+    "lta": 10.15383,
     "X_params": {
       "1": {
         "source": 1,

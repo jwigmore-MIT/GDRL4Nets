@@ -180,7 +180,7 @@ def train_ppo_agent(agent,
     )
 
     pbar = tqdm(total=total_training_frames)
-
+    best_eval_backlog = np.inf
     for i, data in enumerate(collector):
         # actor.train()
         training_env_id = env_generator.history[-1]
@@ -291,17 +291,22 @@ def train_ppo_agent(agent,
 
         prev_frames_processed = (i - 1) * frames_in_batch * cfg.collector.frame_skip
         curr_frames_processed = i * frames_in_batch * cfg.collector.frame_skip
-        if i > 0 and (prev_frames_processed // cfg.eval.eval_interval) < (curr_frames_processed // cfg.eval.eval_interval):
+        if i > 0 and (prev_frames_processed // cfg.eval.eval_interval) < (curr_frames_processed // cfg.eval.eval_interval) or collected_frames >= total_training_frames:
             eval_log_info = (evaluate_ppo_agent(agent,
                                                 eval_env_generator,
                                                 [training_env_id],
                                                 pbar,
                                                 cfg,
                                                 device=device))
+
             log_info.update(eval_log_info)
 
+            if eval_log_info["eval/lta_backlog_all_envs"] < best_eval_backlog:
+                best_eval_backlog = eval_log_info["eval/lta_backlog_training_envs"]
+                torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"best_agent.pt"))
+                wandb.save(f"best_agent.pt")
             # Save the current agent, as model_{training_steps}
-            torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_agent.pt"))
+            torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"recent_agent.pt"))
             agent.training_steps = collected_frames
             wandb.save(f"trained_agent.pt")
             actor.train()
@@ -314,4 +319,5 @@ def train_ppo_agent(agent,
 
         collector.update_policy_weights_()
         sampling_start = time.time()
+
     return agent
