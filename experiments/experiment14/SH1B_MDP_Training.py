@@ -141,6 +141,7 @@ try:
 except:
     mdp.compute_tx_matrix(f"tx_matrices")
 if args.new_mdp:
+    print("Starting VI from scratch...")
     mdp.do_VI(max_iterations=max_vi_iterations, theta=vi_theta)
     mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 else:
