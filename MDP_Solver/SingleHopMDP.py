@@ -6,8 +6,9 @@ import os.path as path
 import tensordict
 import torch
 #from DP.policy_iteration import PolicyIteration
-# from DP.value_iteration import ValueIteration
+from DP.value_iteration import ValueIteration
 from DP.value_iteration_plus import ValueIterationPlus
+from DP.value_iteration_minus import ValueIterationMinus
 from DP.tabular_value_function import TabularValueFunction
 import os
 from DP.tabular_policy import TabularPolicy
@@ -15,7 +16,7 @@ from DP.policy_iteration import PolicyIteration
 
 class SingleHopMDP(MDP):
 
-    def __init__(self, env, name = "SingleHopMDP", q_max = 10, discount = 0.99):
+    def __init__(self, env, name = "SingleHopMDP", q_max = 10, discount = 0.99, value_iterator = "normal"):
         self.actions = np.eye(env.action_spec.n).astype(bool) # each, column is a one-hot boolean vector
         self.n_queues = env.N
         self.state_list = self._get_state_list(env, q_max) # truncated state-space as list
@@ -24,6 +25,8 @@ class SingleHopMDP(MDP):
         self.discount = discount
         self.name = f"{name}_qmax{q_max}_discount{discount}"
         self.env = env
+        self.value_iterator = value_iterator
+
 
     class TX_Matrix:
 
@@ -169,8 +172,15 @@ class SingleHopMDP(MDP):
         value_table = TabularValueFunction()
         if hasattr(self, "value_table"):
             value_table.value_table = self.value_table
-        self.value_iterator = ValueIterationPlus(self, value_table)
+        if self.value_iterator == "plus":
+            self.value_iterator = ValueIterationPlus(self, value_table)
+        elif self.value_iterator == "minus":
+            self.value_iterator = ValueIterationMinus(self, value_table)
+        else:
+            self.value_iterator = ValueIteration(self, value_table)
+
         self.value_iterator.value_iteration(max_iterations, theta)
+
 
         policy = value_table.extract_policy(self)
         policy_table = dict(policy.policy_table)

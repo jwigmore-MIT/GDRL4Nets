@@ -19,9 +19,10 @@ parser = argparse.ArgumentParser(description='Run experiment')
 parser.add_argument('--param_key', type=str, help='key to select the parameters for the environment', default="e")
 parser.add_argument('--rollout_length', type=int, help='length of the rollout', default=20000)
 parser.add_argument('--q_max', type=int, help='maximum queue length', default=60)
-parser.add_argument('--max_vi_iterations', type=int, help='maximum number of value iteration iterations', default=500)
+parser.add_argument('--max_vi_iterations', type=int, help='maximum number of value iteration iterations', default=100)
 parser.add_argument('--continue_training', type=bool, default=False, help='continue training the MDP')
-parser.add_argument('--new_mdp', type=bool, default=False, help='continue training the MDP')
+parser.add_argument('--new_mdp', type=bool, default=True, help='continue training the MDP')
+
 
 args = parser.parse_args()
 
@@ -131,18 +132,18 @@ env = make_env(base_env_params, terminal_backlog=100)
 # Create MaxWeight Actor
 mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
 #%% Now create an MDP from the generated environment
-mdp = SingleHopMDP(env, name = mdp_name, q_max = q_max)
+mdp = SingleHopMDP(env, name = mdp_name, q_max = q_max, value_iterator = 'minus')
 # check if tx_matrix exists
 
-if args.new_mdp:
+
+try:
+    mdp.load_tx_matrix(f"tx_matrices/{mdp_name}_qmax{q_max}_discount0.99_computed_tx_matrix.pkl")
+except:
     mdp.compute_tx_matrix(f"tx_matrices")
-    mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
+if args.new_mdp:
+    mdp.do_VI(max_iterations=max_vi_iterations, theta=vi_theta)
     mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 else:
-    try:
-        mdp.load_tx_matrix(f"tx_matrices/{mdp_name}_qmax{q_max}_discount0.99_computed_tx_matrix.pkl")
-    except:
-        mdp.compute_tx_matrix(f"tx_matrices")
     try:
         print("Loading VI dict...")
         mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
