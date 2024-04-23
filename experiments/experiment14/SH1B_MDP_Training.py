@@ -20,7 +20,7 @@ parser.add_argument('--param_key', type=str, help='key to select the parameters 
 parser.add_argument('--rollout_length', type=int, help='length of the rollout', default=20000)
 parser.add_argument('--q_max', type=int, help='maximum queue length', default=60)
 parser.add_argument('--max_vi_iterations', type=int, help='maximum number of value iteration iterations', default=500)
-
+parser.add_argument('--continue_training', action='store_false', help='continue training the MDP')
 args = parser.parse_args()
 
 """
@@ -116,59 +116,6 @@ env = make_env(base_env_params, terminal_backlog=100)
 
 # Create MaxWeight Actor
 mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
-#%%
-# Generate Trajectory under MaxWeight Policy
-mw_results = {}
-mw_results["td"] = env.rollout(policy=mw_actor, max_steps = rollout_length)
-mw_results["lta_backlog"] = compute_lta(mw_results["td"]["backlog"])
-mw_results["q1_lta_backlog"] = compute_lta(mw_results["td"]["Q"][:,0])
-mw_results["q2_lta_backlog"] = compute_lta(mw_results["td"]["Q"][:,1])
-
-#%%
-# Plot the LTA Backlog
-fig, ax = plt.subplots(1,1)
-ax.plot(mw_results["lta_backlog"], label = "MaxWeight Policy (LTA: {:.2f})".format(mw_results["lta_backlog"][-1]))
-ax.plot(mw_results["q1_lta_backlog"], label = "Q1 LTA Backlog (LTA: {:.2f})".format(mw_results["q1_lta_backlog"][-1]))
-ax.plot(mw_results["q2_lta_backlog"], label = "Q2 LTA Backlog (LTA: {:.2f})".format(mw_results["q2_lta_backlog"][-1]))
-ax.set_xlabel("Time")
-ax.set_ylabel("Backlog")
-ax.set_title(f"Environment: SH1B{param_key}")
-ax.legend()
-fig.show()
-
-#%% Get and plot MW results
-results = {}
-for policy_name, actor in {"MW": mw_actor}.items():
-    policy_results = {}
-    for seed in eval_seeds:
-        env = make_env(base_env_params, seed = seed)
-        td = env.rollout(policy=actor, max_steps = rollout_length)
-        lta = compute_lta(td["backlog"])
-        print(f"Actor: {policy_name}, Seed: {seed}, LTA: {lta[-1]}")
-        policy_results[seed] = {"td": td, "lta": lta}
-    results[policy_name] = policy_results
-
-for policy_name, policy_results in results.items():
-    all_ltas = torch.stack([torch.tensor(policy_results[seed]["lta"]) for seed in eval_seeds])
-    mean_lta = all_ltas.mean(dim = 0)
-    std_lta = all_ltas.std(dim = 0)
-    results[policy_name]["mean_lta"] = mean_lta
-    results[policy_name]["std_lta"] = std_lta
-
-fig, ax = plt.subplots(1,1)
-for policy_name, policy_results in results.items():
-    mean_lta = policy_results["mean_lta"]
-    std_lta = policy_results["std_lta"]
-    ax.plot(policy_results["mean_lta"], label = f"{policy_name} Policy")
-    ax.fill_between(range(len(mean_lta)), mean_lta - std_lta, mean_lta + std_lta, alpha = 0.1)
-ax.set_xlabel("Time")
-ax.set_ylabel("Backlog")
-ax.legend()
-fig.show()
-
-
-
-
 #%% Now create an MDP from the generated environment
 mdp = SingleHopMDP(env, name = mdp_name, q_max = q_max)
 # check if tx_matrix exists
@@ -179,10 +126,12 @@ except:
 try:
     print("Loading VI dict...")
     mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
-    print("Continuing VI from loaded VI dict...")
-    mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
-    mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+    if args.continue_training:
+        print("Continuing VI from loaded VI dict...")
+        mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
+        mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 except:
+    print("VI dict not found.  Starting VI from scratch...")
     mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
     mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 # %% Create MDP actor
