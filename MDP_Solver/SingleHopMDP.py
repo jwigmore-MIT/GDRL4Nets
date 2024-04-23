@@ -108,7 +108,7 @@ class SingleHopMDP(MDP):
     def get_reward(self, state, action, next_state):
         next_buffers = next_state[:self.n_queues]
         if np.any(np.array(next_buffers) >= self.q_max):
-            return -100
+            return -1e10
         else:
             return -np.sum(next_buffers)
 
@@ -214,9 +214,18 @@ class SingleHopMDP(MDP):
         if tuple(state) in self.vi_policy.keys():
             return self.vi_policy[tuple(state)]
         else: # return the closest match
+            # Get the MaxWeight action
+            # q = np.array(state[:self.n_queues])
+            # y = np.array(state[self.n_queues:])
+            # mw_action = np.argmax(q*y) + 1
+            # # return the mw_action as a one-hot vector of length q.shape[0] + 1
+            # action = np.zeros(q.shape[0] + 1)
+            # action[mw_action] = 1
+            # return action
+
             # get the closest state in the policy table
             #print("State not in policy table")
-            closest_state = min(self.vi_policy.keys(), key=lambda x: np.linalg.norm(np.array(x) - np.array(state)))
+            closest_state = min(self.vi_policy.keys(), key=lambda x: np.linalg.norm(np.array(x) - np.array(state), ord = 2))
             return self.vi_policy[closest_state]
 
     def use_pi_policy(self, state):
