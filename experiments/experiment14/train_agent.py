@@ -308,7 +308,7 @@ def train_ppo_agent(agent,
             # Save the current agent, as model_{training_steps}
             torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"recent_agent.pt"))
             agent.training_steps = collected_frames
-            wandb.save(f"trained_agent.pt")
+            wandb.save(f"recent_agent.pt")
             actor.train()
             # update pbar to say that we are training
             pbar.set_description("Training")

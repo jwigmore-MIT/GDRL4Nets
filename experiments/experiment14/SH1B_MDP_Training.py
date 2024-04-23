@@ -20,7 +20,7 @@ parser.add_argument('--param_key', type=str, help='key to select the parameters 
 parser.add_argument('--rollout_length', type=int, help='length of the rollout', default=20000)
 parser.add_argument('--q_max', type=int, help='maximum queue length', default=60)
 parser.add_argument('--max_vi_iterations', type=int, help='maximum number of value iteration iterations', default=100)
-parser.add_argument('--continue_training', type=bool, default=False, help='continue training the MDP')
+parser.add_argument('--continue_training', type=bool, default=True, help='continue training the MDP')
 parser.add_argument('--new_mdp', type=bool, default=False, help='Re-do VI from scratch')
 
 
