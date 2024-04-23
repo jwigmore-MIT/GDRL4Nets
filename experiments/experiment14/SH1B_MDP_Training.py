@@ -21,6 +21,8 @@ parser.add_argument('--rollout_length', type=int, help='length of the rollout', 
 parser.add_argument('--q_max', type=int, help='maximum queue length', default=60)
 parser.add_argument('--max_vi_iterations', type=int, help='maximum number of value iteration iterations', default=500)
 parser.add_argument('--continue_training', type=bool, default=False, help='continue training the MDP')
+parser.add_argument('--new_mdp', type=bool, default=False, help='continue training the MDP')
+
 args = parser.parse_args()
 
 """
@@ -131,21 +133,27 @@ mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
 #%% Now create an MDP from the generated environment
 mdp = SingleHopMDP(env, name = mdp_name, q_max = q_max)
 # check if tx_matrix exists
-try:
-    mdp.load_tx_matrix(f"tx_matrices/{mdp_name}_qmax{q_max}_discount0.99_computed_tx_matrix.pkl")
-except:
+
+if args.new_mdp:
     mdp.compute_tx_matrix(f"tx_matrices")
-try:
-    print("Loading VI dict...")
-    mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
-    if args.continue_training:
-        print("Continuing VI from loaded VI dict...")
-        mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
-        mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
-except:
-    print("VI dict not found.  Starting VI from scratch...")
     mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
     mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+else:
+    try:
+        mdp.load_tx_matrix(f"tx_matrices/{mdp_name}_qmax{q_max}_discount0.99_computed_tx_matrix.pkl")
+    except:
+        mdp.compute_tx_matrix(f"tx_matrices")
+    try:
+        print("Loading VI dict...")
+        mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+        if args.continue_training:
+            print("Continuing VI from loaded VI dict...")
+            mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
+            mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+    except:
+        print("VI dict not found.  Starting VI from scratch...")
+        mdp.do_VI(max_iterations = max_vi_iterations, theta = vi_theta)
+        mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 # %% Create MDP actor
 mdp_actor = MDP_actor(MDP_module(mdp))
 
