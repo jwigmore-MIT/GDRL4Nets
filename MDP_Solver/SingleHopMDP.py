@@ -6,7 +6,8 @@ import os.path as path
 import tensordict
 import torch
 #from DP.policy_iteration import PolicyIteration
-from DP.value_iteration import ValueIteration
+# from DP.value_iteration import ValueIteration
+from DP.value_iteration_plus import ValueIterationPlus
 from DP.tabular_value_function import TabularValueFunction
 import os
 from DP.tabular_policy import TabularPolicy
@@ -108,7 +109,7 @@ class SingleHopMDP(MDP):
     def get_reward(self, state, action, next_state):
         next_buffers = next_state[:self.n_queues]
         if np.any(np.array(next_buffers) >= self.q_max):
-            return -1e10
+            return -np.sum(next_buffers)
         else:
             return -np.sum(next_buffers)
 
@@ -168,9 +169,9 @@ class SingleHopMDP(MDP):
         value_table = TabularValueFunction()
         if hasattr(self, "value_table"):
             value_table.value_table = self.value_table
+        self.value_iterator = ValueIterationPlus(self, value_table)
+        self.value_iterator.value_iteration(max_iterations, theta)
 
-
-        ValueIteration(self, value_table).value_iteration(max_iterations, theta)
         policy = value_table.extract_policy(self)
         policy_table = dict(policy.policy_table)
         value_table = dict(value_table.value_table)

@@ -18,8 +18,8 @@ $\lambda_i$ and Bernoulli capacities with rate $\mu_i$.
 """
 #%%
 # Settings
-param_key = "c"
-do =["MDP","MW"]
+param_key = "e"
+do =["MW"]
 rollout_length = 20000
 q_max = 60
 eval_rollouts = 3
@@ -80,16 +80,16 @@ param_dict = {
                 "2": {"capacity": [0, 3], "probability": [0.7, 0.3]}
             }
         },
-    "b2": { # The optimal policy is to serve the second queue if it has a backlog, and the first queue otherwise
+    "e": {
         "X_params":
             {
-                "1": {"arrival": [0, 1], "probability": [0.4, 0.6]},
-                "2": {"arrival": [0, 1], "probability": [0.5, 0.5]}
+                "1": {"arrival": [0, 1], "probability": [0.33, 0.67]},
+                "2": {"arrival": [0, 1], "probability": [0.33, 0.67]}
             },
         "Y_params":
             {
-                "1": {"capacity": [0, 1], "probability": [0.3, 0.7]},
-                "2": {"capacity": [0, 3], "probability": [0.3, 0.7]}
+                "1": {"capacity": [0, 1, 2], "probability": [0.4, 0.3, 0.3]},
+                "2": {"capacity": [0, 1, 2], "probability": [0.2, 0.5, 0.3]}
             }
     },
 }

@@ -16,7 +16,7 @@ import os
 
 # For running from the command line
 parser = argparse.ArgumentParser(description='Run experiment')
-parser.add_argument('--param_key', type=str, help='key to select the parameters for the environment', default="c")
+parser.add_argument('--param_key', type=str, help='key to select the parameters for the environment', default="e")
 parser.add_argument('--rollout_length', type=int, help='length of the rollout', default=20000)
 parser.add_argument('--q_max', type=int, help='maximum queue length', default=60)
 parser.add_argument('--max_vi_iterations', type=int, help='maximum number of value iteration iterations', default=500)
@@ -94,7 +94,19 @@ param_dict = {
                 "1": {"capacity": [0, 1], "probability": [0.55, 0.45]},
                 "2": {"capacity": [0, 3], "probability": [0.7, 0.3]}
             }
-        }
+        },
+    "e": {
+        "X_params":
+            {
+                "1": {"arrival": [0, 1], "probability": [0.33, 0.67]},
+                "2": {"arrival": [0, 1], "probability": [0.33, 0.67]}
+            },
+        "Y_params":
+            {
+                "1": {"capacity": [0, 1, 2], "probability": [0.4, 0.3, 0.3]},
+                "2": {"capacity": [0, 1, 2], "probability": [0.2, 0.5, 0.3]}
+            }
+    },
 }
 
 
