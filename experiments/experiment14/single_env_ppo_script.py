@@ -18,7 +18,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 parser = argparse.ArgumentParser(description='Run experiment')
 # parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
 parser.add_argument('--agent_type', type=str, help='type of agent to train', default="MLP")
-parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH1D") # or SH2u
+parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH1C") # or SH2u
 parser.add_argument('--experiment_name', type=str, help='what the experiment will be titled for wandb', default="Experiment14")
 parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
@@ -42,7 +42,7 @@ if args.cfg:
 
 cfg.agent_type = args.agent_type
 
-cfg.exp_name = f"{args.experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
+cfg.exp_name = f"{args.agent_type}_{args.context_set}_{args.experiment_name}-{datetime.now().strftime('%y_%m_%d-%H_%M_%S')}"
 cfg.device = device
 #print out the cfg object
 print("="*20)

@@ -3,19 +3,19 @@
     "name": "SingleHop1B",
     "env_type": "SH",
     "nodes": [1, 2, 0],
-    "lta": 4.2782,
+    "lta": 13.628,
     "X_params": {
       "1": {
         "source": 1,
         "destination": 0,
         "arrival": 1,
-        "probability": 0.5
+        "probability": 0.3
       },
       "2": {
           "source": 2,
           "destination": 0,
           "arrival": 1,
-          "probability": 0.5
+          "probability": 0.7
       }
     },
     "Y_params": {
@@ -23,13 +23,13 @@
         "source": 1,
         "destination": 0,
         "capacity": [0,1],
-        "probability": [0.3, 0.7]
+        "probability": [0.6, 0.4]
       },
       "2": {
         "source": 2,
         "destination": 0,
         "capacity": [0, 3],
-        "probability": [0.3, 0.7]
+        "probability": [0.7, 0.3]
       }
     }
   }
