@@ -7,9 +7,9 @@ class PolicyIteration:
         self.mdp = mdp
         self.policy = policy
 
-    def policy_evaluation(self, policy, values, theta=0.001):
-        pbar = tqdm(range(1))
-        while True:
+    def policy_evaluation(self, policy, values, theta=0.001, max_iterations=100):
+        pbar = tqdm(range(int(max_iterations)))
+        for i in pbar:
             delta = 0.0
             new_values = TabularValueFunction()
             for state in self.mdp.get_states():

@@ -61,6 +61,7 @@ class MultiEnvSyncDataCollector(SyncDataCollector):
         )
 
         self.env_generator = env_generator
+        self.env = self.env_generator()
 
     # def iterator(self) -> Iterator[TensorDictBase]:
     #     """
@@ -70,6 +71,6 @@ class MultiEnvSyncDataCollector(SyncDataCollector):
     #     return super().iterator()
     #
     def rollout(self):
-
-        self.env = self.env_generator()
+        if self.reset_at_each_iter:
+            self.env = self.env_generator()
         return super().rollout()

@@ -291,7 +291,7 @@ class SingleHop(EnvBase):
         action = tensordict["action"].squeeze().numpy()
 
         # see if action is invalid by checking if the sum == 1
-        if np.sum(action) != 1:
+        if np.sum(action) > 1:
             raise ValueError("Action must be a one-hot vector")
 
         # make sure the action is the same shape as Y

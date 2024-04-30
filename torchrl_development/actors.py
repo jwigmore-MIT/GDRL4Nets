@@ -10,6 +10,7 @@ from torchrl.modules import Actor, MLP, ProbabilisticActor, ValueOperator, Maske
 import torch
 import torch.nn as nn
 from tensordict import TensorDict
+import torch.nn.functional as F
 
 def create_ia_actor(input_shape,
                     output_shape,
@@ -219,6 +220,7 @@ class MaxWeightNetwork(nn.Module):
         z_0 = self.bias_0 - (Q * Y).sum(dim=-1, keepdim=True)
         z_i = Y * Q * self.weights
         z = torch.cat([z_0, z_i], dim=-1)
+        # z = F.softmax(z, dim=-1)
 
 
         return torch.relu(z).squeeze()
@@ -226,6 +228,231 @@ class MaxWeightNetwork(nn.Module):
     def get_weights(self):
         "returns a copy of bias_0 and weights as a single vector"
         return torch.cat([self.bias_0.detach(), self.weights.detach()], dim = -1)
+
+
+
+def create_independent_actor_critic(input_shape,
+                in_keys,
+                action_spec,
+                temperature = 1.0,
+                actor_depth = 2,
+                actor_cells = 32,
+                type = 1):
+
+    num_nodes = input_shape[-1]//2
+    if type == 1:
+        actor_network = IndependentNodeNetwork(num_nodes, actor_depth, actor_cells)
+    elif type == 2:
+        actor_network = IndependentNodeNetwork2(num_nodes, actor_depth, actor_cells)
+    actor_module = NN_Actor(module=actor_network, in_keys=["Q", "Y"], out_keys=["logits"])
+
+    actor_module = ProbabilisticActor(
+        actor_module,
+        distribution_class=MaskedOneHotCategoricalTemp,
+        in_keys=["logits", "mask"],
+        distribution_kwargs={"grad_method": ReparamGradientStrategy.RelaxedOneHot,
+                             "temperature": temperature},  # {"temperature": 0.5},
+        spec=CompositeSpec(action=action_spec),
+        return_log_prob=True,
+        default_interaction_type=ExplorationType.RANDOM,
+    )
+    # input = TensorDict({"Q": torch.ones(1,weight_size), "Y": torch.ones(1,weight_size),
+    #                     "mask": torch.Tensor([[1,0,0,0,0,0]]).bool()}, batch_size=(1,))
+
+    # actor_output = actor_module(input)
+
+
+    critic_mlp = MLP(in_features=input_shape[-1],
+                     activation_class=torch.nn.ReLU,
+                     out_features=1,
+                     )
+
+
+    # Create Value Module
+    value_module = ValueOperator(
+        module=critic_mlp,
+        in_keys=in_keys,
+    )
+
+    #
+    actor_critic = ActorCriticWrapper(actor_module, value_module)
+
+    return actor_critic
+
+class IndependentNodeNetwork(nn.Module):
+    """
+    This network takes the node states $\mathbf s = (s_i)$ where $s_i = (q_i, y_i)$
+    and passes each s_i through its own independent neural network
+    f_{\theta_i}(s_i) to compute logits z_i
+    """
+    def __init__(self, num_nodes, depth, cells):
+        super(IndependentNodeNetwork, self).__init__()
+        self.num_nodes = num_nodes
+        # create num_nodes independent neural networks, each with depth and cells
+        self.node_nns = nn.ModuleList([MLP(in_features=2,
+                                           out_features=1,
+                                           depth=depth,
+                                           num_cells=cells,
+                                           activation_class=nn.ReLU,
+                                           ) for _ in range(num_nodes)])
+
+
+
+        # self.node_nns = nn.ModuleList([nn.Sequential(
+        #     nn.Linear(2, 32),
+        #     nn.ReLU(),
+        #     nn.Linear(32, 32),
+        #     nn.ReLU(),
+        #     nn.Linear(32, 1)
+        # ) for _ in range(num_nodes)])
+        self.bias_0 = nn.Parameter(torch.ones(1, 1))
+    def forward(self, Q, Y):
+        if Q.dim() == 1:
+            Q = Q.unsqueeze(0)
+        if Y.dim() == 1:
+            Y = Y.unsqueeze(0)
+        s = [torch.column_stack([Q[:,i], Y[:,i]]) for i in range(Q.shape[-1])]
+
+        z_i = [nn(s_i) for s_i, nn in zip(s, self.node_nns)]
+        z_i = torch.column_stack(z_i)
+        z_0 = self.bias_0 - (Q * Y).sum(dim=-1, keepdim=True)
+        z = torch.column_stack([z_0, z_i])
+        # normalize z
+        z = F.softmax(z, dim=-1)
+        return torch.relu(z).squeeze(dim=-1)
+
+
+class IndependentNodeNetwork2(nn.Module):
+    """
+    This network takes the node states $\mathbf s = (s_i)$ where $s_i = (q_i, y_i)$
+    and passes each s_i through its own independent neural network
+    f_{\theta_i}(s_i) to compute logits z_i
+    """
+    def __init__(self, num_nodes, depth, cells):
+        super(IndependentNodeNetwork2, self).__init__()
+        self.num_nodes = num_nodes
+        # create num_nodes independent neural networks, each with depth and cells
+        self.node_nns = nn.ModuleList([MLP(in_features=1,
+                                           out_features=1,
+                                           depth=depth,
+                                           num_cells=cells,
+                                           activation_class=nn.ReLU,
+                                           ) for _ in range(num_nodes)])
+
+
+
+        # self.node_nns = nn.ModuleList([nn.Sequential(
+        #     nn.Linear(2, 32),
+        #     nn.ReLU(),
+        #     nn.Linear(32, 32),
+        #     nn.ReLU(),
+        #     nn.Linear(32, 1)
+        # ) for _ in range(num_nodes)])
+        self.bias_0 = nn.Parameter(torch.ones(1, 1))
+    def forward(self, Q, Y):
+        if Q.dim() == 1:
+            Q = Q.unsqueeze(0)
+        if Y.dim() == 1:
+            Y = Y.unsqueeze(0)
+        # Elementwise multiplication of Q and Y
+        s = [(Q[:,i]* Y[:,i]).unsqueeze(1) for i in range(Q.shape[-1])]
+
+
+        z_i = [nn(s_i) for s_i, nn in zip(s, self.node_nns)]
+        z_i = torch.column_stack(z_i)
+        z_0 = self.bias_0 - (Q * Y).sum(dim=-1, keepdim=True)
+        z = torch.column_stack([z_0, z_i])
+        # normalize z
+        z = F.softmax(z, dim=-1)
+        return torch.relu(z).squeeze(dim=-1)
+
+def create_weight_function_network(input_shape,
+                arrival_rates,
+                service_rates,
+                in_keys,
+                action_spec,
+                temperature = 1.0,
+                actor_depth = 2,
+                actor_cells = 32,
+                type = 1):
+
+    num_nodes = input_shape[-1]//2
+
+    actor_network = WeightFunctionNetworkNode(num_nodes, arrival_rates, service_rates, actor_depth, actor_cells)
+
+    actor_module = NN_Actor(module=actor_network, in_keys=["Q", "Y"], out_keys=["logits"])
+
+    actor_module = ProbabilisticActor(
+        actor_module,
+        distribution_class=MaskedOneHotCategoricalTemp,
+        in_keys=["logits", "mask"],
+        distribution_kwargs={"grad_method": ReparamGradientStrategy.RelaxedOneHot,
+                             "temperature": temperature},  # {"temperature": 0.5},
+        spec=CompositeSpec(action=action_spec),
+        return_log_prob=True,
+        default_interaction_type=ExplorationType.RANDOM,
+    )
+    # input = TensorDict({"Q": torch.ones(1,weight_size), "Y": torch.ones(1,weight_size),
+    #                     "mask": torch.Tensor([[1,0,0,0,0,0]]).bool()}, batch_size=(1,))
+
+    # actor_output = actor_module(input)
+
+
+    critic_mlp = MLP(in_features=input_shape[-1],
+                     activation_class=torch.nn.ReLU,
+                     out_features=1,
+                     )
+
+
+    # Create Value Module
+    value_module = ValueOperator(
+        module=critic_mlp,
+        in_keys=in_keys,
+    )
+
+    #
+    actor_critic = ActorCriticWrapper(actor_module, value_module)
+
+    return actor_critic
+
+class WeightFunctionNetworkNode(nn.Module):
+    """
+    This network takes the node states $\mathbf s = (s_i)$ where $s_i = (q_i, y_i)$
+    and passes each s_i through its own independent neural network
+    f_{\theta_i}(s_i) to compute logits z_i
+    """
+    def __init__(self, num_nodes, arrival_rates, service_rates, depth, cells):
+        super().__init__()
+        self.num_nodes = num_nodes
+        # create num_nodes independent neural networks, each with depth and cells
+        self.NN = MLP(in_features=4,
+                       out_features=1,
+                       depth=depth,
+                       num_cells=cells,
+                       activation_class=nn.ReLU,
+                       )
+
+        self.arrival_rates = arrival_rates
+        self.service_rates = service_rates
+
+
+        self.bias_0 = nn.Parameter(torch.ones(1, 1))
+    def forward(self, Q, Y):
+        if Q.dim() == 1:
+            Q = Q.unsqueeze(0)
+        if Y.dim() == 1:
+            Y = Y.unsqueeze(0)
+        # Stack Q, Y, Arrival Rate i, Service Rate i
+        s = [torch.column_stack([Q[:,i], Y[:,i], torch.ones_like(Q[:,i])*self.arrival_rates[i], torch.ones_like(Q[:,i])*self.service_rates[i]]) for i in range(Q.shape[-1])]
+
+
+        z_i = [self.NN(s_i) for s_i in s]
+        z_i = torch.column_stack(z_i)
+        z_0 = self.bias_0 - (Q * Y).sum(dim=-1, keepdim=True)
+        z = torch.column_stack([z_0, z_i])
+        # normalize z
+        z = F.softmax(z, dim=-1)
+        return torch.relu(z).squeeze(dim=-1)
 
 
 class GNNMaxWeightNetwork(nn.Module):

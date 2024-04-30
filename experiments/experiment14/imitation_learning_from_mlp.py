@@ -168,6 +168,8 @@ def eval_agent(agent, env_generator, num_rollouts = 3, rollout_length = 10000):
 
 # %%
 
+
+
 rollout_length = 30000
 q_max = 50
 num_rollouts = 3
@@ -176,7 +178,7 @@ env_generator_seed = 5031997
 # Configure training params
 num_training_epochs = 500
 lr = 0.0001
-pickle_string = f"MLP_IL_SH1c_nr{num_rollouts}_rl{rollout_length}"
+pickle_string = f"MLP_IL_SH1e_nr{num_rollouts}_rl{rollout_length}"
 
 # results storage
 results = {}
@@ -188,7 +190,7 @@ actor_params = {
 }
 
 # Configure Environment Generator
-base_env_params = parse_env_json("SH1C.json")
+base_env_params = parse_env_json("SH1E.json")
 
 make_env_parameters = {"observe_lambda": False,
                        "device": "cpu",
@@ -218,20 +220,26 @@ mlp_agent = create_actor_critic(
 )
 
 # Load MLP agent
-mlp_agent.load_state_dict(torch.load("SH1C_trained_agents/MLP_c_trained_agent.pt"))
+mlp_agent.load_state_dict(torch.load("SH1E_trained_agents/MLP_E_best_agent.pt"))
 
 # %% Collect Trajectories under MLP Policy
 
 results["MLP"] = eval_agent(mlp_agent, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
-
-
+# %%
+# %% Create MaxWeight Actor
+mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
+# %%
+results["MaxWeight"] = eval_agent(mw_actor, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
+#%% Plot results thus far
 fig, ax = plt.subplots(1,1)
-ax.plot(results["MLP"]["mean_lta"], label = "MLP Policy")
-ax.fill_between(range(len(results["MLP"]["mean_lta"])), results["MLP"]["mean_lta"] - results["MLP"]["std_lta"], results["MLP"]["mean_lta"] +results["MLP"]["std_lta"], alpha = 0.1)
+for agent_name, policy_results in results.items():
+    ax.plot(policy_results["mean_lta"], label = f"{agent_name} Policy")
+    ax.fill_between(range(len(policy_results["mean_lta"])), policy_results["mean_lta"] - policy_results["std_lta"], policy_results["mean_lta"] + policy_results["std_lta"], alpha = 0.1)
 ax.set_xlabel("Time")
 ax.set_ylabel("Backlog")
 ax.legend()
 fig.show()
+
 
 # %% Create ReplayBuffer (Dataset)
 td = torch.cat([results["MLP"][i]["td"] for i in range(num_rollouts)])
@@ -247,9 +255,6 @@ mwn_agent = create_maxweight_actor_critic(input_shape=[input_shape],
                                                 temperature=10,
                                                 init_weights= torch.ones([1,2])
                                                 )
-# %% Create MaxWeight Actor
-mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
-results["MaxWeight"] = eval_agent(mw_actor, env_generator, num_rollouts = num_rollouts, rollout_length = rollout_length)
 
 
 # %% For retraining and plotting over all lrs and losses

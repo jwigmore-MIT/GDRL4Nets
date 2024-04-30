@@ -181,6 +181,10 @@ def train_ppo_agent(agent,
 
     pbar = tqdm(total=total_training_frames)
     best_eval_backlog = np.inf
+    artifact_name = cfg.exp_name.split("-")[0]
+
+
+
     for i, data in enumerate(collector):
         # actor.train()
         training_env_id = env_generator.history[-1]
@@ -303,12 +307,22 @@ def train_ppo_agent(agent,
 
             if eval_log_info["eval/lta_backlog_all_envs"] < best_eval_backlog:
                 best_eval_backlog = eval_log_info["eval/lta_backlog_training_envs"]
-                torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"best_agent.pt"))
-                wandb.save(f"best_agent.pt")
-            # Save the current agent, as model_{training_steps}
-            torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"recent_agent.pt"))
+
+                torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_agent.pt"))
+                agent_artifact = wandb.Artifact(f"trained_agent_{artifact_name}", type="model")
+                agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_agent.pt"))
+                agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                wandb.log_artifact(agent_artifact, aliases=["best", "latest"])
+                # wandb.run.log_artifact(agent_artifact, aliases=["best", "latest"])
+                agent
+            else:
+                torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_agent.pt"))
+                agent_artifact = wandb.Artifact(f"trained_agent_{artifact_name}", type="model")
+                agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_agent.pt"))
+                agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                wandb.log_artifact(agent_artifact, aliases=["latest"])
             agent.training_steps = collected_frames
-            wandb.save(f"recent_agent.pt")
+            # wandb.save(f"recent_agent.pt")
             actor.train()
             # update pbar to say that we are training
             pbar.set_description("Training")

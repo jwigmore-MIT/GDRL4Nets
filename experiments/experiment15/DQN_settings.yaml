@@ -1,0 +1,48 @@
+device: null
+
+# Agent
+agent:
+  depth: 2
+  num_cells: 128
+
+# Environment
+training_env:
+  terminal_backlog: 100
+  inverse_reward: False
+
+
+# collector
+collector:
+  total_frames: 1_000_000
+  frames_per_batch: 100
+  eps_init: 0.2
+  eps_end: 0.05
+  annealing_frames: 100_000
+  test_interval: 20_000
+  max_frames_per_traj: 50_000
+
+# buffer
+buffer:
+  buffer_size: 100_000
+  batch_size: 200
+  scratch_dir: null
+
+# logger
+logger:
+  backend: wandb
+
+# Optim
+optim:
+  lr: 0.000001
+  max_grad_norm: 10
+
+# loss
+loss:
+  gamma: 0.99
+  soft_eps: 0.99
+  num_updates: 1
+  mask_loss: 0.001
+
+eval:
+  num_eval_envs: 3
+  traj_steps: 20_000

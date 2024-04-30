@@ -89,12 +89,12 @@ try:
     mdp.load_tx_matrix(f"tx_matrices/{mdp_name}_qmax{q_max}_discount0.99_computed_tx_matrix.pkl")
 except:
     mdp.compute_tx_matrix(f"tx_matrices")
-#%% Load or compute the Value Iteration
-try:
-    mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
-except:
-    mdp.do_VI(max_iterations = max_vi_iterations, theta = theta)
-    mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+# #%% Load or compute the Value Iteration
+# try:
+#     mdp.load_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
+# except:
+#     mdp.do_VI(max_iterations = max_vi_iterations, theta = theta)
+#     mdp.save_VI(f"saved_mdps/{mdp_name}_qmax{q_max}_discount0.99_VI_dict.p")
 
 #%% Load or compute the Policy Iteration
 try:
