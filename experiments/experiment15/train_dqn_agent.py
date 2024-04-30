@@ -77,7 +77,7 @@ def evaluate_dqn_agent(actor,
                     eval_tds.append(eval_td)
                     eval_backlog = eval_td["next", "backlog"].numpy()
                     eval_lta_backlog = compute_lta(eval_backlog)
-                    vaf =  (eval_td["mask"] * eval_td["action"]).sum().float() / eval_td["mask"].sum()
+                    vaf =  (eval_td["mask"] * eval_td["action"]).sum().float() / eval_td["mask"].shape[0]
                     valid_action_fractions[i].append(vaf)
                     lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
@@ -170,14 +170,18 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
     action_spec = base_env.action_spec
 
     mlp = MLP(in_features = input_shape[0], out_features = output_shape, activation_class= torch.nn.ReLU, depth = cfg.agent.depth, num_cells = cfg.agent.num_cells)
-    q_module = QValueActor(module = mlp, in_keys = ["observation"], spec = CompositeSpec({"action": action_spec}))
+    q_module = QValueActor(module = mlp,
+                           in_keys = ["observation"],
+                           spec = CompositeSpec({"action": action_spec}),
+                           action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,)
 
     # Create Exploration Module
     greedy_module = EGreedyModule(
         annealing_num_steps= cfg.collector.annealing_frames,
         eps_init= cfg.collector.eps_init,
         eps_end= cfg.collector.eps_end,
-        spec = q_module.spec
+        spec = q_module.spec,
+        action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,
     )
 
     model_explore = TensorDictSequential(
@@ -237,7 +241,7 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
                 logger_name="..\\logs",
                 experiment_name= experiment_name,
                 wandb_kwargs={
-                    "project": "Experiment15b",
+                    "project": cfg.logger.project,
                 },
             )
 
@@ -283,7 +287,7 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
         data["action"] is the action chosen by the agent which is a one-hot binary tensor
         data["mask"] * data["action"] will be a binary tensor where the action was invalid
         """
-        valid_action_fraction = (data["mask"] * data["action"]).sum().float() / data["mask"].sum()
+        valid_action_fraction = (data["mask"] * data["action"]).sum().float() / data["mask"].shape[0]
 
         log_info.update(
             {
@@ -304,7 +308,10 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
             sampled_tensordict = sampled_tensordict.to(cfg.device)
 
             loss_td = loss_module(sampled_tensordict)
-            mask_loss = cfg.loss.mask_loss*(sampled_tensordict["action"]*sampled_tensordict["mask"].logical_not()  * q_module(sampled_tensordict["observation"])[1]).sum()
+            if cfg.agent.mask:
+                mask_loss = torch.zeros_like(loss_td["loss"])
+            else:
+                mask_loss = cfg.loss.mask_loss*(sampled_tensordict["action"]*sampled_tensordict["mask"].logical_not()  * q_module(sampled_tensordict["observation"])[1]).sum()
 
             q_loss = loss_td["loss"] + mask_loss
             # Add loss for invalid actions

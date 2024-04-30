@@ -24,5 +24,5 @@ Its mostly based off the dqn_atary.py script from torchrl library
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(SCRIPT_PATH, 'DQN_sweep_settings.yaml'), "r") as file:
     sweep_configuration = yaml.safe_load(file)
-sweep_id = wandb.sweep(sweep_configuration, project="Experiment15b")
+sweep_id = wandb.sweep(sweep_configuration, project="Experiment15c")
 

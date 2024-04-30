@@ -4,6 +4,7 @@ device: null
 agent:
   depth: 2
   num_cells: 128
+  mask: True
 
 # Environment
 training_env:
@@ -30,6 +31,7 @@ buffer:
 # logger
 logger:
   backend: wandb
+  project: Experiment15c
 
 # Optim
 optim:
@@ -41,7 +43,7 @@ loss:
   gamma: 0.99
   soft_eps: 0.99
   num_updates: 1
-  mask_loss: 0.001
+  mask_loss: 0
 
 eval:
   num_eval_envs: 3

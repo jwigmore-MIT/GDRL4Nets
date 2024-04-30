@@ -35,11 +35,9 @@ parameters:
 
   loss:
       parameters:
-          mask_loss:
-            values: [0.0001, 0.001, 0.01, 0.1, 1]
           soft_eps:
             min: 0.9
-            max: 0.9999
+            max: 0.999
             distribution: "log_uniform_values"
           num_updates:
-            values: [1, 2, 3, 4, 5]
+            values: [1, 2, 4, 8]
