@@ -21,81 +21,25 @@ parameters:
         max: 0.001
         distribution: "log_uniform_values"
 
-    collector:
+  collector:
+    parameters:
+      frames_per_batch:
+        values: [10, 50, 100, 500, 1000]
+      annealing_frames:
+        values: [10_000, 50_000, 100_000, 500_000, 1_000_000]
+
+  buffer:
+    parameters:
+      batch_size:
+        values: [10, 50, 100, 500, 1000]
+
+  loss:
       parameters:
-        frames_per_batch:
-          values: [10, 50, 100, 500, 1000]
-        annealing_frames:
-          values: [10_000, 50_000, 100_000, 500_000, 1_000_000]
-
-    buffer:
-      parameters:
-        batch_size:
-          values: [10, 50, 100, 500, 1000]
-
-    loss:
-        parameters:
-            mask_loss:
-              values: [0.0001, 0.001, 0.01, 0.1, 1]
-            soft_eps:
-              min: 0.9
-              max: 0.9999
-              distribution: "log_uniform_values"
-            num_updates:
-              values: [1, 2, 3, 4, 5]
-  # Environment
-#  training_env:
-#    parameters:
-#      terminal_backlog:
-#        values: 100
-#      inverse_reward:
-#        values: False
-
-
-  # collector
-#  collector:
-#    parameters:
-#      total_frames:
-#        values: 3_000_000
-#      frames_per_batch:
-#        values: 100
-#      eps_init:
-#        values: 0.2
-#      eps_end:
-#        values: 0.05
-#      annealing_frames:
-#        values: 100_000
-#      test_interval:
-#        values: 20_000
-#      max_frames_per_traj:
-#        values: -1
-
-  # buffer
-
-
-  # Optim
-#  optim:
-#    parameters:
-#      lr:
-#        values: 0.000001
-#      max_grad_norm:
-#        values: 10
-#
-#  # loss
-#  loss:
-#    parameters:
-#      gamma:
-#        values: 0.99
-#      hard_update_freq:
-#        values: 1000
-#      num_updates:
-#        values: 1
-#      mask_loss:
-#        values: 0.001
-#
-#  eval:
-#    parameters:
-#      num_eval_envs:
-#        values: 3
-#      traj_steps:
-#        values: 20_000
+          mask_loss:
+            values: [0.0001, 0.001, 0.01, 0.1, 1]
+          soft_eps:
+            min: 0.9
+            max: 0.9999
+            distribution: "log_uniform_values"
+          num_updates:
+            values: [1, 2, 3, 4, 5]

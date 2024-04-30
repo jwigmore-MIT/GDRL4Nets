@@ -25,27 +25,4 @@ SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(SCRIPT_PATH, 'DQN_sweep_settings.yaml'), "r") as file:
     sweep_configuration = yaml.safe_load(file)
 sweep_id = wandb.sweep(sweep_configuration, project="Experiment15b")
-env_id = "SH1E"
 
-
-def main():
-    experiment_name = generate_exp_name("DQN", "Sweep1")
-    logger = get_logger("wandb",
-            experiment_name= experiment_name,
-            logger_name="..\\logs",
-            sweep_id = sweep_id,)
-    run = logger.experiment
-    # load base configuration
-    cfg = load_config(os.path.join(SCRIPT_PATH,"DQN_settings.yaml"))
-    # Modify configuration based on sweep configuration
-    for top_level_key, top_level_value in run.config.items():
-        for key, value in top_level_value.items():
-            cfg.__dict__[top_level_key].__dict__[key] = value
-
-    base_env_params = parse_env_json(f"{env_id}.json")
-    train_dqn_agent(cfg, base_env_params, logger, disable_pbar=True)
-
-
-
-
-wandb.agent(sweep_id, function=main)

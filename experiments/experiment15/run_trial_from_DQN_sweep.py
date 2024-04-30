@@ -51,4 +51,4 @@ def main():
 
 
 
-wandb.agent(sweep_id = sweep_id, function=main, project = "Experiment15")
+wandb.agent(sweep_id = sweep_id, function=main, project = "Experiment15b")
