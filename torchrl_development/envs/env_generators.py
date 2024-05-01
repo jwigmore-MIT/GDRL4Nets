@@ -9,13 +9,17 @@ import numpy as np
 
 
 
-
+PROJECT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CURR_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 TORCHRL_DEVELOPMENT_PATH = os.path.dirname(CURR_FILE_PATH)
 CONFIG_FILE_PATH = os.path.join(TORCHRL_DEVELOPMENT_PATH, "config", "environments")
+
 def parse_env_json(json_path, config_args = None):
     import json
     import os
+    print(f"CURR_FILE_PATH: {CURR_FILE_PATH}")
+    print(f"TORCHRL_DEVELOPMENT_PATH: {TORCHRL_DEVELOPMENT_PATH}")
+    print(f"CONFIG_FILE_PATH: {CONFIG_FILE_PATH}")
     full_path = os.path.join(CONFIG_FILE_PATH, json_path)
     para = json.load(open(full_path, "r"))
     env_para = para["problem_instance"]
