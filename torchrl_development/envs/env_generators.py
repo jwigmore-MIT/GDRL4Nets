@@ -1,6 +1,7 @@
 # get directory of torchrl_development
 import os
-from torchrl.envs.transforms import CatTensors, TransformedEnv, SymLogTransform, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, InverseReward, UnsqueezeTransform
+from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform
+from torchrl_development.custom_transforms import SymLogTransform, InverseReward
 from torchrl_development.envs.SingleHop import SingleHop
 from torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from copy import deepcopy
