@@ -4,5 +4,5 @@ setup(
     name='GDRL4Nets',
     version='0.1.0',
     description='A brief description of my project',
-    packages=['torchrl_development', 'torch_geometric_development'],
+    packages=find_packages(),
 )
