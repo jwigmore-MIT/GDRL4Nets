@@ -21,6 +21,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 cfg = load_config(os.path.join(SCRIPT_PATH, "DQN_settings.yaml"))
+cfg.device = device
 env_params = parse_env_json(f"SH1E.json")
 
 base_env = make_env(env_params)

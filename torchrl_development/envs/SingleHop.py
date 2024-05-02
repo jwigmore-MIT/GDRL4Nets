@@ -297,7 +297,6 @@ class SingleHop(EnvBase):
             chosen_action = np.random.choice(np.where(action == action.max())[0])
             action = zero_action
             action[chosen_action] = 1
-
             # action_values = tensordict["action_value"]
             # raise ValueError(f"Action must be a one-hot vector - instead got {action} \\"
             #                  f"with values {action_values}")
