@@ -43,7 +43,7 @@ def evaluate_dqn_agent(actor,
                        training_envs_ind,
                        pbar,
                        cfg,
-                       device):
+                       device="cpu"):
     log_info = {}
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
 
@@ -73,7 +73,7 @@ def evaluate_dqn_agent(actor,
                     pbar.set_description(
                         f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
                     eval_env = eval_env_generator.sample(true_ind=i)
-                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True).to('cpu')
+                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor)
                     eval_tds.append(eval_td)
                     eval_backlog = eval_td["next", "backlog"].numpy()
                     eval_lta_backlog = compute_lta(eval_backlog)
@@ -134,7 +134,7 @@ def evaluate_dqn_agent(actor,
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
-def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False):
+def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
 
 
     env_generator_seed = 531997
@@ -167,12 +167,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
     output_shape = base_env.action_spec.space.n
     action_spec = base_env.action_spec
 
-    mlp = MLP(in_features = input_shape[0],
-              out_features = output_shape,
-              activation_class= torch.nn.ReLU,
-              depth = cfg.agent.depth,
-              num_cells = cfg.agent.num_cells,
-              device = device)
+    mlp = MLP(in_features = input_shape[0], out_features = output_shape, activation_class= torch.nn.ReLU, depth = cfg.agent.depth, num_cells = cfg.agent.num_cells)
     q_module = QValueActor(module = mlp,
                            in_keys = ["observation"],
                            spec = CompositeSpec({"action": action_spec}),
@@ -189,7 +184,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
 
     model_explore = TensorDictSequential(
         q_module,
-        greedy_module,).to(device)
+        greedy_module,).to(cfg.device)
 
     # Create the collector
     collector = MultiEnvSyncDataCollector(
@@ -197,12 +192,11 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         policy=model_explore,
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
-        device=device,
-        storing_device=device,
-        env_device="cpu",
+        device=cfg.device,
+        storing_device=cfg.device,
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         env_generator=training_env_generator.sample,
-        # reset_at_each_iter=False,
+        reset_at_each_iter=False,
 )
 
     tempdir = tempfile.TemporaryDirectory()
@@ -214,7 +208,6 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         storage=LazyMemmapStorage(
             max_size=cfg.buffer.buffer_size,
             scratch_dir=scratch_dir,
-            #device = device
         ),
         batch_size=cfg.buffer.batch_size,
     )
@@ -263,8 +256,8 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
     sampling_start = time.time()
     num_updates = cfg.loss.num_updates
     max_grad = cfg.optim.max_grad_norm
-    q_losses = torch.zeros(num_updates, device=device)
-    mask_losses = torch.zeros(num_updates, device = device)
+    q_losses = torch.zeros(num_updates, device=cfg.device)
+    mask_losses = torch.zeros(num_updates, device=cfg.device)
     pbar = tqdm.tqdm(total=cfg.collector.total_frames, disable = disable_pbar)
 
     # initialize the artifact saving params
@@ -272,7 +265,6 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
     artifact_name = logger.exp_name
 
     for i, data in enumerate(collector):
-        # print(f"Device of data: {data.device}")
         log_info = {}
         training_env_id = training_env_generator.history[-1]
         sampling_time = time.time() - sampling_start
@@ -312,7 +304,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         training_start = time.time()
         for j in range(num_updates):
             sampled_tensordict = replay_buffer.sample()
-            sampled_tensordict = sampled_tensordict.to(device)
+            sampled_tensordict = sampled_tensordict.to(cfg.device)
 
             loss_td = loss_module(sampled_tensordict)
             if cfg.agent.mask:
@@ -356,7 +348,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
             if (i >= 1 and (prev_test_frame < cur_test_frame)) or final:
                 q_module.eval()
                 eval_start = time.time()
-                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, [training_env_generator.history[-1]], pbar, cfg, device)
+                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, [training_env_generator.history[-1]], pbar, cfg, device=cfg.device)
 
                 eval_time = time.time() - eval_start
                 log_info.update(eval_log_info)

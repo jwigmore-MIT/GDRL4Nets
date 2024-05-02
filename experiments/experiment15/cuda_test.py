@@ -3,7 +3,7 @@ from torchrl_development.utils.configuration import load_config
 import os
 from torchrl_development.envs.env_generators import parse_env_json
 import torch
-from train_dqn_agent_cuda import train_dqn_agent
+from train_dqn_agent import train_dqn_agent
 from torchrl_development.envs.env_generators import make_env
 from argparse import ArgumentParser
 
