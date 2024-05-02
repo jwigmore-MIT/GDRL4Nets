@@ -31,7 +31,7 @@ cfg.device = device
 # cfg.loss.soft_eps = 0.95
 # cfg.optim.lr = 0.0005
 # cfg.agent.mask = True
-cfg.total_frames = 20000
+cfg.collector.total_frames = 20000
 # Create a profiler object
 profiler = cProfile.Profile()
 
