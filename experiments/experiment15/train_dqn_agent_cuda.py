@@ -43,7 +43,7 @@ def evaluate_dqn_agent(actor,
                        training_envs_ind,
                        pbar,
                        cfg,
-                       device="cpu"):
+                       device):
     log_info = {}
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
 
@@ -73,7 +73,7 @@ def evaluate_dqn_agent(actor,
                     pbar.set_description(
                         f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
                     eval_env = eval_env_generator.sample(true_ind=i)
-                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor)
+                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, device=device)
                     eval_tds.append(eval_td)
                     eval_backlog = eval_td["next", "backlog"].numpy()
                     eval_lta_backlog = compute_lta(eval_backlog)
@@ -355,7 +355,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
             if (i >= 1 and (prev_test_frame < cur_test_frame)) or final:
                 q_module.eval()
                 eval_start = time.time()
-                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, [training_env_generator.history[-1]], pbar, cfg, device=cfg.device)
+                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, [training_env_generator.history[-1]], pbar, cfg, device)
 
                 eval_time = time.time() - eval_start
                 log_info.update(eval_log_info)
