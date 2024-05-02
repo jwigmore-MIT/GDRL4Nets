@@ -15,7 +15,7 @@ training_env:
 # collector
 collector:
   total_frames: 1_000_000
-  frames_per_batch: 50
+  frames_per_batch: 500
   eps_init: 0.2
   eps_end: 0.05
   annealing_frames: 50000
@@ -25,7 +25,7 @@ collector:
 # buffer
 buffer:
   buffer_size: 100_000
-  batch_size: 200
+  batch_size: 2000
   scratch_dir: null
 
 # logger
