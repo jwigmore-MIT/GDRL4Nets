@@ -272,7 +272,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
     artifact_name = logger.exp_name
 
     for i, data in enumerate(collector):
-        print(f"Device of data: {data.device}")
+        # print(f"Device of data: {data.device}")
         log_info = {}
         training_env_id = training_env_generator.history[-1]
         sampling_time = time.time() - sampling_start
