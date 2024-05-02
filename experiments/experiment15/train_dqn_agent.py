@@ -385,4 +385,3 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         sampling_start = time.time()
 
 
-    return eval_log_info["eval_normalized/normalized_lta_backlog_all_envs"]
