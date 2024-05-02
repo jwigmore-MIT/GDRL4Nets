@@ -40,7 +40,6 @@ def make_env(env_params,
              graph= False,
              observe_lambda = False,
              seed=0,
-             device="cpu",
              terminal_backlog=None,
              observation_keys=["Q", "Y"],
              inverse_reward= False,
@@ -71,9 +70,9 @@ def make_env(env_params,
     env_params["stat_window_size"] = stat_window_size
     env_params["terminate_on_lta_threshold"] = terminate_on_lta_threshold
     if graph:
-        base_env = SingleHopGraph(env_params, seed, device)
+        base_env = SingleHopGraph(env_params, seed)
     else:
-        base_env = SingleHop(env_params, seed, device)
+        base_env = SingleHop(env_params, seed)
     env = TransformedEnv(
         base_env,
         Compose(

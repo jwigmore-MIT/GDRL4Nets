@@ -134,7 +134,7 @@ def evaluate_dqn_agent(actor,
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
-def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
+def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False):
 
 
     env_generator_seed = 531997
@@ -167,7 +167,12 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
     output_shape = base_env.action_spec.space.n
     action_spec = base_env.action_spec
 
-    mlp = MLP(in_features = input_shape[0], out_features = output_shape, activation_class= torch.nn.ReLU, depth = cfg.agent.depth, num_cells = cfg.agent.num_cells)
+    mlp = MLP(in_features = input_shape[0],
+              out_features = output_shape,
+              activation_class= torch.nn.ReLU,
+              depth = cfg.agent.depth,
+              num_cells = cfg.agent.num_cells,
+              device = device)
     q_module = QValueActor(module = mlp,
                            in_keys = ["observation"],
                            spec = CompositeSpec({"action": action_spec}),
@@ -192,8 +197,10 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
         policy=model_explore,
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
-        device=cfg.device,
-        storing_device=cfg.device,
+        device=device,
+        storing_device=device,
+        policy_device=device,
+        env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         env_generator=training_env_generator.sample,
         reset_at_each_iter=False,
@@ -208,6 +215,7 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
         storage=LazyMemmapStorage(
             max_size=cfg.buffer.buffer_size,
             scratch_dir=scratch_dir,
+            device = device
         ),
         batch_size=cfg.buffer.batch_size,
     )
@@ -256,8 +264,8 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
     sampling_start = time.time()
     num_updates = cfg.loss.num_updates
     max_grad = cfg.optim.max_grad_norm
-    q_losses = torch.zeros(num_updates, device=cfg.device)
-    mask_losses = torch.zeros(num_updates, device=cfg.device)
+    q_losses = torch.zeros(num_updates, device=device)
+    mask_losses = torch.zeros(num_updates, device = device)
     pbar = tqdm.tqdm(total=cfg.collector.total_frames, disable = disable_pbar)
 
     # initialize the artifact saving params
@@ -265,6 +273,7 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
     artifact_name = logger.exp_name
 
     for i, data in enumerate(collector):
+        print(f"Device of data: {data.device}")
         log_info = {}
         training_env_id = training_env_generator.history[-1]
         sampling_time = time.time() - sampling_start
@@ -276,8 +285,8 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
         replay_buffer.extend(data)
 
         # Get and log training rewards and episode lengths
-        mean_episode_reward = data["next", "reward"].mean()
-        mean_backlog = data["next", "backlog"].float().mean()
+        mean_episode_reward = data["next", "reward"].mean().to("cpu")
+        mean_backlog = data["next", "backlog"].float().mean().to("cpu")
         num_trajectories = data["done"].sum()
         normalized_backlog = mean_backlog / training_env_generator.context_dicts[training_env_id]["lta"]
         # compute the fraction of times the chosen action was invalid
