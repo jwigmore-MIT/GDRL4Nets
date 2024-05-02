@@ -73,7 +73,7 @@ def evaluate_dqn_agent(actor,
                     pbar.set_description(
                         f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
                     eval_env = eval_env_generator.sample(true_ind=i)
-                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor)
+                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True)
                     eval_tds.append(eval_td)
                     eval_backlog = eval_td["next", "backlog"].numpy()
                     eval_lta_backlog = compute_lta(eval_backlog)
