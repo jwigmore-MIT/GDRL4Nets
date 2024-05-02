@@ -241,6 +241,7 @@ def train_dqn_agent(cfg, env_params, logger = None, disable_pbar = False):
                 logger_name="..\\logs",
                 experiment_name= experiment_name,
                 wandb_kwargs={
+                    "config": cfg.as_dict(),
                     "project": cfg.logger.project,
                 },
             )
