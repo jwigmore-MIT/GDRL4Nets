@@ -50,8 +50,8 @@ stats = pstats.Stats(profiler)
 # Sort the statistics by the cumulative time spent in the function
 stats.sort_stats(pstats.SortKey.CUMULATIVE)
 
-# Print the statistics
-stats.print_stats()
+# Print only the top 200 lines of the statistics
+stats.print_stats(amount = 200)
 
 
 
