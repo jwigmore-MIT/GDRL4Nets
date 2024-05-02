@@ -292,7 +292,7 @@ class SingleHop(EnvBase):
 
         # see if action is invalid by checking if the sum == 1
         if np.sum(action) > 1:
-            raise ValueError("Action must be a one-hot vector")
+            raise ValueError(f"Action must be a one-hot vector - instead got {action}")
 
         # make sure the action is the same shape as Y
 
