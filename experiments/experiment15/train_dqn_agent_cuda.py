@@ -73,7 +73,7 @@ def evaluate_dqn_agent(actor,
                     pbar.set_description(
                         f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
                     eval_env = eval_env_generator.sample(true_ind=i)
-                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, device=device)
+                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor)
                     eval_tds.append(eval_td)
                     eval_backlog = eval_td["next", "backlog"].numpy()
                     eval_lta_backlog = compute_lta(eval_backlog)
@@ -192,7 +192,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         greedy_module,).to(device)
 
     # Create the collector
-    collector = SyncDataCollector(
+    collector = MultiEnvSyncDataCollector(
         create_env_fn=training_env_generator.sample(),
         policy=model_explore,
         frames_per_batch=cfg.collector.frames_per_batch,
