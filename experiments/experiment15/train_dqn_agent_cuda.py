@@ -192,17 +192,17 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         greedy_module,).to(device)
 
     # Create the collector
-    collector = MultiEnvSyncDataCollector(
+    collector = SyncDataCollector(
         create_env_fn=training_env_generator.sample(),
         policy=model_explore,
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
         device=device,
         storing_device=device,
-        env_device="cpu",
+        env_device=device,
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         env_generator=training_env_generator.sample,
-        reset_at_each_iter=False,
+        # reset_at_each_iter=False,
 )
 
     tempdir = tempfile.TemporaryDirectory()
