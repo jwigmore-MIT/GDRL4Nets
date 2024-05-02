@@ -5,6 +5,11 @@ from torchrl_development.envs.env_generators import parse_env_json
 import torch
 from train_dqn_agent_cuda import train_dqn_agent
 from torchrl_development.envs.env_generators import make_env
+from argparse import ArgumentParser
+
+parser = ArgumentParser(description='Settings')
+parser.add_argument('--device', type=str, help='id of the sweep to run', default=None)
+args = parser.parse_args()
 
 
 
@@ -17,7 +22,10 @@ Its mostly based off the dqn_atary.py script from torchrl library
 # %%
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if args.device is None:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+else:
+    device = args.device
 print(f"Device: {device}")
 
 cfg = load_config(os.path.join(SCRIPT_PATH, "DQN_settings.yaml"))
