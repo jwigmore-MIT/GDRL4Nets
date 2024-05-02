@@ -312,7 +312,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         training_start = time.time()
         for j in range(num_updates):
             sampled_tensordict = replay_buffer.sample()
-            #sampled_tensordict = sampled_tensordict.to(device)
+            sampled_tensordict = sampled_tensordict.to(device)
 
             loss_td = loss_module(sampled_tensordict)
             if cfg.agent.mask:
