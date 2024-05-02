@@ -25,7 +25,7 @@ env_params = parse_env_json(f"SH1E.json")
 
 base_env = make_env(env_params)
 
-train_dqn_agent(cfg, base_env, device, logger = None, disable_pbar=False)
+train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar=False)
 
 
 
