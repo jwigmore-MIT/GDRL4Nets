@@ -198,6 +198,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
         device=device,
+        storing_device=device,
         env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         env_generator=training_env_generator.sample,
