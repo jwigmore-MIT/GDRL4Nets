@@ -284,8 +284,8 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         replay_buffer.extend(data)
 
         # Get and log training rewards and episode lengths
-        mean_episode_reward = data["next", "reward"].mean().to("cpu")
-        mean_backlog = data["next", "backlog"].float().mean().to("cpu")
+        mean_episode_reward = data["next", "reward"].mean()
+        mean_backlog = data["next", "backlog"].float().mean()
         num_trajectories = data["done"].sum()
         normalized_backlog = mean_backlog / training_env_generator.context_dicts[training_env_id]["lta"]
         # compute the fraction of times the chosen action was invalid
@@ -312,7 +312,7 @@ def train_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False
         training_start = time.time()
         for j in range(num_updates):
             sampled_tensordict = replay_buffer.sample()
-            sampled_tensordict = sampled_tensordict.to(cfg.device)
+            sampled_tensordict = sampled_tensordict.to(device)
 
             loss_td = loss_module(sampled_tensordict)
             if cfg.agent.mask:
