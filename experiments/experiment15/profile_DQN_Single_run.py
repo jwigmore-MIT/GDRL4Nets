@@ -51,7 +51,7 @@ stats = pstats.Stats(profiler)
 stats.sort_stats(pstats.SortKey.CUMULATIVE)
 
 # Print only the top 200 lines of the statistics
-stats.print_stats(amount = 200)
+stats.print_stats(200)
 
 
 
