@@ -288,7 +288,7 @@ class SingleHop(EnvBase):
 
     def _step(self, tensordict: TensorDict):
 
-        action = tensordict["action"].squeeze().numpy()
+        action = tensordict["action"].squeeze().cpu().numpy()
 
         # see if action is invalid by checking if the sum == 1
         if np.sum(action) > 1:
