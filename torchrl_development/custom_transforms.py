@@ -106,3 +106,41 @@ class InverseReward(Transform):
             device=reward_spec.device,
             shape=reward_spec.shape,
         )
+
+class ReverseSignTransform(Transform):
+    """Applies the transformation r = -r to the rewards.
+        For unbounded rewards in unbounded environments
+
+    Args:
+        in_keys (List[NestedKey]): input keys
+        out_keys (List[NestedKey], optional): output keys. Defaults to value
+            of ``in_keys``.
+        dtype (torch.dtype, optional): the dtype of the output reward.
+            Defaults to ``torch.float``.
+    """
+
+    def __init__(
+        self,
+        in_keys: Sequence[NestedKey] | None = None,
+        out_keys: Sequence[NestedKey] | None = None,
+    ):
+        if in_keys is None:
+            in_keys = ["reward"]
+        if out_keys is None:
+            out_keys = copy(in_keys)
+        super().__init__(in_keys=in_keys, out_keys=out_keys)
+
+    def _apply_transform(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        # if not reward.shape or reward.shape[-1] != 1:
+        #     raise RuntimeError(
+        #         f"Reward shape last dimension must be singleton, got reward of shape {reward.shape}"
+        #     )
+        return -input_tensor
+
+    @_apply_to_composite
+    def transform_reward_spec(self, reward_spec: TensorSpec) -> TensorSpec:
+        return UnboundedContinuousTensorSpec(
+            dtype=torch.float,
+            device=reward_spec.device,
+            shape=reward_spec.shape,
+        )

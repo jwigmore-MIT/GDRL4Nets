@@ -1,7 +1,7 @@
 # get directory of torchrl_development
 import os
-from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform
-from torchrl_development.custom_transforms import SymLogTransform, InverseReward
+from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform
+from torchrl_development.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform
 from torchrl_development.envs.SingleHop import SingleHop
 from torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from copy import deepcopy
@@ -42,7 +42,10 @@ def make_env(env_params,
              seed=0,
              terminal_backlog=None,
              observation_keys=["Q", "Y"],
+             negative_keys = None,
+             symlog = True,
              inverse_reward= False,
+             cost_based: bool = False,
              terminate_on_convergence = False,
              convergence_threshold = 0.1,
              stat_window_size = 100000,
@@ -73,16 +76,23 @@ def make_env(env_params,
         base_env = SingleHopGraph(env_params, seed)
     else:
         base_env = SingleHop(env_params, seed)
+    if negative_keys is not None:
+        base_env = TransformedEnv(base_env, ReverseSignTransform(in_keys=negative_keys, out_keys=negative_keys))
+    if cost_based:
+        base_env = TransformedEnv(base_env, ReverseSignTransform(in_keys=["reward"], out_keys=["reward"]))
     env = TransformedEnv(
         base_env,
         Compose(
             # normalize observations
             ActionMask(action_key="action", mask_key="mask"),
             CatTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
-            SymLogTransform(in_keys=["observation"], out_keys=["observation"]),
+            # SymLogTransform(in_keys=["observation"], out_keys=["observation"]),
             # StepCounter()
         )
+
     )
+    if symlog:
+        env = TransformedEnv(env, SymLogTransform(in_keys=["observation"], out_keys=["observation"]))
     if graph:
         "Create x key from concatentation of observation keys and do symlog transform"
         env = TransformedEnv(env, UnsqueezeTransform(in_keys = observation_keys, out_keys = observation_keys, unsqueeze_dim = -1))
