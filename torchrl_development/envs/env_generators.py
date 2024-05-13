@@ -43,7 +43,8 @@ def make_env(env_params,
              terminal_backlog=None,
              observation_keys=["Q", "Y"],
              negative_keys = None,
-             symlog = True,
+             symlog_obs = True,
+             symlog_reward = False,
              inverse_reward= False,
              cost_based: bool = False,
              terminate_on_convergence = False,
@@ -91,8 +92,10 @@ def make_env(env_params,
         )
 
     )
-    if symlog:
+    if symlog_obs:
         env = TransformedEnv(env, SymLogTransform(in_keys=["observation"], out_keys=["observation"]))
+    if symlog_reward:
+        env = TransformedEnv(env, SymLogTransform(in_keys=["reward"], out_keys=["reward"]))
     if graph:
         "Create x key from concatentation of observation keys and do symlog transform"
         env = TransformedEnv(env, UnsqueezeTransform(in_keys = observation_keys, out_keys = observation_keys, unsqueeze_dim = -1))
