@@ -78,7 +78,7 @@ if __name__ == "__main__":
                                     "terminal_backlog": getattr(cfg.training_env, "terminal_backlog", None),
                                     "observation_keys": getattr(cfg.training_env, "observation_keys", ["Q", "Y"]),
                                     "negative_keys": getattr(cfg.training_env, "negative_keys", ["Y"]),
-                                    "symlog": getattr(cfg.training_env, "symlog", False),
+                                    "symlog": getattr(cfg.training_env, "symlog_obs", False),
                                     "inverse_reward": getattr(cfg.training_env, "inverse_reward", False),
                                     "cost_based": getattr(cfg.training_env, "cost_based", True),}
 

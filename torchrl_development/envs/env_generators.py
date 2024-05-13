@@ -86,7 +86,7 @@ def make_env(env_params,
             # normalize observations
             ActionMask(action_key="action", mask_key="mask"),
             CatTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
-            SymLogTransform(in_keys=["observation"], out_keys=["observation"]),
+            #SymLogTransform(in_keys=["observation"], out_keys=["observation"]),
             # StepCounter()
         )
 

@@ -12,6 +12,7 @@ agent:
 training_env:
   terminal_backlog: 250
   inverse_reward: False
+  symlog_obs: True
   cost_based: True
   env_generator_seed: 19970503
 
