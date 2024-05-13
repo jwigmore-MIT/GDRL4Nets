@@ -13,7 +13,7 @@ training_env:
   inverse_reward: False
   symlog_obs: True
   cost_based: True
-  symlog_reward: False
+  symlog_reward: True
   env_generator_seed: 19970503
 
 
