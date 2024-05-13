@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
     parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH2u") # or SH2u
-    parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_DQN")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
