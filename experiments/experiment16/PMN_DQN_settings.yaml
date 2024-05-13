@@ -13,7 +13,7 @@ training_env:
   inverse_reward: False
   symlog_obs: True
   cost_based: True
-  symlog_reward: True
+  symlog_reward: False
   env_generator_seed: 19970503
 
 
@@ -41,7 +41,7 @@ logger:
 
 # Optim
 optim:
-  lr: 0.01
+  lr: 0.1
   max_grad_norm: 10
 
 # loss
