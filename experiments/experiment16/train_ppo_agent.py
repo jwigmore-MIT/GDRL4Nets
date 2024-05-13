@@ -19,6 +19,8 @@ from torchrl.objectives import DQNLoss, HardUpdate, SoftUpdate
 from torchrl.collectors import MultiaSyncDataCollector, MultiSyncDataCollector, SyncDataCollector
 from torchrl.data import LazyMemmapStorage, TensorDictReplayBuffer
 from torchrl.envs import ExplorationType, set_exploration_type
+from torchrl.data import TensorDictReplayBuffer, SamplerWithoutReplacement, LazyMemmapStorage
+from tensordict import TensorDict
 from torchrl.data import CompositeSpec
 from tensordict.nn import TensorDictSequential
 import tempfile
@@ -27,6 +29,8 @@ from torchrl.record.loggers import get_logger, generate_exp_name
 import time
 import tqdm
 import numpy as np
+from torchrl.objectives.value import GAE
+from torchrl.objectives import ClipPPOLoss
 from torchrl_development.MultiEnvSyncDataCollector import MultiEnvSyncDataCollector
 import matplotlib.pyplot as plt
 from torchrl_development.utils.configuration import make_serializable
@@ -138,7 +142,7 @@ def evaluate_dqn_agent(actor,
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
-def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device, logger = None, disable_pbar = False):
+def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, logger = None, disable_pbar = False):
 
 
     base_env = training_env_generator.sample()
@@ -148,59 +152,25 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
     output_shape = base_env.action_spec.space.n
     action_spec = base_env.action_spec
 
-    if cfg.agent.type == "LMN":
-
-        lip_nn = torch.nn.Sequential(
-            lmn.LipschitzLinear(input_shape[0], 32, kind="one", lipschitz_const = 10),
-            lmn.GroupSort(2),
-            lmn.LipschitzLinear(32, 32, kind="one", lipschitz_const = 10),
-            lmn.GroupSort(2),
-            lmn.LipschitzLinear(32, output_shape, kind="one", lipschitz_const = 10),
-        )
-        mono_nn = lmn.MonotonicWrapper(lip_nn, monotonic_constraints=[-1,-1,1,1])
-    elif cfg.agent.type == "PMN":
-        mono_nn = PMN(input_size  = input_shape[0],
-                      output_size = output_shape,
-                      hidden_sizes = cfg.agent.hidden_sizes,
-                      relu_max = getattr(cfg, "relu_max", 1),
-                      )
-    elif cfg.agent.type == "PMN_RELU":
-        mono_nn = PMN(input_size  = input_shape[0],
-                      output_size = output_shape,
-                      hidden_sizes = cfg.agent.hidden_sizes,
-                      exp_unit = ReLUUnit,
-                      fc_layer = FCLayer_notexp,)
-    elif cfg.agent.type == "MLP":
-        mono_nn = MLP(input_size  = input_shape[0],
-                      output_size = output_shape,
-                      hidden_size = cfg.agent.hidden_sizes)
-    else:
-
-        Exception("Invalid agent type")
-
-
-
-    q_module = MinQValueActor(module = mono_nn,
-                           in_keys = ["observation"],
-                           spec = CompositeSpec({"action": action_spec}),
-                           action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,)
-
-    # Create Exploration Module
-    greedy_module = EGreedyModule(
-        annealing_num_steps= cfg.collector.annealing_frames,
-        eps_init= cfg.collector.eps_init,
-        eps_end= cfg.collector.eps_end,
-        spec = q_module.spec,
-        action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,
+   # create actor and critic
+    agent = create_actor_critic(
+        input_shape,
+        output_shape,
+        in_keys=["observation"],
+        action_spec=action_spec,
+        temperature=cfg.agent.temperature,
+        actor_depth=cfg.agent.hidden_sizes.__len__(),
+        actor_cells=cfg.agent.hidden_sizes[-1],
     )
+    actor = agent.get_policy_operator().to(device)
+    critic = agent.get_value_operator().to(device)
 
-    # Exploration Module
-
-
-    model_explore = TensorDictSequential(
-        q_module,
-        greedy_module,).to(device)
-
+    adv_module = GAE(
+        gamma=cfg.loss.gamma,
+        lmbda=cfg.loss.gae_lambda,
+        value_network=critic,
+        average_gae=False,
+    )
     # Create the collector
 
     make_env_funcs = [lambda i=i: training_env_generator.sample(true_ind = i) for i in training_env_generator.context_dicts.keys()]
@@ -213,7 +183,7 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
 
     collector = MultiSyncDataCollector(
         create_env_fn= make_env_funcs,
-        policy=model_explore,
+        policy=agent.get_policy_operator(),
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
         device=device,
@@ -221,44 +191,37 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
         env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         split_trajs=True,
+        reset_when_done=True,
 )
 
-    tempdir = tempfile.TemporaryDirectory()
-    scratch_dir = tempdir.name
-
-    replay_buffer = TensorDictReplayBuffer(
-        pin_memory=False,
-        prefetch=3,
-        storage=LazyMemmapStorage(
-            max_size=cfg.buffer.buffer_size,
-            scratch_dir=scratch_dir,
-            #device = device
-        ),
-        batch_size=cfg.buffer.batch_size,
+    # # create data buffer
+    sampler = SamplerWithoutReplacement()
+    data_buffer = TensorDictReplayBuffer(
+        storage=LazyMemmapStorage(cfg.collector.frames_per_batch),
+        sampler=sampler,
+        batch_size=cfg.loss.mini_batch_size,  # amount of samples to be sampled when sample is called
     )
 
-    loss_module = DQNLoss(
-            value_network=q_module,
-            loss_function="l2",
-            delay_value=True,
-            double_dqn=True,
-        )
-    loss_module.make_value_estimator(gamma=cfg.loss.gamma)
-    target_net_updater = SoftUpdate(
-        loss_module, eps = cfg.loss.soft_eps)
-    # target_net_updater = HardUpdate(
-    #     loss_module, value_network_update_interval=cfg.loss.hard_update_freq
-    # )
+    ## Create PPO loss module
+    loss_module = ClipPPOLoss(
+        actor_network=actor,
+        critic_network=critic,
+        clip_epsilon=cfg.loss.clip_epsilon,
+        entropy_coef=cfg.loss.entropy_coef,
+        normalize_advantage=cfg.loss.norm_advantage,
+        loss_critic_type="l2"
+    )
+
 
     # Create the optimizer
     optimizer = torch.optim.Adam(
-        model_explore.parameters(),
+        loss_module.parameters(),
         lr= cfg.optim.lr,
     )
 
     # create wandb logger
     if logger is None:
-        experiment_name = generate_exp_name(f"DQN_{cfg.agent.type}", "Solo")
+        experiment_name = generate_exp_name(f"PPO_MLP", "Solo")
         logger = get_logger(
                 "wandb",
                 logger_name="..\\logs",
@@ -268,9 +231,9 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
                     "project": cfg.logger.project,
                 },
             )
-    wandb.log({"init/init": True})
+    #wandb.log({"init/init": True})
     #wandb.watch(q_module[0], log="parameters", log_freq=10)
-    wandb.watch(mono_nn, log="all", log_freq=100, log_graph=False)
+    #wandb.watch(mono_nn, log="all", log_freq=100, log_graph=False)
 
     # # Save the cfg as a yaml file and upload to wandb
     # with open(os.path.join(logger.experiment.dir, cfg.context_set), "w") as file:
@@ -284,10 +247,15 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
     sampling_start = time.time()
     num_updates = cfg.loss.num_updates
     max_grad = cfg.optim.max_grad_norm
-    q_losses = torch.zeros(num_updates, device=device)
+    pol_losses = torch.zeros(num_updates, device=device)
     mask_losses = torch.zeros(num_updates, device = device)
-    pbar = tqdm.tqdm(total=cfg.collector.total_frames, disable = disable_pbar)
+    num_mini_batches = cfg.collector.frames_per_batch // cfg.loss.mini_batch_size
 
+    total_network_updates = (
+            (cfg.collector.total_frames // cfg.collector.frames_per_batch) * cfg.loss.num_updates * num_mini_batches
+    )
+    pbar = tqdm.tqdm(total=cfg.collector.total_frames, disable = disable_pbar)
+    num_network_updates = 0
     # initialize the artifact saving params
     best_eval_backlog = np.inf
     artifact_name = logger.exp_name
@@ -300,18 +268,19 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
         pbar.update(data.numel())
         current_frames = data.numel()
         collected_frames += current_frames
-        greedy_module.step(current_frames)
         # drop data if [collector, mask] is False
 
         #env_datas = split_trajectories(data)
         # Get and log training rewards and episode lengths
-        for env_data in data:
-
+        #combine all data that has the same context_id
+        data = data[data["collector", "mask"]]
+        for context_id in data["context_id"].unique():
+            env_data = data[data["context_id"] == context_id]
             env_data = env_data[env_data["collector", "mask"]]
 
             # first check if all of the env_data is from the same environment
-            if not (env_data["collector", "traj_ids"] == env_data["collector", "traj_ids"][0]).all():
-                raise ValueError("Data from multiple environments is being logged")
+            # if not (env_data["collector", "traj_ids"] == env_data["collector", "traj_ids"][0]).all():
+            #     raise ValueError("Data from multiple environments is being logged")
             context_id = env_data.get("context_id", None)
             if context_id is not None:
                 context_id = context_id[0].item()
@@ -339,44 +308,69 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
         data["mask"] * data["action"] will be a binary tensor where the action was invalid
         """
         data = data[data["collector", "mask"]]
-        data = data.reshape(-1)
-        replay_buffer.extend(data)
         # optimization steps
         training_start = time.time()
+        losses = TensorDict({}, batch_size=[cfg.loss.num_updates, num_mini_batches])
+
         for j in range(num_updates):
-            sampled_tensordict = replay_buffer.sample()
-            sampled_tensordict = sampled_tensordict.to(device)
+            # Compute GAE
+            with torch.no_grad():
+                data = adv_module(data.to(device, non_blocking=True))
+            data_reshape = data.reshape(-1)
+            # Update the data buffer
+            data_buffer.extend(data_reshape)
+            for k, batch in enumerate(data_buffer):
+                # Linearly decrease the learning rate and clip epsilon
+                alpha = 1.0
+                if cfg.optim.anneal_lr:
+                    alpha = 1 - (num_network_updates / total_network_updates)
+                    for group in optimizer.param_groups:
+                        group["lr"] = cfg.optim.lr * alpha
 
-            loss_td = loss_module(sampled_tensordict)
-            if cfg.agent.mask:
-                mask_loss = torch.zeros_like(loss_td["loss"])
-            else:
-                mask_loss = cfg.loss.mask_loss*(sampled_tensordict["action"]*sampled_tensordict["mask"].logical_not()  * q_module(sampled_tensordict["observation"])[1]).sum()
+                num_network_updates += 1
 
-            q_loss = loss_td["loss"] + mask_loss
-            # Add loss for invalid actions
+                batch["sample_log_prob"] = batch["sample_log_prob"].squeeze()
+                # batch["action"] = batch["action"].squeeze()
+                # Get a data batch
+                batch = batch.to(device, non_blocking=True)
 
-            optimizer.zero_grad()
-            q_loss.backward()
-            if max_grad > 0:
-                torch.nn.utils.clip_grad_norm_(
-                    list(loss_module.parameters()), max_norm=max_grad
+                # Forward pass PPO loss
+                loss = loss_module(batch)
+                losses[j, k] = loss.select(
+                    "loss_critic", "loss_entropy", "loss_objective", "entropy", "ESS"
                 )
-            optimizer.step()
-            target_net_updater.step()
-            q_losses[j].copy_(loss_td["loss"].detach())
-            mask_losses[j].copy_(mask_loss.detach())
+                loss_sum = (
+                        loss["loss_critic"] + loss["loss_objective"] + loss["loss_entropy"]
+                )
+                # Backward pass
+                loss_sum.backward()
+
+                ## Collect all gradient information if debugging
+                # for name, param in loss_module.named_parameters():
+                #     if param.grad is None:
+                #         print(f"None gradient in actor {name}")
+                #     else:
+                #         print(f"{name} gradient: {param.grad.mean()}")
+                torch.nn.utils.clip_grad_norm_(
+                    list(loss_module.parameters()), max_norm=cfg.optim.max_grad_norm
+                )
+
+                # Update the networks
+                optimizer.step()
+                optimizer.zero_grad()
         pbar.set_description("Training")
 
         training_time = time.time() - training_start
 
         # Get and log q-values, loss, epsilon, sampling time and training time
+        for key, value in loss.items():
+            if key not in ["loss_critic", "loss_entropy", "loss_objective"]:
+                log_info.update({f"train/{key}": value.mean().item()})
+            else:
+                log_info.update({f"train/{key}": value.sum().item()})
         log_info.update(
             {
-                "train/q_values": (data["action_value"] * data["action"]).sum().item(),
-                "train/mask_loss": mask_losses.mean().item(),
-                "train/q_loss": q_losses.mean().item(),
-                "train/epsilon": greedy_module.eps,
+                "train/lr": alpha * cfg.optim.lr,
                 "train/sampling_time": sampling_time,
                 "train/training_time": training_time,
             }
@@ -389,10 +383,10 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
             cur_test_frame = (i * cfg.collector.frames_per_batch) // cfg.collector.test_interval
             final = current_frames >= collector.total_frames
             if (i >= 1 and (prev_test_frame < cur_test_frame)) or final:
-                q_module.eval()
+                actor.eval()
                 eval_start = time.time()
                 training_env_ids = list(training_env_generator.context_dicts.keys())
-                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, training_env_ids, pbar, cfg, device)
+                eval_log_info, eval_tds = evaluate_dqn_agent(actor, eval_env_generator, training_env_ids, pbar, cfg, device)
 
                 eval_time = time.time() - eval_start
                 log_info.update(eval_log_info)
@@ -400,18 +394,18 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
                 # Save the agent if the eval backlog is the best
                 if eval_log_info["eval/lta_backlog_training_envs"] < best_eval_backlog:
                     best_eval_backlog = eval_log_info["eval/lta_backlog_training_envs"]
-                    torch.save(q_module.state_dict(), os.path.join(logger.experiment.dir, f"trained_q_module.pt"))
-                    agent_artifact = wandb.Artifact(f"trained_q_module_{artifact_name}", type="model")
-                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_q_module.pt"))
+                    torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+                    agent_artifact = wandb.Artifact(f"trained_actor_module_{artifact_name}", type="model")
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
                     agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
                     wandb.log_artifact(agent_artifact, aliases=["best", "latest"])
                 else:
-                    torch.save(q_module.state_dict(), os.path.join(logger.experiment.dir, f"trained_q_module.pt"))
-                    agent_artifact = wandb.Artifact(f"trained_q_module.pt_{artifact_name}", type="model")
-                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_q_module.pt"))
+                    torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+                    agent_artifact = wandb.Artifact(f"trained_actor_module.pt_{artifact_name}", type="model")
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
                     agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
                     wandb.log_artifact(agent_artifact, aliases=["latest"])
-                q_module.train()
+                actor.train()
         try:
             #for key, value in log_info.items():
                 #logger.log(key, value, collected_frames)

@@ -5,6 +5,7 @@ from torchrl_development.envs.env_generators import parse_env_json
 import torch
 #from train_monotonic_dqn_agent import train_mono_dqn_agent
 from train_monotonic_dqn_agent import train_mono_dqn_agent
+from train_ppo_agent import train_ppo_agent
 import json
 import argparse
 import numpy as np
@@ -46,10 +47,13 @@ def smart_type(value):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
-    parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
+    parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="a")
     parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH2u") # or SH2u
-    parser.add_argument('--base_cfg', type=str, help='base configuration file', default="PMN_DQN_settings.yaml")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
+
+    base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
+                "MLP_PPO": 'MLP_PPO_settings.yaml',}
 
     context_set_jsons = {"SH3": "SH3_context_set_100_03251626.json",
                          "SH2u": "SH2u_context_set_10_03211514.json",}
@@ -64,7 +68,7 @@ if __name__ == "__main__":
     # Set Device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
-    cfg = load_config(os.path.join(SCRIPT_PATH, args.base_cfg))
+    cfg = load_config(os.path.join(SCRIPT_PATH, base_cfg[args.train_type]))
     cfg.device = device
 
     # Select the Context Set
@@ -108,7 +112,7 @@ if __name__ == "__main__":
 
 
     # Create Logger
-    experiment_name = generate_exp_name(f"DQN_{cfg.agent.type}", f"{cfg.context_set}_{args.training_set}")
+    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}_{args.training_set}")
     logger = get_logger(
             "wandb",
             logger_name="..\\logs",
@@ -121,9 +125,10 @@ if __name__ == "__main__":
     # from torchrl.envs import ParallelEnv
     # create_env_funcs = [training_env_generator.sample for i in range(training_env_generator.num_envs)]
     # parallel_envs = ParallelEnv(num_workers = training_env_generator.num_envs, create_env_fn = create_env_funcs)
-
-    train_mono_dqn_agent(cfg, training_env_generator, test_env_generator, device, logger)
-
+    if args.train_type == "PMN_DQN":
+        train_mono_dqn_agent(cfg, training_env_generator, test_env_generator, device, logger)
+    elif args.train_type == "MLP_PPO":
+        train_ppo_agent(cfg, training_env_generator, test_env_generator, device, logger)
 
     """ Needs
     

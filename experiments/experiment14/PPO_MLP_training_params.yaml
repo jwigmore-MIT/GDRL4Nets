@@ -15,6 +15,7 @@ training_env:
   terminal_backlog: 100
   inverse_reward: True
   env_generator_seed: 531997
+  cost_based: False
 
 eval_envs:
   env_generator_seed: 531997
