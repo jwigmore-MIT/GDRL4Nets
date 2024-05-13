@@ -16,7 +16,7 @@ from torchrl.modules import MLP,QValueActor
 from torchrl_development.actors import MinQValueActor
 from torchrl.modules import EGreedyModule
 from torchrl.objectives import DQNLoss, HardUpdate, SoftUpdate
-from torchrl.collectors import SyncDataCollector
+from torchrl.collectors import MultiaSyncDataCollector, MultiSyncDataCollector, SyncDataCollector
 from torchrl.data import LazyMemmapStorage, TensorDictReplayBuffer
 from torchrl.envs import ExplorationType, set_exploration_type
 from torchrl.data import CompositeSpec
@@ -31,8 +31,10 @@ from torchrl_development.MultiEnvSyncDataCollector import MultiEnvSyncDataCollec
 import matplotlib.pyplot as plt
 from torchrl_development.utils.configuration import make_serializable
 import monotonicnetworks as lmn
-from SMNN import PureMonotonicNeuralNetwork as PMN, MultiLayerPerceptron as MLP, ReLUUnit, ExpUnit, FCLayer_notexp,ReLUnUnit
-
+from torchrl_development.SMNN import PureMonotonicNeuralNetwork as PMN, MultiLayerPerceptron as MLP, ReLUUnit, ExpUnit, FCLayer_notexp,ReLUnUnit
+from torchrl.envs import ParallelEnv
+from torchrl.trainers.helpers import make_collector_onpolicy
+from torchrl.collectors.utils import  split_trajectories
 """ Script Description
 This script is used to experiment with using DQN to solve for the optimal policy of SingleHop environments.
 Its mostly based off the dqn_atary.py script from torchrl library
@@ -136,43 +138,11 @@ def evaluate_dqn_agent(actor,
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
-def train_mono_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = False):
+def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device, logger = None, disable_pbar = False):
 
 
-    env_generator_seed = 531997
-
-
-    training_make_env_parameters = {
-                        "negative_keys": ["Y"],
-                        "symlog": False,
-                        "observe_lambda": False,
-                       "terminal_backlog": cfg.training_env.terminal_backlog,
-                       "inverse_reward": cfg.training_env.inverse_reward,
-                        "cost_based": cfg.training_env.cost_based,
-
-                       }
-
-    training_env_generator = EnvGenerator(env_params,
-                                training_make_env_parameters,
-                                env_generator_seed=env_generator_seed)
-
-    eval_make_env_parameters = {
-                            "negative_keys": ["Y"],
-                            "symlog": False,
-                            "observe_lambda": False,
-                            "terminal_backlog": 250,
-                            "inverse_reward": cfg.training_env.inverse_reward,
-                            "cost_based": cfg.training_env.cost_based,  # True,
-                            "stat_window_size": 100000,
-                            "terminate_on_convergence": False,
-                            "terminate_on_lta_threshold": False,}
-
-    eval_env_generator = EnvGenerator(env_params,
-                                    eval_make_env_parameters,
-                                    env_generator_seed=int(env_generator_seed+1))
-
-    base_env = make_env(env_params, **training_make_env_parameters)
-
+    base_env = training_env_generator.sample()
+    training_env_generator.clear_history()
     # Create DQN Agent
     input_shape = base_env.observation_spec["observation"].shape
     output_shape = base_env.action_spec.space.n
@@ -191,10 +161,8 @@ def train_mono_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = 
     elif cfg.agent.type == "PMN":
         mono_nn = PMN(input_size  = input_shape[0],
                       output_size = output_shape,
-                      hidden_sizes = (32, 32),
+                      hidden_sizes = (64, 64),
                       relu_max = getattr(cfg, "relu_max", 1),
-                      #fc_layer=FCLayer_notexp,
-                      # exp_unit = ReLUnUnit,
                       )
     elif cfg.agent.type == "PMN_RELU":
         mono_nn = PMN(input_size  = input_shape[0],
@@ -231,8 +199,17 @@ def train_mono_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = 
         greedy_module,).to(device)
 
     # Create the collector
-    collector = MultiEnvSyncDataCollector(
-        create_env_fn=training_env_generator.sample(),
+
+    make_env_funcs = [lambda i=i: training_env_generator.sample(true_ind = i) for i in training_env_generator.context_dicts.keys()]
+    # Get lta for each environment
+    training_env_info = {}
+    for (e,i) in enumerate(training_env_generator.context_dicts.keys()):
+        training_env_info[e] = {"lta": training_env_generator.context_dicts[i]["lta"],
+                                "context_id": i}
+
+
+    collector = MultiSyncDataCollector(
+        create_env_fn= make_env_funcs,
         policy=model_explore,
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
@@ -240,8 +217,7 @@ def train_mono_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = 
         storing_device=device,
         env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
-        env_generator=training_env_generator.sample,
-        # reset_at_each_iter=False,
+        split_trajs=True,
 )
 
     tempdir = tempfile.TemporaryDirectory()
@@ -314,45 +290,54 @@ def train_mono_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = 
     artifact_name = logger.exp_name
 
     for i, data in enumerate(collector):
+
         # print(f"Device of data: {data.device}")
-        d_ind = (data["mask"].sum(dim = 1) > 1).nonzero(as_tuple=True)[0]
         log_info = {}
-        training_env_id = training_env_generator.history[-1]
         sampling_time = time.time() - sampling_start
         pbar.update(data.numel())
-        data = data.reshape(-1)
         current_frames = data.numel()
         collected_frames += current_frames
         greedy_module.step(current_frames)
-        replay_buffer.extend(data)
+        # drop data if [collector, mask] is False
 
+        #env_datas = split_trajectories(data)
         # Get and log training rewards and episode lengths
-        mean_episode_reward = data["next", "reward"].mean()
-        mean_backlog = data["next", "backlog"].float().mean()
-        num_trajectories = data["done"].sum()
-        normalized_backlog = mean_backlog / training_env_generator.context_dicts[training_env_id]["lta"]
+        for env_data in data:
+
+            env_data = env_data[env_data["collector", "mask"]]
+
+            # first check if all of the env_data is from the same environment
+            if not (env_data["collector", "traj_ids"] == env_data["collector", "traj_ids"][0]).all():
+                raise ValueError("Data from multiple environments is being logged")
+            context_id = env_data.get("context_id", None)
+            if context_id is not None:
+                context_id = context_id[0].item()
+            baseline_lta = env_data.get("baseline_lta", None)
+            if baseline_lta is not None:
+                env_lta = baseline_lta[-1]
+            mean_episode_reward = env_data["next", "reward"].mean()
+            mean_backlog = env_data["next", "backlog"].float().mean()
+            normalized_backlog = mean_backlog / env_lta
+            valid_action_fraction = (env_data["mask"] * env_data["action"]).sum().float() / env_data["mask"].shape[0]
+            log_header = f"train/context_id_{context_id}"
+
+            log_info.update({f'{log_header}/mean_episode_reward': mean_episode_reward.item(),
+                             f'{log_header}/mean_backlog': mean_backlog.item(),
+                             f'{log_header}/mean_normalized_backlog': normalized_backlog.item(),
+                             f'{log_header}/valid_action_fraction': valid_action_fraction.item(),})
+
+        # Get average mean_normalized_backlog across each context
+        avg_mean_normalized_backlog = np.mean([log_info[f'train/context_id_{i}/mean_normalized_backlog'] for i in training_env_generator.context_dicts.keys()])
+        log_info.update({"train/avg_mean_normalized_backlog": avg_mean_normalized_backlog})
         # compute the fraction of times the chosen action was invalid
         """
         data["mask"] is a binary tensor for each possible action, where False means the action was invalid
         data["action"] is the action chosen by the agent which is a one-hot binary tensor
         data["mask"] * data["action"] will be a binary tensor where the action was invalid
         """
-        valid_action_fraction = (data["mask"] * data["action"]).sum().float() / data["mask"].shape[0]
-
-
-
-        log_info.update(
-            {
-                "train/mean_episode_reward": mean_episode_reward.item(),
-                "train/mean_backlog": mean_backlog.item(),
-                "train/mean_normalized_backlog": normalized_backlog.item(),
-                "train/num_trajectories": num_trajectories.item(),
-                "train/training_env_id": training_env_id,
-                "train/valid_action_fraction": valid_action_fraction.item(),
-            }
-        )
-
-
+        data = data[data["collector", "mask"]]
+        data = data.reshape(-1)
+        replay_buffer.extend(data)
         # optimization steps
         training_start = time.time()
         for j in range(num_updates):
@@ -403,7 +388,8 @@ def train_mono_dqn_agent(cfg, env_params, device, logger = None, disable_pbar = 
             if (i >= 1 and (prev_test_frame < cur_test_frame)) or final:
                 q_module.eval()
                 eval_start = time.time()
-                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, [training_env_generator.history[-1]], pbar, cfg, device)
+                training_env_ids = list(training_env_generator.context_dicts.keys())
+                eval_log_info, eval_tds = evaluate_dqn_agent(q_module, eval_env_generator, training_env_ids, pbar, cfg, device)
 
                 eval_time = time.time() - eval_start
                 log_info.update(eval_log_info)

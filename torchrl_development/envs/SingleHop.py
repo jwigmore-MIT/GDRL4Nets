@@ -85,7 +85,9 @@ class SingleHop(EnvBase):
         # Add baseline lta performance for maxweight
         self.baseline_lta = net_para.get("baseline_lta", None)
 
-        #
+        # Add context_id if available
+        self.context_id = net_para.get("context_id", None)
+
         self.terminate_on_lta_threshold = net_para.get("terminate_on_lta_threshold", False)
         self.terminal_lta_factor = net_para.get("terminal_lta_factor", 5)
 
@@ -371,6 +373,10 @@ class SingleHop(EnvBase):
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
         if self.track_stdev:
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
+        if getattr(self, "baseline_lta", None) is not None:
+            out.set("baseline_lta", torch.tensor(self.baseline_lta, dtype = torch.float))
+        if getattr(self, "context_id", None) is not None:
+            out.set("context_id", torch.tensor(self.context_id, dtype = torch.int))
         return out
 
     def _reset(self, tensordict: TensorDict):
@@ -396,6 +402,10 @@ class SingleHop(EnvBase):
         if self.track_stdev:
             self.time_avg_stats.reset()
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
+        if getattr(self, "baseline_lta", None) is not None:
+            out.set("baseline_lta", torch.tensor(self.baseline_lta, dtype=torch.float))
+        if getattr(self, "context_id", None) is not None:
+            out.set("context_id", torch.tensor(self.context_id, dtype=torch.int))
         return out
 
     def _set_seed(self, seed: Optional[int]):

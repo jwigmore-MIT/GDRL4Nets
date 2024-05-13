@@ -14,7 +14,6 @@ Its mostly based off the dqn_atary.py script from torchrl library
 
 """
 # %%
-
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")

@@ -86,7 +86,7 @@ def make_env(env_params,
             # normalize observations
             ActionMask(action_key="action", mask_key="mask"),
             CatTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
-            # SymLogTransform(in_keys=["observation"], out_keys=["observation"]),
+            SymLogTransform(in_keys=["observation"], out_keys=["observation"]),
             # StepCounter()
         )
 
@@ -287,6 +287,7 @@ class EnvGenerator:
             if true_ind is not None:
                 env_params_ind = true_ind
             env_params = self.context_dicts[env_params_ind]["env_params"]
+            env_params["context_id"] = env_params_ind
         # if ind is not in the keys
         except KeyError:
             raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")

@@ -10,19 +10,20 @@ agent:
 
 # Environment
 training_env:
-  terminal_backlog: 100
+  terminal_backlog: 1000
   inverse_reward: False
   cost_based: True
+  env_generator_seed: 19970503
 
 
 # collector
 collector:
-  total_frames: 100_000
+  total_frames: 3_000_000
   frames_per_batch: 50
   eps_init: 0.2
   eps_end: 0.05
-  annealing_frames: 50000
-  test_interval: 20_000
+  annealing_frames: 100_000
+  test_interval: 50_000
   max_frames_per_traj: 50_000
 
 # buffer
@@ -34,7 +35,7 @@ buffer:
 # logger
 logger:
   backend: wandb
-  project: MonoQ_Network
+  project: Experiment16
 
 # Optim
 optim:
@@ -50,4 +51,4 @@ loss:
 
 eval:
   num_eval_envs: 3
-  traj_steps: 20_000
+  traj_steps: 50_000
