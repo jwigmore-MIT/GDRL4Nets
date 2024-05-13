@@ -13,8 +13,8 @@ training_env:
   terminal_backlog: 1000
   inverse_reward: False
   symlog_obs: True
-  cost_based: True
-  symlog_reward: False
+  cost_based: False
+  symlog_reward: True
   env_generator_seed: 19970503
 
 

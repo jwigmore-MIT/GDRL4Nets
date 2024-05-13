@@ -103,8 +103,8 @@ def make_env(env_params,
         env = TransformedEnv(env, SymLogTransform(in_keys=["x"], out_keys=["x"]))
     if inverse_reward:
         env = TransformedEnv(env, InverseReward())
-    else:
-        env = TransformedEnv(env, RewardScaling(loc=0, scale=0.01))
+    # else:
+    #     env = TransformedEnv(env, RewardScaling(loc=0, scale=0.01))
 
     return env
 
