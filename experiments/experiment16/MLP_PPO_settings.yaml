@@ -11,10 +11,10 @@ agent:
 # Environment
 training_env:
   terminal_backlog: 250
-  inverse_reward: False
+  inverse_reward: True
   symlog_obs: True
   cost_based: False
-  symlog_reward: True
+  symlog_reward: False
   env_generator_seed: 19970503
 
 
