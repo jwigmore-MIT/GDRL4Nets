@@ -4,8 +4,7 @@ device: null
 agent:
   type: PMN
   relu_max: 1000
-  depth: 2
-  num_cells: 128
+  hidden_sizes: [64, 64]
   mask: True
 
 # Environment

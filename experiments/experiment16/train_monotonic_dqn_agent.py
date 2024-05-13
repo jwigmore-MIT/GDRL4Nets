@@ -161,19 +161,19 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
     elif cfg.agent.type == "PMN":
         mono_nn = PMN(input_size  = input_shape[0],
                       output_size = output_shape,
-                      hidden_sizes = (64, 64),
+                      hidden_sizes = cfg.agent.hidden_sizes,
                       relu_max = getattr(cfg, "relu_max", 1),
                       )
     elif cfg.agent.type == "PMN_RELU":
         mono_nn = PMN(input_size  = input_shape[0],
                       output_size = output_shape,
-                      hidden_sizes = (32, 32),
+                      hidden_sizes = cfg.agent.hidden_sizes,
                       exp_unit = ReLUUnit,
                       fc_layer = FCLayer_notexp,)
     elif cfg.agent.type == "MLP":
         mono_nn = MLP(input_size  = input_shape[0],
                       output_size = output_shape,
-                      hidden_size = (32, 32))
+                      hidden_size = cfg.agent.hidden_sizes)
     else:
 
         Exception("Invalid agent type")
