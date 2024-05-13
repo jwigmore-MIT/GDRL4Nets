@@ -10,7 +10,7 @@ agent:
 
 # Environment
 training_env:
-  terminal_backlog: 1000
+  terminal_backlog: 250
   inverse_reward: False
   symlog_obs: True
   cost_based: False
