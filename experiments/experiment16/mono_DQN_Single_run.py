@@ -68,6 +68,7 @@ if __name__ == "__main__":
 
     # Set Device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"
     print(f"Device: {device}")
     cfg = load_config(os.path.join(SCRIPT_PATH, base_cfg[args.train_type]))
     cfg.device = device
