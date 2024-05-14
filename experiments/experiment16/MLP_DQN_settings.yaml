@@ -11,9 +11,9 @@ training_env:
   terminal_backlog: 250
   inverse_reward: False
   symlog_obs: True
-  cost_based: True
-  symlog_reward: True
-  reward_scale: 0.001
+  cost_based: False
+  symlog_reward: False
+  reward_scale: 0.0001
   env_generator_seed: 19970503
   stat_window_size: 5000
 
