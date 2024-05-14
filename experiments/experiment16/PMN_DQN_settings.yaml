@@ -16,6 +16,7 @@ training_env:
   symlog_reward: True
   reward_scale: 0.001
   env_generator_seed: 19970503
+  stat_window_size: 5000
 
 
 

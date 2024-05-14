@@ -259,6 +259,10 @@ class SingleHop(EnvBase):
                 shape = (1,),
                 dtype = torch.float
             ))
+            self.observation_spec.set("ta_mean", UnboundedContinuousTensorSpec(
+                shape = (1,),
+                dtype = torch.float
+            ))
 
         if getattr(self, "baseline_lta", None) is not None:
             self.observation_spec.set("baseline_lta", UnboundedContinuousTensorSpec(
@@ -385,6 +389,7 @@ class SingleHop(EnvBase):
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
         if self.track_stdev:
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
+            out.set("ta_mean", torch.Tensor([self.time_avg_stats.mean]))
         if getattr(self, "baseline_lta", None) is not None:
             out.set("baseline_lta", torch.tensor(self.baseline_lta, dtype = torch.float))
         if getattr(self, "context_id", None) is not None:
@@ -412,8 +417,9 @@ class SingleHop(EnvBase):
         if self.obs_lambda:
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
         if self.track_stdev:
-            self.time_avg_stats.reset()
+            # self.time_avg_stats.reset()
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
+            out.set("ta_mean", torch.Tensor([self.time_avg_stats.mean]))
         if getattr(self, "baseline_lta", None) is not None:
             out.set("baseline_lta", torch.tensor(self.baseline_lta, dtype=torch.float))
         if getattr(self, "context_id", None) is not None:

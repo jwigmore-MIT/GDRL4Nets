@@ -41,6 +41,28 @@ Its mostly based off the dqn_atary.py script from torchrl library
 
 
 """
+
+
+class Tracker:
+    """
+    Is a FIFO queue of fixed size for tracking metrics such as training backlog
+    """
+
+    def __init__(self, size):
+        self.size = size
+        self.queue = []
+        self.pointer = 0
+
+    def extend(self, items):
+        self.queue.extend(items)
+        if len(self.queue) > self.size:
+            self.queue = self.queue[-self.size:]
+            self.p
+
+
+    def mean(self):
+        return np.mean(self.queue)
+
 # %%
 def evaluate_dqn_agent(actor,
                        eval_env_generator,
@@ -214,13 +236,13 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
     collector = MultiSyncDataCollector(
         create_env_fn= make_env_funcs,
         policy=model_explore,
-        frames_per_batch=cfg.collector.frames_per_batch,
+        frames_per_batch=cfg.collector.frames_per_batch*training_env_generator.num_envs,
         total_frames=cfg.collector.total_frames,
         device=device,
         storing_device=device,
         env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
-        split_trajs=True,
+        split_trajs=False,
 )
 
     tempdir = tempfile.TemporaryDirectory()
@@ -268,9 +290,9 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
                     "project": cfg.logger.project,
                 },
             )
-    wandb.log({"init/init": True})
+    # wandb.log({"init/init": True})
     #wandb.watch(q_module[0], log="parameters", log_freq=10)
-    wandb.watch(mono_nn, log="all", log_freq=100, log_graph=False)
+    # wandb.watch(mono_nn, log="all", log_freq=100, log_graph=False)
 
     # # Save the cfg as a yaml file and upload to wandb
     # with open(os.path.join(logger.experiment.dir, cfg.context_set), "w") as file:
@@ -291,54 +313,94 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
     # initialize the artifact saving params
     best_eval_backlog = np.inf
     artifact_name = logger.exp_name
+    log_infos = {}
 
+
+
+
+
+    # create tracker of the backlog for the past 1000 frames for each training environment
+    # backlog_tracker = {i: Tracker(cfg.collector.backlog_log_interval) for i in training_env_generator.context_dicts.keys()}
+    # reward_tracker = {i: Tracker(cfg.collector.backlog_log_interval) for i in training_env_generator.context_dicts.keys()}
     for i, data in enumerate(collector):
 
         # print(f"Device of data: {data.device}")
         log_info = {}
         sampling_time = time.time() - sampling_start
-        pbar.update(data.numel())
-        current_frames = data.numel()
-        collected_frames += current_frames
-        greedy_module.step(current_frames)
+        # data = data[data["collector", "mask"]]
+
+
         # drop data if [collector, mask] is False
 
         #env_datas = split_trajectories(data)
         # Get and log training rewards and episode lengths
-        for env_data in data:
+        for context_id in data["context_id"].unique():
 
-            env_data = env_data[env_data["collector", "mask"]]
+            env_data = data[data["context_id"] == context_id]
 
             # first check if all of the env_data is from the same environment
-            if not (env_data["collector", "traj_ids"] == env_data["collector", "traj_ids"][0]).all():
-                raise ValueError("Data from multiple environments is being logged")
+            # if not (env_data["collector", "traj_ids"] == env_data["collector", "traj_ids"][0]).all():
+            #     raise ValueError("Data from multiple environments is being logged")
             context_id = env_data.get("context_id", None)
             if context_id is not None:
                 context_id = context_id[0].item()
             baseline_lta = env_data.get("baseline_lta", None)
             if baseline_lta is not None:
                 env_lta = baseline_lta[-1]
+
+
+
+            # # add new backlog to backlog tracker
+            # backlog_tracker[context_id].extend(env_data["next", "backlog"].numpy())
+            # reward_tracker[context_id].extend(env_data["next", "reward"].numpy())
+            # # if the backlog tracker is longer than 1000 frames, remove the first element
+            # if len(backlog_tracker[context_id]) >= cfg.collector.backlog_log_interval:
+            #     log_info.update({f"train/context_id_{context_id}/mean_backlog": np.mean(backlog_tracker[context_id])})
+            #     log_info.update({f"train/context_id_{context_id}/mean_normalized_backlog": np.mean(reward_tracker[context_id])/env_lta})
+            #     log_info.update({f"train/context_id_{context_id}/mean_episode_reward": np.mean(reward_tracker[context_id])})
+            #     log_info.update({f"train/context_id_{context_id}/valid_action_fraction": (env_data["mask"] * env_data["action"]).sum().float() / env_data["mask"].shape[0]})
+            #     backlog_tracker[context_id] = backlog_tracker[context_id][-1000:]
+            #     reward_tracker[context_id] = reward_tracker[context_id][-1000:]
+            #     take_mean = True
+            # else:
+            #     take_mean = False
+
+
             mean_episode_reward = env_data["next", "reward"].mean()
-            mean_backlog = env_data["next", "backlog"].float().mean()
+            #
+            # if env_data["next","done"].any():
+            #     final_tas = env_data["next", "backlog"][env_data["next", "done"]].numpy()
+            #     mean_backlog = final_tas.mean()
+            # else:
+            mean_backlog = env_data["next", "ta_mean"][-1]
+            std_backlog = env_data["next", "ta_stdev"][-1]
+            # mean_backlog = env_data["next", "backlog"].float().mean()
             normalized_backlog = mean_backlog / env_lta
             valid_action_fraction = (env_data["mask"] * env_data["action"]).sum().float() / env_data["mask"].shape[0]
             log_header = f"train/context_id_{context_id}"
 
             log_info.update({f'{log_header}/mean_episode_reward': mean_episode_reward.item(),
                              f'{log_header}/mean_backlog': mean_backlog.item(),
+                             f'{log_header}/std_backlog': std_backlog.item(),
                              f'{log_header}/mean_normalized_backlog': normalized_backlog.item(),
                              f'{log_header}/valid_action_fraction': valid_action_fraction.item(),})
 
         # Get average mean_normalized_backlog across each context
+        # if take_mean:
         avg_mean_normalized_backlog = np.mean([log_info[f'train/context_id_{i}/mean_normalized_backlog'] for i in training_env_generator.context_dicts.keys()])
         log_info.update({"train/avg_mean_normalized_backlog": avg_mean_normalized_backlog})
+
         # compute the fraction of times the chosen action was invalid
         """
         data["mask"] is a binary tensor for each possible action, where False means the action was invalid
         data["action"] is the action chosen by the agent which is a one-hot binary tensor
         data["mask"] * data["action"] will be a binary tensor where the action was invalid
         """
-        data = data[data["collector", "mask"]]
+        # data = data[data["collector", "mask"]]
+        pbar.update(data.numel())
+        current_frames = data.numel()
+        collected_frames += current_frames
+        greedy_module.step(current_frames)
         data = data.reshape(-1)
         replay_buffer.extend(data)
         # optimization steps
@@ -417,6 +479,18 @@ def train_mono_dqn_agent(cfg, training_env_generator, eval_env_generator, device
                 #logger.log(key, value, collected_frames)
             log_info["trainer/step"] = collected_frames
             wandb.log(log_info, step=collected_frames)
+            # # append log_info to log_infos
+            # for key, value in log_info.items():
+            #     if key not in log_infos:
+            #         log_infos[key] = []
+            #     log_infos[key].append(value)
+            # prev_log_frame = ((i - 1) * cfg.collector.frames_per_batch) // cfg.collector.log_interval
+            # cur_log_frame = (i * cfg.collector.frames_per_batch) // cfg.collector.log_interval
+            # if (i >= 1 and (prev_log_frame < cur_log_frame)) or final:
+            #     for key, value in log_infos.items():
+            #         logger.log(key, np.mean(value), collected_frames)
+            #     log_infos = {}
+            # # wandb.log(log_info, step=collected_frames)
         except Exception as e:
             print(e)
         collector.update_policy_weights_()

@@ -290,15 +290,20 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
             if baseline_lta is not None:
                 env_lta = baseline_lta[-1]
             mean_episode_reward = env_data["next", "reward"].mean()
-            mean_backlog = env_data["next", "backlog"].float().mean()
+            mean_backlog = env_data["next", "ta_mean"][-1]
+            std_backlog = env_data["next", "ta_stdev"][-1]
+            # mean_backlog = env_data["next", "backlog"].float().mean()
             normalized_backlog = mean_backlog / env_lta
             valid_action_fraction = (env_data["mask"] * env_data["action"]).sum().float() / env_data["mask"].shape[0]
             log_header = f"train/context_id_{context_id}"
 
             log_info.update({f'{log_header}/mean_episode_reward': mean_episode_reward.item(),
                              f'{log_header}/mean_backlog': mean_backlog.item(),
+                             f'{log_header}/std_backlog': std_backlog.item(),
                              f'{log_header}/mean_normalized_backlog': normalized_backlog.item(),
-                             f'{log_header}/valid_action_fraction': valid_action_fraction.item(),})
+                             f'{log_header}/valid_action_fraction': valid_action_fraction.item(), })
+
+
 
         # Get average mean_normalized_backlog across each context
         avg_mean_normalized_backlog = np.mean([log_info[f'train/context_id_{i}/mean_normalized_backlog'] for i in training_env_generator.context_dicts.keys()])

@@ -11,7 +11,12 @@ import argparse
 import numpy as np
 from torchrl_development.envs.env_generators import EnvGenerator
 from torchrl.record.loggers import get_logger, generate_exp_name
-
+from torchrl_development.SMNN import PureMonotonicNeuralNetwork as PMN, MultiLayerPerceptron as MLP, ReLUUnit, \
+    ExpUnit, FCLayer_notexp, ReLUnUnit
+from torchrl.data import CompositeSpec
+from torchrl_development.actors import MinQValueActor
+from torchrl_development.actors import create_maxweight_actor_critic, create_actor_critic
+import time
 os.environ["MAX_IDLE_COUNT"] = "1_000_000"
 
 # Get script path
@@ -80,7 +85,7 @@ if __name__ == "__main__":
     # Create the Training Env Generators
     training_make_env_parameters = {"graph": getattr(cfg.training_env, "graph", False),
                                     "observe_lambda": getattr(cfg.training_env, "observe_lambda", True),
-                                    "terminal_backlog": getattr(cfg.training_env, "terminal_backlog", None),
+                                    "terminal_backlog": None,
                                     "observation_keys": getattr(cfg.training_env, "observation_keys", ["Q", "Y"]),
                                     "negative_keys": getattr(cfg.training_env, "negative_keys", ["Y"]),
                                     "symlog_obs": getattr(cfg.training_env, "symlog_obs", False),
@@ -101,44 +106,54 @@ if __name__ == "__main__":
                                           cycle_sample=False)
 
 
-    # Create Test Env Generators
-    test_make_env_parameters = training_make_env_parameters.copy()
-    test_env_ind = train_sets[args.training_set]["test"]
-    test_env_ind.extend(training_env_ind)
-
-    test_env_generator_input_params = {"context_dicts": {i: all_context_dicts[str(i)] for i in test_env_ind},
-                                          "num_envs": len(test_env_ind),}
-
-    test_env_generator = EnvGenerator(test_env_generator_input_params,
-                                      test_make_env_parameters,
-                                      env_generator_seed = cfg.training_env.env_generator_seed,)
+   # Create DQN and PPO Agents
+    base_env = training_env_generator.sample(0)
+    input_shape = base_env.observation_spec["observation"].shape
+    output_shape = base_env.action_spec.space.n
+    action_spec = base_env.action_spec
 
 
-    # Create Logger
-    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}_{args.training_set}")
-    logger = get_logger(
-            "wandb",
-            logger_name="..\\logs",
-            experiment_name= experiment_name,
-            wandb_kwargs={
-                "config": cfg.as_dict(),
-                "project": cfg.logger.project,
-            },
-        )
-    # from torchrl.envs import ParallelEnv
-    # create_env_funcs = [training_env_generator.sample for i in range(training_env_generator.num_envs)]
-    # parallel_envs = ParallelEnv(num_workers = training_env_generator.num_envs, create_env_fn = create_env_funcs)
 
-    # cfg.collector.test_interval = 2000
-    if args.train_type == "PMN_DQN":
-        train_mono_dqn_agent(cfg, training_env_generator, test_env_generator, device, logger)
-    elif args.train_type == "MLP_PPO":
-        train_ppo_agent(cfg, training_env_generator, test_env_generator, device, logger)
+    ppo_agent = create_actor_critic(
+        input_shape,
+        output_shape,
+        in_keys=["observation"],
+        action_spec=action_spec,
+        temperature=cfg.agent.temperature,
+        actor_depth=cfg.agent.hidden_sizes.__len__(),
+        actor_cells=cfg.agent.hidden_sizes[-1],
+    )
+    ppo_actor = ppo_agent.get_policy_operator().to(device)
+    ppo_actor.eval()
 
-    """ Needs
-    
-             
-    
-    """
+
+    mono_nn = PMN(input_size=input_shape[0],
+                  output_size=output_shape,
+                  hidden_sizes=cfg.agent.hidden_sizes,
+                  relu_max=getattr(cfg, "relu_max", 10),
+                  )
+    q_actor = MinQValueActor(module = mono_nn,
+                           in_keys = ["observation"],
+                           spec = CompositeSpec({"action": action_spec}),
+                           action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,).to(device)
+    q_actor.eval()
+
+
+    # Time each agent on a 50_000 step rollout
+    with torch.no_grad():
+        print("Timing PPO Agent")
+        ppo_env = training_env_generator.sample(0)
+        start = time.time()
+        ppo_rollout = ppo_env.rollout(50_000, ppo_actor)
+        end = time.time()
+        print(f"Time taken: {end - start}")
+
+        print("Timing DQN Agent")
+        mono_env = training_env_generator.sample(0)
+        start = time.time()
+        mono_rollout = mono_env.rollout(50_000, q_actor)
+        end = time.time()
+        print(f"Time taken: {end - start}")
+
 
 

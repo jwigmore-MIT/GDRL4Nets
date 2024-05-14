@@ -16,6 +16,7 @@ training_env:
   cost_based: False
   symlog_reward: False
   env_generator_seed: 19970503
+  stat_window_size: 5000
 
 
 
