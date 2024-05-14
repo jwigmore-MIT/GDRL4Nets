@@ -3,7 +3,7 @@ device: null
 # Agent
 agent:
   type: MLP
-  hidden_sizes: [64, 64]
+  hidden_sizes: [128, 128]
   mask: True
 
 # Environment
