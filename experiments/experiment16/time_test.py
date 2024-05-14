@@ -144,14 +144,14 @@ if __name__ == "__main__":
         print("Timing PPO Agent")
         ppo_env = training_env_generator.sample(0)
         start = time.time()
-        ppo_rollout = ppo_env.rollout(50_000, ppo_actor)
+        ppo_rollout = ppo_env.rollout(50_000, ppo_actor, auto_cast_to_device=True )
         end = time.time()
         print(f"Time taken: {end - start}")
 
         print("Timing DQN Agent")
         mono_env = training_env_generator.sample(0)
         start = time.time()
-        mono_rollout = mono_env.rollout(50_000, q_actor)
+        mono_rollout = mono_env.rollout(50_000, q_actor, auto_cast_to_device=True)
         end = time.time()
         print(f"Time taken: {end - start}")
 
