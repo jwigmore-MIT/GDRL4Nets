@@ -56,7 +56,6 @@ def evaluate_dqn_agent(actor,
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
 
             actor.eval()
-            print("actor device: ", actor.device)
             test_envs_ind = eval_env_generator.context_dicts.keys()
             eval_start = time.time()
             # update pbar to say that we are evaluating
@@ -70,62 +69,32 @@ def evaluate_dqn_agent(actor,
             num_evals = 0
             eval_tds = []
 
-            # Create Parallel Envs for Testing
-            # make_env_funcs = [lambda i=i: eval_env_generator.sample(true_ind = i) for i in eval_env_generator.context_dicts.keys()]
-            # # envs = ParallelEnv(num_workers=eval_env_generator.num_envs, create_env_fn=make_env_funcs)
-            # # envs_rollout = envs.rollout(1000, actor, break_when_any_done=False, auto_reset = False)
-            # # num_eval_envs = eval_env_generator.num_envs  # gen_env_generator.num_envs
-            # # Create Async Collector
-            # collector = MultiaSyncDataCollector(
-            #     create_env_fn = make_env_funcs,
-            #     policy = actor,
-            #     total_frames=make_env_funcs.__len__()* 1000*3,
-            #     device = device,
-            #     frames_per_batch=make_env_funcs.__len__()* 1000*3,
-            # )
-            # for batch in collector:
-            #     print("Here")
-
-            for e, i in enumerate(eval_env_generator.context_dicts.keys()):  # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
-                pbar.set_description(f"Evaluating Environment {i} ({e+1}/{len(eval_env_generator.context_dicts.keys())})")
+            num_eval_envs = eval_env_generator.num_envs  # gen_env_generator.num_envs
+            for i in eval_env_generator.context_dicts.keys():  # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
                 lta_backlogs[i] = []
                 valid_action_fractions[i] = []
                 eval_env_generator.reseed()
-                seeds = eval_env_generator.gen_seeds(cfg.eval.num_eval_envs)
-                make_env_func = [lambda seed = seed: eval_env_generator.sample(true_ind=i, seed = seed) for seed in seeds]
-                env = ParallelEnv(cfg.eval.num_eval_envs,
-                                  make_env_func,
-                                  # [make_env_func]*cfg.eval.num_eval_envs,
-                                  device = device,)
-                td = env.rollout(cfg.eval.traj_steps,
-                                 actor,
-                                 break_when_any_done = True,
-                                 auto_cast_to_device=True).to("cpu")
-                lta_backlogs[i] = [compute_lta(td["backlog"][i]) for i in range(cfg.eval.num_eval_envs)]
-                valid_action_fractions[i] = [(td["mask"][i] * td["action"][i]).sum().float() / td["mask"][i].shape[0] for i in range(cfg.eval.num_eval_envs)]
-                # print("Here")
-
-                # for n in range(cfg.eval.num_eval_envs):
-                #     # reset eval_env_generator
-                #     num_evals += 1
-                #     # update pbar to say that we are evaluating num_evals/gen_env_generator.num_envs*cfg.eval.num_eval_envs
-                #     pbar.set_description(
-                #         f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
-                #     eval_env = eval_env_generator.sample(true_ind=i)
-                #     eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True).to('cpu')
-                #     eval_tds.append(eval_td)
-                #     eval_backlog = eval_td["next", "backlog"].numpy()
-                #     eval_lta_backlog = compute_lta(eval_backlog)
-                #     vaf =  (eval_td["mask"] * eval_td["action"]).sum().float() / eval_td["mask"].shape[0]
-                #     valid_action_fractions[i].append(vaf)
-                #     lta_backlogs[i].append(eval_lta_backlog)
+                for n in range(cfg.eval.num_eval_envs):
+                    # reset eval_env_generator
+                    num_evals += 1
+                    # update pbar to say that we are evaluating num_evals/gen_env_generator.num_envs*cfg.eval.num_eval_envs
+                    pbar.set_description(
+                        f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
+                    eval_env = eval_env_generator.sample(true_ind=i)
+                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True).to('cpu')
+                    eval_tds.append(eval_td)
+                    eval_backlog = eval_td["next", "backlog"].numpy()
+                    eval_lta_backlog = compute_lta(eval_backlog)
+                    vaf =  (eval_td["mask"] * eval_td["action"]).sum().float() / eval_td["mask"].shape[0]
+                    valid_action_fractions[i].append(vaf)
+                    lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
                 # get MaxWeight LTA from gen_env_generator.context_dicts[i]["lta]
                 max_weight_lta = eval_env_generator.context_dicts[i]["lta"]
                 normalized_final_mean_lta_backlogs[i] = final_mean_lta_backlogs[i] / max_weight_lta
                 final_mean_vaf[i] = np.mean(valid_action_fractions[i])
             eval_time = time.time() - eval_start
-            log_info.update({"eval/eval_time": eval_time})
+            log_info.update({f"eval/eval_time": eval_time})
             # add individual final_mean_lta_backlogs to log_info
             for i, lta in final_mean_lta_backlogs.items():
                 log_info.update({f"eval/lta_backlog_lambda({i})": lta})

@@ -38,7 +38,7 @@ buffer:
 # logger
 logger:
   backend: wandb
-  project: Experiment16
+  project: Experiment16b
 
 # Optim
 optim:
