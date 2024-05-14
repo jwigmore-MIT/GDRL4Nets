@@ -125,7 +125,7 @@ def evaluate_dqn_agent(actor,
                 normalized_final_mean_lta_backlogs[i] = final_mean_lta_backlogs[i] / max_weight_lta
                 final_mean_vaf[i] = np.mean(valid_action_fractions[i])
             eval_time = time.time() - eval_start
-
+            log_info.update({"eval/eval_time": eval_time})
             # add individual final_mean_lta_backlogs to log_info
             for i, lta in final_mean_lta_backlogs.items():
                 log_info.update({f"eval/lta_backlog_lambda({i})": lta})
