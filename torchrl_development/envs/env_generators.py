@@ -270,7 +270,11 @@ class EnvGenerator:
         self.seed_generator = np.random.default_rng(seed)
         self.env_generator_seed = seed
 
-    def sample_from_multi(self, rel_ind = None, true_ind = None):
+    def gen_seeds(self, n):
+        return self.seed_generator.integers(low = 0, high = 100000, size = n)
+
+
+    def sample_from_multi(self, rel_ind = None, true_ind = None, seed = None):
         """
         If given rel_ind, then samples the rel_ind-th environment from the context_dicts
         If given true_ind, then samples the true_ind environment from the context_dicts
@@ -291,12 +295,14 @@ class EnvGenerator:
                 env_params_ind = true_ind
             env_params = self.context_dicts[env_params_ind]["env_params"]
             env_params["context_id"] = env_params_ind
+            env_params["baseline_lta"] = self.context_dicts[env_params_ind]["lta"]
         # if ind is not in the keys
         except KeyError:
             raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")
-
-        env = make_env(env_params, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
-        env.base_env.baseline_lta = self.context_dicts[env_params_ind]["lta"]
+        if seed is None:
+            seed = self.seed_generator.integers(low = 0, high = 100000)
+        env = make_env(env_params, seed = seed, **self._make_env_keywords)
+        # env.base_env.baseline_lta = self.context_dicts[env_params_ind]["lta"]
         self.history.append(env_params_ind)
         return env
 

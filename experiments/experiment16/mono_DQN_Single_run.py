@@ -12,6 +12,7 @@ import numpy as np
 from torchrl_development.envs.env_generators import EnvGenerator
 from torchrl.record.loggers import get_logger, generate_exp_name
 
+os.environ["MAX_IDLE_COUNT"] = "1_000_000"
 
 # Get script path
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -125,6 +126,8 @@ if __name__ == "__main__":
     # from torchrl.envs import ParallelEnv
     # create_env_funcs = [training_env_generator.sample for i in range(training_env_generator.num_envs)]
     # parallel_envs = ParallelEnv(num_workers = training_env_generator.num_envs, create_env_fn = create_env_funcs)
+
+    # cfg.collector.test_interval = 2000
     if args.train_type == "PMN_DQN":
         train_mono_dqn_agent(cfg, training_env_generator, test_env_generator, device, logger)
     elif args.train_type == "MLP_PPO":

@@ -1384,9 +1384,17 @@ class MaskedOneHotCategoricalTemp(MaskedCategorical):
     def mode(self) -> torch.Tensor:
         if hasattr(self, "logits"):
             # get the argmax of the logits
-            argmax = self.logits.argmax()
-            argmax_one_hot = torch.zeros_like(self.logits).squeeze()
-            argmax_one_hot[argmax] = 1
+            """
+            logits is either (W,N) or (1,N)
+            logits.argmax() is (W,)
+            Want to return (W,N) or (1,N) tensor of one-hot vectors
+            How do I do this?
+            
+            """
+            argmax = self.logits.argmax(dim=1)
+            argmax_one_hot = torch.zeros_like(self.logits)
+            rows = torch.arange(self.logits.size(0)).long()
+            argmax_one_hot[rows, argmax] = 1
             return argmax_one_hot.to(torch.long)
 
         else:

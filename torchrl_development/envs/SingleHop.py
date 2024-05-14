@@ -260,6 +260,18 @@ class SingleHop(EnvBase):
                 dtype = torch.float
             ))
 
+        if getattr(self, "baseline_lta", None) is not None:
+            self.observation_spec.set("baseline_lta", UnboundedContinuousTensorSpec(
+                shape = (1,),
+                dtype = torch.float
+            ))
+
+        if getattr(self, "context_id", None) is not None:
+            self.observation_spec.set("context_id",  UnboundedContinuousTensorSpec(
+                shape = (1,),
+                dtype = torch.float
+            ))
+
         self.action_spec = OneHotDiscreteTensorSpec(
             n = len(self.nodes), # 0 is idling, n corresponds to node n
             shape = (len(self.nodes),),

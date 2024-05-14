@@ -69,25 +69,54 @@ def evaluate_dqn_agent(actor,
             num_evals = 0
             eval_tds = []
 
-            num_eval_envs = eval_env_generator.num_envs  # gen_env_generator.num_envs
-            for i in eval_env_generator.context_dicts.keys():  # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
+            # Create Parallel Envs for Testing
+            # make_env_funcs = [lambda i=i: eval_env_generator.sample(true_ind = i) for i in eval_env_generator.context_dicts.keys()]
+            # # envs = ParallelEnv(num_workers=eval_env_generator.num_envs, create_env_fn=make_env_funcs)
+            # # envs_rollout = envs.rollout(1000, actor, break_when_any_done=False, auto_reset = False)
+            # # num_eval_envs = eval_env_generator.num_envs  # gen_env_generator.num_envs
+            # # Create Async Collector
+            # collector = MultiaSyncDataCollector(
+            #     create_env_fn = make_env_funcs,
+            #     policy = actor,
+            #     total_frames=make_env_funcs.__len__()* 1000*3,
+            #     device = device,
+            #     frames_per_batch=make_env_funcs.__len__()* 1000*3,
+            # )
+            # for batch in collector:
+            #     print("Here")
+
+            for e, i in enumerate(eval_env_generator.context_dicts.keys()):  # i =1,2 are scaled, 3-6 are general, and 0 is the same as training
+                pbar.set_description(f"Evaluating Environment {i} ({e+1}/{len(eval_env_generator.context_dicts.keys())})")
                 lta_backlogs[i] = []
                 valid_action_fractions[i] = []
                 eval_env_generator.reseed()
-                for n in range(cfg.eval.num_eval_envs):
-                    # reset eval_env_generator
-                    num_evals += 1
-                    # update pbar to say that we are evaluating num_evals/gen_env_generator.num_envs*cfg.eval.num_eval_envs
-                    pbar.set_description(
-                        f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
-                    eval_env = eval_env_generator.sample(true_ind=i)
-                    eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True).to('cpu')
-                    eval_tds.append(eval_td)
-                    eval_backlog = eval_td["next", "backlog"].numpy()
-                    eval_lta_backlog = compute_lta(eval_backlog)
-                    vaf =  (eval_td["mask"] * eval_td["action"]).sum().float() / eval_td["mask"].shape[0]
-                    valid_action_fractions[i].append(vaf)
-                    lta_backlogs[i].append(eval_lta_backlog)
+                seeds = eval_env_generator.gen_seeds(cfg.eval.num_eval_envs)
+                make_env_func = [lambda seed = seed: eval_env_generator.sample(true_ind=i, seed = seed) for seed in seeds]
+                env = ParallelEnv(cfg.eval.num_eval_envs,
+                                  make_env_func,
+                                  # [make_env_func]*cfg.eval.num_eval_envs,
+                                  device = device,)
+                td = env.rollout(cfg.eval.traj_steps,
+                                 actor,
+                                 break_when_any_done = True)
+                lta_backlogs[i] = [compute_lta(td["backlog"][i]) for i in range(cfg.eval.num_eval_envs)]
+                valid_action_fractions[i] = [(td["mask"][i] * td["action"][i]).sum().float() / td["mask"][i].shape[0] for i in range(cfg.eval.num_eval_envs)]
+                # print("Here")
+
+                # for n in range(cfg.eval.num_eval_envs):
+                #     # reset eval_env_generator
+                #     num_evals += 1
+                #     # update pbar to say that we are evaluating num_evals/gen_env_generator.num_envs*cfg.eval.num_eval_envs
+                #     pbar.set_description(
+                #         f"Evaluating {num_evals}/{eval_env_generator.num_envs * cfg.eval.num_eval_envs} eval environment")
+                #     eval_env = eval_env_generator.sample(true_ind=i)
+                #     eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True).to('cpu')
+                #     eval_tds.append(eval_td)
+                #     eval_backlog = eval_td["next", "backlog"].numpy()
+                #     eval_lta_backlog = compute_lta(eval_backlog)
+                #     vaf =  (eval_td["mask"] * eval_td["action"]).sum().float() / eval_td["mask"].shape[0]
+                #     valid_action_fractions[i].append(vaf)
+                #     lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
                 # get MaxWeight LTA from gen_env_generator.context_dicts[i]["lta]
                 max_weight_lta = eval_env_generator.context_dicts[i]["lta"]
@@ -187,8 +216,8 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
         device=device,
-        storing_device=device,
-        env_device="cpu",
+        # storing_device=device,
+        # env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         split_trajs=True,
         reset_when_done=True,
@@ -265,6 +294,8 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         # print(f"Device of data: {data.device}")
         log_info = {}
         sampling_time = time.time() - sampling_start
+        data = data[data["collector", "mask"]]
+
         pbar.update(data.numel())
         current_frames = data.numel()
         collected_frames += current_frames
@@ -273,7 +304,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         #env_datas = split_trajectories(data)
         # Get and log training rewards and episode lengths
         #combine all data that has the same context_id
-        data = data[data["collector", "mask"]]
+        # data = data[data["collector", "mask"]]
         for context_id in data["context_id"].unique():
             env_data = data[data["context_id"] == context_id]
             env_data = env_data[env_data["collector", "mask"]]
@@ -311,11 +342,14 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         # optimization steps
         training_start = time.time()
         losses = TensorDict({}, batch_size=[cfg.loss.num_updates, num_mini_batches])
-
+        value_estimates = torch.zeros(num_updates, device=device)
+        q_value_estimates = torch.zeros(num_updates, device=device)
         for j in range(num_updates):
             # Compute GAE
             with torch.no_grad():
                 data = adv_module(data.to(device, non_blocking=True))
+                value_estimates[j] = data["state_value"].mean()
+                q_value_estimates[j] = data["value_target"].mean()
             data_reshape = data.reshape(-1)
             # Update the data buffer
             data_buffer.extend(data_reshape)
@@ -373,6 +407,8 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
                 "train/lr": alpha * cfg.optim.lr,
                 "train/sampling_time": sampling_time,
                 "train/training_time": training_time,
+                "train/q_values:": q_value_estimates.mean().item(),
+                "train/value_estimate": value_estimates.mean().item(),
             }
         )
 
