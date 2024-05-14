@@ -1,0 +1,57 @@
+device: null
+
+# Agent
+agent:
+  type: MLP
+  hidden_sizes: [64, 64]
+  mask: True
+
+# Environment
+training_env:
+  terminal_backlog: 250
+  inverse_reward: False
+  symlog_obs: True
+  cost_based: True
+  symlog_reward: True
+  reward_scale: 0.001
+  env_generator_seed: 19970503
+  stat_window_size: 5000
+
+
+
+# collector
+collector:
+  total_frames: 3_000_000
+  frames_per_batch: 50
+  eps_init: 0.2
+  eps_end: 0.05
+  annealing_frames: 500_000
+  test_interval: 50_000
+  max_frames_per_traj: 50_000
+
+# buffer
+buffer:
+  buffer_size: 100_000
+  batch_size: 200
+  scratch_dir: null
+
+# logger
+logger:
+  backend: wandb
+  project: Experiment16b
+
+# Optim
+optim:
+  lr: 0.1
+  max_grad_norm: 10
+
+# loss
+loss:
+  gamma: 0.99
+  soft_eps: 0.99
+  num_updates: 4
+  mask_loss: 0
+
+eval:
+  num_eval_envs: 3
+  traj_steps: 50_000

@@ -54,6 +54,7 @@ if __name__ == "__main__":
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
+                "MLP_DQN": 'MLP_DQN_settings.yaml',
                 "MLP_PPO": 'MLP_PPO_settings.yaml',
                 "PMN_PPO": 'PMN_PPO_settings.yaml',}
 
