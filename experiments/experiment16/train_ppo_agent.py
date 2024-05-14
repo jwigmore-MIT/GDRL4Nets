@@ -56,6 +56,7 @@ def evaluate_dqn_agent(actor,
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
 
             actor.eval()
+            print("actor device: ", actor.device)
             test_envs_ind = eval_env_generator.context_dicts.keys()
             eval_start = time.time()
             # update pbar to say that we are evaluating
@@ -98,7 +99,8 @@ def evaluate_dqn_agent(actor,
                                   device = device,)
                 td = env.rollout(cfg.eval.traj_steps,
                                  actor,
-                                 break_when_any_done = True)
+                                 break_when_any_done = True,
+                                 auto_cast_to_device=True)
                 lta_backlogs[i] = [compute_lta(td["backlog"][i]) for i in range(cfg.eval.num_eval_envs)]
                 valid_action_fractions[i] = [(td["mask"][i] * td["action"][i]).sum().float() / td["mask"][i].shape[0] for i in range(cfg.eval.num_eval_envs)]
                 # print("Here")
@@ -216,8 +218,8 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         frames_per_batch=cfg.collector.frames_per_batch,
         total_frames=cfg.collector.total_frames,
         device=device,
-        # storing_device=device,
-        # env_device="cpu",
+        storing_device=device,
+        env_device="cpu",
         max_frames_per_traj=cfg.collector.max_frames_per_traj,
         split_trajs=True,
         reset_when_done=True,
