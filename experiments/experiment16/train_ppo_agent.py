@@ -100,7 +100,7 @@ def evaluate_dqn_agent(actor,
                 td = env.rollout(cfg.eval.traj_steps,
                                  actor,
                                  break_when_any_done = True,
-                                 auto_cast_to_device=True)
+                                 auto_cast_to_device=True).to("cpu")
                 lta_backlogs[i] = [compute_lta(td["backlog"][i]) for i in range(cfg.eval.num_eval_envs)]
                 valid_action_fractions[i] = [(td["mask"][i] * td["action"][i]).sum().float() / td["mask"][i].shape[0] for i in range(cfg.eval.num_eval_envs)]
                 # print("Here")
