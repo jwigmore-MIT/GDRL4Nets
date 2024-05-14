@@ -123,7 +123,7 @@ if __name__ == "__main__":
         actor_depth=cfg.agent.hidden_sizes.__len__(),
         actor_cells=cfg.agent.hidden_sizes[-1],
     )
-    ppo_actor = ppo_agent.get_policy_operator().to(device)
+    ppo_actor = ppo_agent.get_policy_operator()
     ppo_actor.eval()
 
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     q_actor = MinQValueActor(module = mono_nn,
                            in_keys = ["observation"],
                            spec = CompositeSpec({"action": action_spec}),
-                           action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,).to(device)
+                           action_mask_key = "mask" if getattr(cfg.agent, "mask", False) else None,)
     q_actor.eval()
 
 
@@ -144,14 +144,14 @@ if __name__ == "__main__":
         print("Timing PPO Agent")
         ppo_env = training_env_generator.sample(0)
         start = time.time()
-        ppo_rollout = ppo_env.rollout(50_000, ppo_actor, auto_cast_to_device=True )
+        ppo_rollout = ppo_env.rollout(50_000, ppo_actor, auto_cast_to_device=False)
         end = time.time()
         print(f"Time taken: {end - start}")
 
         print("Timing DQN Agent")
         mono_env = training_env_generator.sample(0)
         start = time.time()
-        mono_rollout = mono_env.rollout(50_000, q_actor, auto_cast_to_device=True)
+        mono_rollout = mono_env.rollout(50_000, q_actor, auto_cast_to_device=False)
         end = time.time()
         print(f"Time taken: {end - start}")
 
