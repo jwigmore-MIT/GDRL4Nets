@@ -47,6 +47,7 @@ def make_env(env_params,
              symlog_reward = False,
              inverse_reward= False,
              cost_based: bool = False,
+             reward_scale: float = 1.0,
              terminate_on_convergence = False,
              convergence_threshold = 0.1,
              stat_window_size = 100000,
@@ -103,8 +104,8 @@ def make_env(env_params,
         env = TransformedEnv(env, SymLogTransform(in_keys=["x"], out_keys=["x"]))
     if inverse_reward:
         env = TransformedEnv(env, InverseReward())
-    # else:
-    #     env = TransformedEnv(env, RewardScaling(loc=0, scale=0.01))
+    if reward_scale != 1.0:
+        env = TransformedEnv(env, RewardScaling(loc=0, scale=reward_scale))
 
     return env
 

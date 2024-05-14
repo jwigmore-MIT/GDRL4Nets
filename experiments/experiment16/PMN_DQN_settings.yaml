@@ -14,6 +14,7 @@ training_env:
   symlog_obs: True
   cost_based: True
   symlog_reward: True
+  reward_scale: 0.001
   env_generator_seed: 19970503
 
 

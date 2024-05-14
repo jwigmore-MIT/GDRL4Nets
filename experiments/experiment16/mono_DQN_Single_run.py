@@ -86,7 +86,8 @@ if __name__ == "__main__":
                                     "symlog_obs": getattr(cfg.training_env, "symlog_obs", False),
                                     "symlog_reward": getattr(cfg.training_env, "symlog_reward", False),
                                     "inverse_reward": getattr(cfg.training_env, "inverse_reward", False),
-                                    "cost_based": getattr(cfg.training_env, "cost_based", True),}
+                                    "cost_based": getattr(cfg.training_env, "cost_based", True),
+                                    "reward_scale": getattr(cfg.training_env, "reward_scale", 1.0),}
 
     training_env_ind = train_sets[args.training_set]["train"]
 

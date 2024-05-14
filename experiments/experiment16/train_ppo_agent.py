@@ -409,7 +409,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
                 "train/lr": alpha * cfg.optim.lr,
                 "train/sampling_time": sampling_time,
                 "train/training_time": training_time,
-                "train/q_values:": q_value_estimates.mean().item(),
+                "train/q_values": q_value_estimates.mean().item(),
                 "train/value_estimate": value_estimates.mean().item(),
             }
         )
