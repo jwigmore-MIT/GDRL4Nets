@@ -153,15 +153,34 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
     action_spec = base_env.action_spec
 
    # create actor and critic
-    agent = create_actor_critic(
-        input_shape,
-        output_shape,
-        in_keys=["observation"],
-        action_spec=action_spec,
-        temperature=cfg.agent.temperature,
-        actor_depth=cfg.agent.hidden_sizes.__len__(),
-        actor_cells=cfg.agent.hidden_sizes[-1],
-    )
+    if getattr(cfg.agent, "actor_type", "MLP") == "MLP":
+        agent = create_actor_critic(
+            input_shape,
+            output_shape,
+            in_keys=["observation"],
+            action_spec=action_spec,
+            temperature=cfg.agent.temperature,
+            actor_depth=cfg.agent.hidden_sizes.__len__(),
+            actor_cells=cfg.agent.hidden_sizes[-1],
+        )
+    elif getattr(cfg.agent, "actor_type", "MLP") == "PMN":
+        mono_nn = PMN(input_size=input_shape[0],
+                      output_size=output_shape,
+                      hidden_sizes=cfg.agent.hidden_sizes,
+                      relu_max=getattr(cfg, "relu_max", 1),
+                      )
+        agent = create_actor_critic(
+            input_shape,
+            output_shape,
+            actor_nn=mono_nn,
+            in_keys=["observation"],
+            action_spec=action_spec,
+            temperature=cfg.agent.temperature,
+            actor_depth=cfg.agent.hidden_sizes.__len__(),
+            actor_cells=cfg.agent.hidden_sizes[-1],
+        )
+
+
     actor = agent.get_policy_operator().to(device)
     critic = agent.get_value_operator().to(device)
 

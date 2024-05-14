@@ -2,12 +2,13 @@ device: null
 
 # Agent
 agent:
-  actor_type: MLP
+  actor_type: PMN
   critic_type: MLP
   hidden_sizes: [64, 64]
   observe_lambda: True
   mask: True
   temperature: 0.1
+
 
 # Environment
 training_env:

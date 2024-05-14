@@ -106,20 +106,25 @@ def create_actor_critic(input_shape,
              output_shape,
              in_keys,
              action_spec,
+             actor_nn = None,
+             critic_nn = None,
              temperature = 1.0,
              device="cpu",
-                        actor_depth = 2,
-                        actor_cells = 32,):
-    actor_mlp = MLP(in_features=input_shape[-1],
+             actor_depth = 2,
+             actor_cells = 32,
+             ):
+
+    if actor_nn is None:
+        actor_nn = MLP(in_features=input_shape[-1],
                     activation_class=torch.nn.ReLU,
                     out_features=output_shape,
                     depth=actor_depth,
                     num_cells=actor_cells,
-
                     )
-    actor_mlp_output = actor_mlp(torch.ones(input_shape))
+
+    actor_mlp_output = actor_nn(torch.ones(input_shape))
     actor_module = TensorDictModule(
-        module=actor_mlp,
+        module=actor_nn,
         in_keys=in_keys,
         out_keys=["logits"],
     )
@@ -135,18 +140,18 @@ def create_actor_critic(input_shape,
         default_interaction_type=ExplorationType.RANDOM,
     )
 
+    if critic_nn is None:
+        critic_nn = MLP(in_features=input_shape[-1],
+                        activation_class=torch.nn.ReLU,
+                        out_features=1,
+                        )
 
-    critic_mlp = MLP(in_features=input_shape[-1],
-                     activation_class=torch.nn.ReLU,
-                     out_features=1,
-                     )
-
-    critic_mlp_output = critic_mlp(torch.ones(input_shape))
+    critic_mlp_output = critic_nn(torch.ones(input_shape))
 
 
     # Create Value Module
     value_module = ValueOperator(
-        module=critic_mlp,
+        module=critic_nn,
         in_keys=in_keys,
     )
 

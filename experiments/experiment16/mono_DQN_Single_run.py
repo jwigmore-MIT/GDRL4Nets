@@ -50,11 +50,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
     parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH2u") # or SH2u
-    parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_PPO")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
-                "MLP_PPO": 'MLP_PPO_settings.yaml',}
+                "MLP_PPO": 'MLP_PPO_settings.yaml',
+                "PMN_PPO": 'PMN_PPO_settings.yaml',}
 
     context_set_jsons = {"SH3": "SH3_context_set_100_03251626.json",
                          "SH2u": "SH2u_context_set_10_03211514.json",}
@@ -131,9 +132,9 @@ if __name__ == "__main__":
     # parallel_envs = ParallelEnv(num_workers = training_env_generator.num_envs, create_env_fn = create_env_funcs)
 
     # cfg.collector.test_interval = 2000
-    if args.train_type == "PMN_DQN":
+    if "DQN" in args.train_type:
         train_mono_dqn_agent(cfg, training_env_generator, test_env_generator, device, logger)
-    elif args.train_type == "MLP_PPO":
+    elif "PPO" in args.train_type:
         train_ppo_agent(cfg, training_env_generator, test_env_generator, device, logger)
 
     """ Needs
