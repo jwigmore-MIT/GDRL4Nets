@@ -167,7 +167,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         mono_nn = PMN(input_size=input_shape[0],
                       output_size=output_shape,
                       hidden_sizes=cfg.agent.hidden_sizes,
-                      relu_max=getattr(cfg, "relu_max", 1),
+                      relu_max=getattr(cfg, "relu_max", 0.1),
                       )
         agent = create_actor_critic(
             input_shape,

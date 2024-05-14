@@ -3,7 +3,7 @@ device: null
 # Agent
 agent:
   type: PMN
-  relu_max: 1000
+  relu_max: 10
   hidden_sizes: [64, 64]
   mask: True
 
