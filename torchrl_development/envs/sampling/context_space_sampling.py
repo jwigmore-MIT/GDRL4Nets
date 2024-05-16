@@ -180,7 +180,6 @@ def sample_context_space(base_param_file,
         for n in range(num_rollouts_per_env):
             env = make_env(new_params,
                            seed = 0,
-                           device = "cpu",
                            terminal_backlog = 1000)
 
             # Test MaxWeightActor

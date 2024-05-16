@@ -217,6 +217,62 @@ class PureMonotonicNeuralNetwork(torch.nn.Module):
         #return self.network(x)
 
 
+class PureMonotonicPlusNeuralNetwork(torch.nn.Module):
+    """
+    Like the PureMonotonicNeuralNetwork but we take each state group, and pass it through its own monotonic network
+    The input size is 3*N, and the output size is N+1, where N is the number of state groups
+    Output n>1 corresponds with an action for state group n-1.
+    Let S= (s_{1,1}, s_{1,2}, s_{1,3}, s_{2,1}, s_{2,2}, s_{2,3}, ...., s_{N,1}, s_{N,2}, s_{N,3})
+    We pass S through the main network, and then pass each state group through its own monotonic network
+    Main Network f_{\theta}(S): S\mapsto R^{N+1}
+    Side networks f_{\phi_i}: S_i\mapsto R  where S_i = (s_{i,1}, s_{i,2}, s_{i,3})
+    Output is
+        f_\theta(S)_i + f_{\phi_i}(S_i))_{i=1}^{N+1}  for i=1,2,3
+        f_\theta(S)_0 for i=0
+    """
+
+    def __init__(self,
+                 input_size: int,
+                 output_size: int = 1,
+                 hidden_sizes: Tuple = (64, 64),
+                 side_net_sizes: Tuple = (8, 8),
+                 relu_max: float = 1.0,
+                 exp_unit: ActivationLayer = ExpUnit,
+                 fc_layer: ActivationLayer = FCLayer
+                 ):
+        super(PureMonotonicNeuralNetwork,self).__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+        self.hidden_sizes = hidden_sizes
+        self.relu_max = relu_max
+
+        self.hidden_layers = torch.nn.ModuleList([
+            exp_unit(self.input_size if i == 0 else hidden_sizes[i-1], hidden_sizes[i], max_value=relu_max) for i in range(len(hidden_sizes))
+        ])
+
+        self.fclayer = fc_layer(hidden_sizes[len(hidden_sizes)-1], output_size)
+
+        self.network = torch.nn.Sequential(*self.hidden_layers, self.fclayer)
+
+        self.side_nets = torch.nn.ModuleList([
+            torch.nn.Sequential(
+                exp_unit(3, side_net_sizes[0], max_value=relu_max),
+                exp_unit(side_net_sizes[0], side_net_sizes[1], max_value=relu_max),
+                fc_layer(side_net_sizes[1], 1)
+            ) for _ in range(output_size)
+        ])
+
+    def forward(self,x):
+        for layer in self.hidden_layers:
+            x = layer(x)
+        main_out = self.fclayer(x)
+        side_outs = [side_net(x[i:i+3]) for i, side_net in enumerate(self.side_nets)]
+        out = main_out + torch.cat(side_outs, dim=1)
+
+        return out
+
+        #return self.network(x)
+
 
 class SameStructure(torch.nn.Module):
     def __init__(self,

@@ -15,21 +15,21 @@ class MaxWeightActor(TensorDictModule):
 
 
 def maxweight(Q, Y):
-    # Q are the queue lengths
-    # Y are the channel weights
+    # Q are the queue lengths  -- size (B, N) where B is number in the batch and N is the number of queues
+    # Y are the channel weights --  size (B, N) where B is number in the batch and N is the number of queues
     # returns the maxweight schedule as a zero-one vector of length Q.shape[0] +1, where element 0 corresponds to
     #idling
+    if Q.dim() == 1:
+        Q = Q.unsqueeze(0)
+    if Y.dim() == 1:
+        Y = Y.unsqueeze(0)
     v = Q*Y
-    if torch.all(v==0):
-        # first element is one, all others is zero
-        return torch.Tensor(([1] + [0]*Q.shape[0])).int()
-    else:
-        # find the max index
-        max_index = torch.argmax(v)
-        # create the schedule
-        schedule = torch.zeros(Q.shape[0]+1)
-        schedule[max_index+1] = 1
-        return schedule.int()
+    all_zeros = torch.all(v == 0, dim=-1)
+    max_index = torch.argmax(v, dim=-1)
+    schedule = torch.zeros((Q.shape[0], Q.shape[1] + 1)).int()
+    schedule[all_zeros, 0] = 1
+    schedule[~all_zeros, max_index[~all_zeros] + 1] = 1
+    return schedule.int()
 
 if __name__ == "__main__":
     # test maxweight

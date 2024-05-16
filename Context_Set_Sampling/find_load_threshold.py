@@ -49,7 +49,6 @@ def find_load_threshold(env_params, load_range, repeats = 3, seed=0, terminal_ba
             env = make_env(new_params,
                  observe_lambda = False,
                  seed=seed,
-                 device="cpu",
                  terminal_backlog=terminal_backlog,
                  observation_keys=["Q", "Y"],
                  inverse_reward= False,

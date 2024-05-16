@@ -13,6 +13,8 @@ from Context_Set_Sampling.context_set_stats import plot_arrival_rate_histogram
 from torchrl_development.utils.configuration import make_serializable
 from torchrl_development.envs.sampling.polytope_sampling import dikin_walk, collect_chain, chebyshev_center
 import os
+from torchrl.envs import ParallelEnv
+import time
 
 def sample_contexts_hit_and_run(context_space_dict, num_samples, thin = 100):
     vertex_arrival_rates = np.array([context_space_dict["context_dicts"][str(i)]["arrival_rates"] for i in  range(context_space_dict["num_envs"])])
@@ -50,9 +52,18 @@ def sample_contexts_dilkins(context_space_dict, num_samples):
 def estimate_lta_backlog(env_params,
                          num_rollouts_per_env = 3,
                          max_rollout_steps = 50000,
+                         plot = False,
                          **make_env_kwargs):
     max_weight_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
     max_weight_ltas = []
+
+    # parallel_time = time.time()
+    # make_env_func = [lambda i = i: make_env(env_params, **make_env_kwargs) for i in range(num_rollouts_per_env)]
+    # envs = ParallelEnv(num_rollouts_per_env, make_env_func)
+    # td = envs.rollout(max_steps = max_rollout_steps, policy=max_weight_actor, break_when_any_done=True)
+    # print(f"Parallel rollout time: {time.time() - parallel_time}")
+
+    # serial_time = time.time()
     for i in range(num_rollouts_per_env):
         env = make_env(env_params, **make_env_kwargs)
         td = env.rollout(policy=max_weight_actor, max_steps = max_rollout_steps)
@@ -61,9 +72,10 @@ def estimate_lta_backlog(env_params,
         elif td["next"]["truncated"][-1]:
             print(f"Rollout {i} truncated at step {len(td)}")
             raise ValueError("Rollout truncated")
+    # print(f"Serial rollout time: {time.time() - serial_time}")
     network_load = env.base_env.network_load
     final_ltas = np.array([lta[-1] for lta in max_weight_ltas])
-    if False:
+    if plot:
         import matplotlib.pyplot as plt
         fig, axes = plt.subplots(1,1, figsize = (15,10))
         for i in range(num_rollouts_per_env):
@@ -76,7 +88,10 @@ def estimate_lta_backlog(env_params,
 
 def create_context_set_dict(context_parameters: np.array,
                             base_env_params: dict,
-                            make_env_params: dict):
+                            make_env_params: dict,
+                            max_rollout_steps = 50000,
+                            num_rollouts_per_env = 3,
+                            plot = False) -> dict:
     N,K = context_parameters.shape
     context_parameters = context_parameters
     base_env_params = deepcopy(base_env_params)
@@ -86,8 +101,8 @@ def create_context_set_dict(context_parameters: np.array,
     context_set_dict["ltas"] = []
     context_set_dict["network_loads"] = []
 
-    num_rollouts_per_env = 3
-    max_rollout_steps = 50000
+    num_rollouts_per_env = num_rollouts_per_env
+    max_rollout_steps = max_rollout_steps
     pbar = tqdm.tqdm(total=N)
     pbar.set_description(f"Computing LTA for sampled contexts")
     for s, sample in enumerate(context_parameters):
@@ -103,6 +118,7 @@ def create_context_set_dict(context_parameters: np.array,
         max_weight_lta, max_weight_lta_stdev, network_load = estimate_lta_backlog(env_params,
                                                                                   num_rollouts_per_env,
                                                                                   max_rollout_steps,
+                                                                                  plot = plot,
                                                                                   **make_env_params)
         context_dict["lta"] = max_weight_lta
         context_dict["lta_stdev"] = max_weight_lta_stdev
