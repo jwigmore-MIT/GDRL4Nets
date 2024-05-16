@@ -1,0 +1,709 @@
+{
+  "num_envs": 10,
+  "ltas": [
+    64.78984,
+    66.06728,
+    50.83566,
+    67.53028,
+    16.39144,
+    14.6523,
+    26.92364,
+    21.16836,
+    47.6228,
+    139.55272
+  ],
+  "network_loads": [
+    0.9899999999999999,
+    0.99,
+    0.99,
+    0.99,
+    1.3708,
+    1.4100666666666668,
+    1.4681,
+    1.5427666666666666,
+    1.5901666666666667,
+    1.641
+  ],
+  "context_dicts": {
+    "0": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 1.4849999999999999
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 0.0
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.0,
+        1.4849999999999999,
+        0.0,
+        0.0
+      ],
+      "network_load": 0.9899999999999999,
+      "lta": 64.78984,
+      "admissible": true
+    },
+    "1": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.99
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 0.0
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.99,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "network_load": 0.99,
+      "lta": 66.06728,
+      "admissible": true
+    },
+    "2": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 1.98
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 0.0
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.0,
+        0.0,
+        1.98,
+        0.0
+      ],
+      "network_load": 0.99,
+      "lta": 50.83566,
+      "admissible": true
+    },
+    "3": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.0
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 2.475
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.0,
+        0.0,
+        0.0,
+        2.475
+      ],
+      "network_load": 0.99,
+      "lta": 67.53028,
+      "admissible": true
+    },
+    "4": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.417
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.021
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.75
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 1.412
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.417,
+        0.021,
+        0.75,
+        1.412
+      ],
+      "network_load": 1.3708,
+      "lta": 16.39144,
+      "admissible": true
+    },
+    "5": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.404
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.388
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 1.026
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 0.586
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.404,
+        0.388,
+        1.026,
+        0.586
+      ],
+      "network_load": 1.4100666666666668,
+      "lta": 14.6523,
+      "admissible": true
+    },
+    "6": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.549
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 1.14
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.231
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 0.109
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.549,
+        1.14,
+        0.231,
+        0.109
+      ],
+      "network_load": 1.4681,
+      "lta": 26.92364,
+      "admissible": true
+    },
+    "7": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.488
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.577
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.921
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 0.524
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.488,
+        0.577,
+        0.921,
+        0.524
+      ],
+      "network_load": 1.5427666666666666,
+      "lta": 21.16836,
+      "admissible": true
+    },
+    "8": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.736
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.265
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.243
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 1.39
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.736,
+        0.265,
+        0.243,
+        1.39
+      ],
+      "network_load": 1.5901666666666667,
+      "lta": 47.6228,
+      "admissible": true
+    },
+    "9": {
+      "env_params": {
+        "name": "SingleHop3",
+        "env_type": "SH",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          0
+        ],
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "X_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "arrival_rate": 0.177
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "arrival_rate": 0.792
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "arrival_rate": 0.524
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 1.685
+          }
+        },
+        "Y_params": {
+          "1": {
+            "source": 1,
+            "destination": 0,
+            "service_rate": 1
+          },
+          "2": {
+            "source": 2,
+            "destination": 0,
+            "service_rate": 1.5
+          },
+          "3": {
+            "source": 3,
+            "destination": 0,
+            "service_rate": 2
+          },
+          "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 2.5
+          }
+        }
+      },
+      "arrival_rates": [
+        0.177,
+        0.792,
+        0.524,
+        1.685
+      ],
+      "network_load": 1.641,
+      "lta": 139.55272,
+      "admissible": true
+    }
+  }
+}
