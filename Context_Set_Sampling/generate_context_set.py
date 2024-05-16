@@ -134,8 +134,8 @@ def create_context_set_dict(context_parameters: np.array,
 
 if __name__ == "__main__":
 
-        base_name = "SH3"
-        num_contexts = 100
+        base_name = "SH4b"
+        num_contexts = 30
         thin = 1000
         sampling_method = 'hit_and_run' #'dilkins' or 'hit_and_run'
         date_time = datetime.now().strftime('%m%d%H%M')
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
 
 
-        context_space_dict = json.load(open("SH3_lf1.38_context_space-nondominated.json", 'rb'))
+        context_space_dict = json.load(open(f"SH3_lf1.38_context_space-nondominated.json", 'rb'))
         if sampling_method == 'hit_and_run':
             context_samples = sample_contexts_hit_and_run(context_space_dict, num_contexts, thin = thin)
         else:
