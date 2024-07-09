@@ -1,0 +1,36 @@
+{
+  "problem_instance": {
+    "name": "SingleHop_Two_Node_Simple_base",
+    "env_type": "SH",
+    "nodes": [1, 2, 0],
+    "lta": 3.6120,
+    "X_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.4
+      },
+      "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.4
+      }
+    },
+    "Y_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "capacity": 1,
+        "probability": 0.7
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "capacity": 1,
+        "probability": 0.7
+      }
+    }
+  }
+}

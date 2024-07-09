@@ -2,6 +2,10 @@ from DP.tabular_policy import TabularPolicy
 
 class ValueFunction():
 
+    def __init__(self, q_max = 100, penalty = -100):
+        self.q_max = q_max
+        self.limit = int(q_max+1)
+        self.penalty = penalty
     def update(self, state, value):
         pass
 
@@ -13,13 +17,17 @@ class ValueFunction():
 
     """ Return the Q-value of action in state """
     def get_q_value(self, mdp, state, action):
+        "Need to modify such that if state is not in the value table, we return self.get_value(state)-100"
         q_value = 0.0
         for (new_state, probability) in mdp.get_transitions(state, action):
             reward = mdp.get_reward(state, action, new_state)
-            q_value += probability * (
-                reward
-                + (mdp.get_discount_factor() * self.get_value(new_state))
-            )
+            if self.limit in new_state:
+                q_value += probability * (reward + (mdp.get_discount_factor() * (self.get_value(state)+self.penalty)))
+            else:
+                q_value += probability * (
+                    reward
+                    + (mdp.get_discount_factor() * self.get_value(new_state))
+                )
 
         return q_value
 

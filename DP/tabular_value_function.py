@@ -4,7 +4,8 @@ from DP.value_function import ValueFunction
 
 
 class TabularValueFunction(ValueFunction):
-    def __init__(self, default=0.0):
+    def __init__(self, q_max = 100, penalty = -100, default=0):
+        super().__init__(q_max, penalty)
         self.value_table = defaultdict(lambda: default)
 
 
@@ -20,5 +21,6 @@ class TabularValueFunction(ValueFunction):
     def get_value(self, state):
         if not isinstance(state, tuple):
             state = tuple(state)
+
         return self.value_table[state]
 

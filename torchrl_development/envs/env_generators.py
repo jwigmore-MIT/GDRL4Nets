@@ -1,6 +1,6 @@
 # get directory of torchrl_development
 import os
-from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform
+from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform, ObservationNorm
 from torchrl_development.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform
 from torchrl_development.envs.SingleHop import SingleHop
 from torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
@@ -14,13 +14,14 @@ CURR_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 TORCHRL_DEVELOPMENT_PATH = os.path.dirname(CURR_FILE_PATH)
 CONFIG_FILE_PATH = os.path.join(TORCHRL_DEVELOPMENT_PATH, "config", "environments")
 
-def parse_env_json(json_path, config_args = None):
+def parse_env_json(rel_json_path = None, full_path = None, config_args = None):
     import json
     import os
-    print(f"CURR_FILE_PATH: {CURR_FILE_PATH}")
-    print(f"TORCHRL_DEVELOPMENT_PATH: {TORCHRL_DEVELOPMENT_PATH}")
-    print(f"CONFIG_FILE_PATH: {CONFIG_FILE_PATH}")
-    full_path = os.path.join(CONFIG_FILE_PATH, json_path)
+    # print(f"CURR_FILE_PATH: {CURR_FILE_PATH}")
+    # print(f"TORCHRL_DEVELOPMENT_PATH: {TORCHRL_DEVELOPMENT_PATH}")
+    # print(f"CONFIG_FILE_PATH: {CONFIG_FILE_PATH}")
+    if full_path is None:
+        full_path = os.path.join(CONFIG_FILE_PATH, rel_json_path)
     para = json.load(open(full_path, "r"))
     env_para = para["problem_instance"]
     if config_args is not None:
@@ -40,8 +41,10 @@ def make_env(env_params,
              graph= False,
              observe_lambda = False,
              seed=0,
+             device = None, # device is not used
              terminal_backlog=None,
              observation_keys=["Q", "Y"],
+             observation_keys_scale = None,
              negative_keys = None,
              symlog_obs = True,
              symlog_reward = False,
@@ -80,6 +83,13 @@ def make_env(env_params,
         base_env = SingleHop(env_params, seed)
     if negative_keys is not None:
         base_env = TransformedEnv(base_env, ReverseSignTransform(in_keys=negative_keys, out_keys=negative_keys))
+    if observation_keys_scale is not None:
+        out_observation_keys = [f"{key}_scaled" for key in observation_keys]
+        if observation_keys_scale.__len__() != observation_keys.__len__():
+            raise ValueError("observation_keys_scale must be the same length as observation_keys")
+        for i in range(observation_keys.__len__()):
+            base_env = TransformedEnv(base_env, ObservationNorm(in_keys=[observation_keys[i]], out_keys=[out_observation_keys[i]], scale=1/observation_keys_scale[i], loc = 0))
+        observation_keys = out_observation_keys
     if cost_based:
         base_env = TransformedEnv(base_env, ReverseSignTransform(in_keys=["reward"], out_keys=["reward"]))
     env = TransformedEnv(

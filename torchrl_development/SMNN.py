@@ -31,8 +31,10 @@ class ExpUnit(ActivationLayer):
                  out_features: int,
                  max_value: float = 1.0):
         super().__init__(in_features, out_features)
-        torch.nn.init.uniform_(self.weight,a=-20.0, b=2.0)
-        truncated_normal_(self.bias, std=0.5)
+        torch.nn.init.uniform_(self.weight,a=-3.0, b=0) # weights seem to be too small using this one
+        #torch.nn.init.uniform_(self.weight,a=-1, b=2.0)
+        # truncated_normal_(self.bias, std=0.1)
+        self.bias = torch.nn.Parameter(torch.zeros(out_features))
         self.size = in_features
         self.max_value = max_value
 
@@ -46,7 +48,7 @@ class NegExpUnit(ActivationLayer):
                  out_features: int,
                  max_value: float = 1.0):
         super().__init__(in_features, out_features)
-        torch.nn.init.uniform_(self.weight,a=-20.0, b=2.0)
+        torch.nn.init.uniform_(self.weight,a=-20.0, b=2)
         truncated_normal_(self.bias, std=0.5)
         self.size = in_features
         self.max_value = max_value
@@ -100,8 +102,10 @@ class FCLayer(ActivationLayer):
                  in_features: int,
                  out_features: int):
         super().__init__(in_features, out_features)
-        truncated_normal_(self.weight, mean=-10.0, std=3)
-        truncated_normal_(self.bias, std=0.5)
+        # truncated_normal_(self.weight, mean=0.0, std=1)
+        torch.nn.init.uniform_(self.weight, a=-3.0, b=0)
+        #truncated_normal_(self.bias, std=0.1)
+        self.bias = torch.nn.Parameter(torch.zeros(out_features))
 
     def forward(self, x):
         FC = x @ torch.exp(self.weight) + self.bias

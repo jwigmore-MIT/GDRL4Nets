@@ -49,6 +49,7 @@ class ValueIterationMinus:
             self.values.merge(new_values)
 
             pbar.set_description(f"Delta: {delta}")
+            # Get policy
 
             # Terminate if the value function has converged
             if delta < theta:

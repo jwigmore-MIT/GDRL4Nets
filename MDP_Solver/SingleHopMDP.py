@@ -13,6 +13,7 @@ from DP.tabular_value_function import TabularValueFunction
 import os
 from DP.tabular_policy import TabularPolicy
 from DP.policy_iteration import PolicyIteration
+from collections import defaultdict
 
 class SingleHopMDP(MDP):
 
@@ -64,7 +65,7 @@ class SingleHopMDP(MDP):
     def compute_tx_matrix(self,
                            save_path = None):
         env = self.env
-        tx_matrix = form_transition_matrix2(env, self.state_list, self.actions)
+        tx_matrix = form_transition_matrix2(env, self.state_list, self.actions, q_max = self.q_max)
         num_s_a_pairs = len(tx_matrix.keys())
         print("Transition Matrix Estimated")
         print("Number of state-action pairs: ", np.sum(num_s_a_pairs))
@@ -100,7 +101,9 @@ class SingleHopMDP(MDP):
         return self.state_list
 
     def get_transitions(self, state, action):
-        key = state + action.tolist()
+        if hasattr(action, "tolist"):
+            action = action.tolist()
+        key = state + action
         transitions = list(self.tx_matrix[tuple(key)].items())
         # key = deepcopy(state)
         # key.extend(action.tolist())
@@ -128,6 +131,10 @@ class SingleHopMDP(MDP):
         #         # valid_actions = self.actions[valid_action_index]
         #         # return valid_actions.en
 
+    def get_mask(self, state):
+        self.env.base_env.set_state(state)
+        return self.env.get_mask()
+
 
     def get_initial_state(self):
         return np.zeros(self.n_queues * 2)
@@ -141,13 +148,14 @@ class SingleHopMDP(MDP):
     def get_goal_states(self):
         return None
 
-    def do_PI(self, max_iterations=100, theta=0.1):
-        self.pi_policy = TabularPolicy(default_action=self.actions[1])
+    def do_PI(self, default_policy = None, max_iterations=100, theta=0.1):
+        self.pi_policy = TabularPolicy(policy_table=default_policy)
         # Need to to initialize the policy with a default action that is valid
         # for each state in the transition matrix
-        for state in self.state_list:
-            valid_actions = self.get_actions(state)
-            self.pi_policy.update(state, valid_actions[0])
+        if default_policy is None:
+            for state in self.state_list:
+                valid_actions = self.get_actions(state)
+                self.pi_policy.update(state, valid_actions[0])
         policy_iteration = PolicyIteration(self, self.pi_policy)
         policy_iteration.policy_iteration(max_iterations, theta)
         print("Policy Iteration Complete, updated mdp.pi_policy")
@@ -163,6 +171,11 @@ class SingleHopMDP(MDP):
             policy_table = pickle.load(f)
         self.pi_policy = TabularPolicy(default_action=self.actions[1])
         self.pi_policy.policy_table = policy_table
+
+    def get_pi_policy_table(self):
+        if self.pi_policy is None:
+            raise ValueError("Policy must be estimated before getting it")
+        return self.pi_policy.policy_table
 
 
 
@@ -317,7 +330,7 @@ def form_transition_matrix(env, state_list, action_list, max_samples = 1000, min
     return tx_matrix, n_samples
 
 
-def form_transition_matrix2(env, state_list, action_list, max_samples=1000, min_samples=100, theta=0.001):
+def form_transition_matrix2(env, state_list, action_list, q_max = 30):
     from tqdm import tqdm
     """
     state_list: list of states as lists
@@ -335,9 +348,7 @@ def form_transition_matrix2(env, state_list, action_list, max_samples=1000, min_
     P(X = x) = P(X0 = x0, X1 = x1, ..., Xn = xn) = P(X0 = x0)P(X1 = x1)...P(Xn = xn)
     
     
-    
-    
-    
+    # Should also recompute transition matrix such that for all states where q_i> q_max, we set q_i = q_max
     
 
     """
@@ -375,16 +386,19 @@ def form_transition_matrix2(env, state_list, action_list, max_samples=1000, min_
                     Q_prime = Q # meaning we idle
                 else:
                     Q_prime = np.max([Q - np.multiply(Y,action[1:]), np.zeros_like(Q)], axis = 0)
+                    # Q_prime =np.max([Q - np.multiply(Y,action[1:]), np.zeros_like(Q)], axis = 0), q_max*np.ones_like(Q) # restrict Q to be less than q_max
                 temp = deepcopy(XY_dist.dist_dict)
-                new_dist = {}
+                new_dist = defaultdict(lambda : 0)
                 for x_key, x_value in temp.items():
                     state_prime = np.concatenate([Q_prime, np.zeros_like(Q_prime)])
+                    #new_key = np.min([np.array(list(x_key)) + state_prime, q_max*np.ones_like(x_key)], axis = 0)
                     new_key = np.array(list(x_key)) + state_prime
-                    new_dist[tuple(new_key)] = x_value
+                    new_dist[tuple(new_key)] += x_value
                     # check that the new dist sums to 1
                 if np.abs(np.sum(list(new_dist.values())) - 1) > 0.01:
                     raise ValueError("Transition Probabilities do not sum to one")
-                tx_matrix[tuple(key)] = new_dist
+                # convert new_dist to a normal dictionary
+                tx_matrix[tuple(key)] = dict(new_dist)
             else:
                 pass
 

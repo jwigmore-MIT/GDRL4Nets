@@ -26,6 +26,7 @@ from torchrl.modules.tensordict_module.common import SafeModule
 from tensordict import TensorDictBase
 from torchrl.data.utils import _process_action_space_spec
 from torchrl.modules.tensordict_module.sequence import SafeSequential
+import monotonicnetworks as lmn
 
 
 
@@ -218,6 +219,23 @@ class NN_Actor(TensorDictModule):
         td["logits"] = self.module(td["Q"], td["Y"])
         return td
 
+class Ind_NN_Actor(TensorDictModule):
+
+        def __init__(self, module, N, d,  in_keys = ["observation"], out_keys = "logits" ):
+            super().__init__(module= module, in_keys = in_keys, out_keys=out_keys)
+            self.N =N
+            self.d = d
+        def forward(self, td):
+            """
+            td["observation"] is a B x (d * N) tensor
+            We want to convert this to a B x N x d tensor before passing to the module
+            :param td:
+            :return:
+            """
+            x = td["observation"].view(-1, self.d, self.N)
+            td[self.out_keys[0]] = self.module(x)
+            return td
+
 
 class MaxWeightNetwork(nn.Module):
     def __init__(self, weight_size, temperature=1.0, weights = None):
@@ -254,20 +272,24 @@ class MaxWeightNetwork(nn.Module):
 
 
 
-def create_independent_actor_critic(input_shape,
-                in_keys,
+def create_independent_actor_critic(number_nodes,
+                actor_input_dimension,
+                actor_in_keys,
+                critic_in_keys,
                 action_spec,
                 temperature = 1.0,
                 actor_depth = 2,
                 actor_cells = 32,
-                type = 1):
+                type = 1,
+                network_type = "MLP",
+                relu_max= 10):
 
-    num_nodes = input_shape[-1]//2
     if type == 1:
-        actor_network = IndependentNodeNetwork(num_nodes, actor_depth, actor_cells)
+        actor_network = IndependentNodeNetwork(actor_input_dimension, number_nodes,actor_depth, actor_cells, network_type, relu_max)
     elif type == 2:
-        actor_network = IndependentNodeNetwork2(num_nodes, actor_depth, actor_cells)
-    actor_module = NN_Actor(module=actor_network, in_keys=["Q", "Y"], out_keys=["logits"])
+        actor_network = IndependentNodeNetwork2(number_nodes, actor_depth, actor_cells)
+
+    actor_module = Ind_NN_Actor(actor_network, N = number_nodes, d = actor_input_dimension, in_keys=actor_in_keys, out_keys=["logits"])
 
     actor_module = ProbabilisticActor(
         actor_module,
@@ -285,7 +307,7 @@ def create_independent_actor_critic(input_shape,
     # actor_output = actor_module(input)
 
 
-    critic_mlp = MLP(in_features=input_shape[-1],
+    critic_mlp = MLP(in_features=number_nodes*actor_input_dimension,
                      activation_class=torch.nn.ReLU,
                      out_features=1,
                      )
@@ -294,7 +316,7 @@ def create_independent_actor_critic(input_shape,
     # Create Value Module
     value_module = ValueOperator(
         module=critic_mlp,
-        in_keys=in_keys,
+        in_keys=critic_in_keys,
     )
 
     #
@@ -308,16 +330,41 @@ class IndependentNodeNetwork(nn.Module):
     and passes each s_i through its own independent neural network
     f_{\theta_i}(s_i) to compute logits z_i
     """
-    def __init__(self, num_nodes, depth, cells):
+    def __init__(self, input_dim, num_nodes, depth, cells, network_type = "MLP", relu_max = 1):
         super(IndependentNodeNetwork, self).__init__()
+        self.input_dim = input_dim
         self.num_nodes = num_nodes
         # create num_nodes independent neural networks, each with depth and cells
-        self.node_nns = nn.ModuleList([MLP(in_features=2,
-                                           out_features=1,
-                                           depth=depth,
-                                           num_cells=cells,
-                                           activation_class=nn.ReLU,
-                                           ) for _ in range(num_nodes)])
+        if network_type == "MLP":
+            self.node_nns = nn.ModuleList([MLP(in_features=input_dim,
+                                               out_features=1,
+                                               depth=depth,
+                                               num_cells=cells,
+                                               activation_class=nn.ReLU,
+                                               ) for _ in range(num_nodes)])
+        elif network_type == "LMN":
+            module_list = []
+            for _ in range(num_nodes):
+                lip_nn = torch.nn.Sequential(
+                lmn.LipschitzLinear(input_dim, cells, kind="one", lipschitz_const=1),
+                lmn.GroupSort(2),
+                lmn.LipschitzLinear(cells,  cells, kind="one", lipschitz_const=1),
+                lmn.GroupSort(2),
+                lmn.LipschitzLinear(cells, 1, kind="one", lipschitz_const=1))
+                mono_nn = lmn.MonotonicWrapper(lip_nn, monotonic_constraints=[1]*input_dim)
+                module_list.append(mono_nn)
+            self.node_nns= torch.nn.ModuleList(module_list)
+        elif network_type == "PMN":
+            from torchrl_development.SMNN import PureMonotonicNeuralNetwork as PMN
+            from copy import deepcopy
+            module_list = []
+            base_pmn = PMN(input_size = input_dim, output_size = 1, hidden_sizes = [cells]*depth, relu_max= relu_max)
+            for _ in range(num_nodes):
+                # pmn = PMN(input_size = input_dim, output_size = 1, hidden_sizes = [cells]*depth, relu_max=relu_max)
+                # pmn.load_state_dict(deepcopy(base_pmn.state_dict()))
+                module_list.append(PMN(input_size = input_dim, output_size = 1, hidden_sizes = [cells]*depth, relu_max=10))
+                # module_list.append(pmn)
+            self.node_nns = torch.nn.ModuleList(module_list)
 
 
 
@@ -329,21 +376,44 @@ class IndependentNodeNetwork(nn.Module):
         #     nn.Linear(32, 1)
         # ) for _ in range(num_nodes)])
         self.bias_0 = nn.Parameter(torch.ones(1, 1))
-    def forward(self, Q, Y):
-        if Q.dim() == 1:
-            Q = Q.unsqueeze(0)
-        if Y.dim() == 1:
-            Y = Y.unsqueeze(0)
-        s = [torch.column_stack([Q[:,i], Y[:,i]]) for i in range(Q.shape[-1])]
+    def forward(self, X):
+        """
+        X will be a B x d x N tensor where N = self.num_nodes and D = input_dim
+        Want to pass each B x d x 1 tensor through the corresponding neural network
+        The output will be a B x N tensor of logits
 
-        z_i = [nn(s_i) for s_i, nn in zip(s, self.node_nns)]
-        z_i = torch.column_stack(z_i)
-        z_0 = self.bias_0 - (Q * Y).sum(dim=-1, keepdim=True)
-        z = torch.column_stack([z_0, z_i])
-        # normalize z
-        z = F.softmax(z, dim=-1)
-        return torch.relu(z).squeeze(dim=-1)
+        :param X:
+        :return:
+        """
+        # Handle the case where X is a N x D tensor
+        if X.dim() == 2:
+            X.unsqueeze_(0)
 
+        # Create a B x 1 Tensor of zeros
+        zeros = torch.zeros(X.shape[0], 1)
+        # Initialize an empty list to store the output of each node's neural network
+        output_list = [zeros]
+
+        # Iterate over each node
+        for i in range(self.num_nodes):
+            # Extract the input for the current node
+            node_input = X[:, :, i]
+
+            # Pass the node's input through its corresponding neural network
+            node_output = self.node_nns[i](node_input)
+
+            # Append the output to the list
+            output_list.append(node_output)
+
+        # Stack the outputs to form a tensor of shape (B, N+1)
+        output_tensor = torch.stack(output_list, dim=-2)
+
+        return output_tensor.squeeze(-1)
+
+class IndependentLMNNetwork(nn.Module):
+    """
+    Like IndependentNodeNetwork but using Lipsc
+    """
 
 class IndependentNodeNetwork2(nn.Module):
     """
