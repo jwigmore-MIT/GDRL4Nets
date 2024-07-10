@@ -816,4 +816,29 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
         collector.update_policy_weights_()
         sampling_start = time.time()
 
+    # Test Model last time
+    actor.eval()
+    eval_start = time.time()
+    training_env_ids = list(training_env_generator.context_dicts.keys())
+    eval_log_info, eval_tds = evaluate_dqn_agent(actor, eval_env_generator, training_env_ids, pbar, cfg,
+                                                 device)
+
+    eval_time = time.time() - eval_start
+    log_info.update(eval_log_info)
+
+    # Save the agent if the eval backlog is the best
+    if eval_log_info["eval/lta_backlog_training_envs"] < best_eval_backlog:
+        best_eval_backlog = eval_log_info["eval/lta_backlog_training_envs"]
+        torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+        agent_artifact = wandb.Artifact(f"trained_actor_module_{artifact_name}", type="model")
+        agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+        agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+        wandb.log_artifact(agent_artifact, aliases=["best", "latest"])
+    else:
+        torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+        agent_artifact = wandb.Artifact(f"trained_actor_module.pt_{artifact_name}", type="model")
+        agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+        agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+        wandb.log_artifact(agent_artifact, aliases=["latest"])
+
 

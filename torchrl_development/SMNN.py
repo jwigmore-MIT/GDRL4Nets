@@ -4,8 +4,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from typing import Union, Iterable, Sized, Tuple
+from DeepSets import create_deep_set_nn
 
-def truncated_normal_(tensor, mean: float = 0., std: float = 1.):  
+
+def truncated_normal_(tensor, mean: float = 0., std: float = 1.):
     size = tensor.shape
     tmp = tensor.new_empty(size + (4,)).normal_()
     valid = (tmp < 2) & (tmp > -2)
@@ -183,7 +185,32 @@ class ScalableMonotonicNeuralNetwork(torch.nn.Module):
 
         out = self.fclayer(torch.cat([exp_output,relu_output],dim = 1)) 
         return out
-    
+
+
+class DeepSetScalableMonotonicNeuralNetwork(torch.nn.Module):
+    def __init__(self,
+                 input_size: int,
+                 mono_size: int,
+                 mono_feature,
+                 exp_unit_size: Tuple = (),
+                 relu_unit_size: Tuple = (),
+                 conf_unit_size: Tuple = (),
+                 phi_in_dim: int = 3,
+                 latent_dim: int = 64,
+                 deepset_width: int = 16,
+                 deepset_out_dim: int = 16,
+                 exp_unit: ActivationLayer = ExpUnit,
+                 relu_unit: ActivationLayer = ReLUUnit,
+                 conf_unit: ActivationLayer = ConfluenceUnit,
+                 fully_connected_layer: ActivationLayer = FCLayer):
+
+        super(DeepSetScalableMonotonicNeuralNetwork,self).__init__()
+
+        # Create Deep Set NN, which will be input into the non-nonotonic network
+        self.invariant_model = create_deep_set_nn(phi_in_dim, latent_dim, deepset_out_dim, width = deepset_width)
+
+
+
 class PureMonotonicNeuralNetwork(torch.nn.Module):
     """
     Same as ScalableMonotonicNeuralNetwork but with no confluence or Relu units
