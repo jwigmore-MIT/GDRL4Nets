@@ -188,17 +188,27 @@ class ScalableMonotonicNeuralNetwork(torch.nn.Module):
 
 
 class DeepSetScalableMonotonicNeuralNetwork(torch.nn.Module):
+    """
+    How this module works is that we have a MK length input vector where each consecutive M elements corresponds to a single output.
+    Each output is obtained through the following process:
+    For start in range(0, M, MK)
+        Keep elements start:start+M as the monotonic feature ->
+        Pass all other features into the invariant model
+        Concatenate the output of the invariant model with the monotonic feature
+        Pass concatenated output through the scalable monotonic neural network where the first M features are the monotonic feature, and the rest are not
+
+
+    """
     def __init__(self,
-                 input_size: int,
-                 mono_size: int,
-                 mono_feature,
-                 exp_unit_size: Tuple = (),
-                 relu_unit_size: Tuple = (),
-                 conf_unit_size: Tuple = (),
+
+                 num_classes,
                  phi_in_dim: int = 3,
                  latent_dim: int = 64,
                  deepset_width: int = 16,
                  deepset_out_dim: int = 16,
+                 exp_unit_size: Tuple = (),
+                 relu_unit_size: Tuple = (),
+                 conf_unit_size: Tuple = (),
                  exp_unit: ActivationLayer = ExpUnit,
                  relu_unit: ActivationLayer = ReLUUnit,
                  conf_unit: ActivationLayer = ConfluenceUnit,
@@ -206,8 +216,33 @@ class DeepSetScalableMonotonicNeuralNetwork(torch.nn.Module):
 
         super(DeepSetScalableMonotonicNeuralNetwork,self).__init__()
 
+
         # Create Deep Set NN, which will be input into the non-nonotonic network
+        self.total_input_size = num_classes*phi_in_dim
+        self.mono_size = phi_in_dim
         self.invariant_model = create_deep_set_nn(phi_in_dim, latent_dim, deepset_out_dim, width = deepset_width)
+        self.scalable_monotonic_network = ScalableMonotonicNeuralNetwork(int(phi_in_dim+deepset_out_dim), self.mono_size, list(range(0,self.mono_size)), exp_unit_size, relu_unit_size, conf_unit_size, exp_unit, relu_unit, conf_unit, fully_connected_layer)
+        self.bias_0 = torch.nn.Parameter(torch.zeros(1))
+    def forward(self, x):
+        """
+        x will have shape (batch_size, phi_in_dim*num_classes)
+        :param x:
+        :return:
+        """
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
+        # Preallocate memory for out
+        out = self.bias_0*torch.ones((x.shape[0], self.total_input_size // self.mono_size+1), device=x.device)
+
+        for start in range(0, self.total_input_size, self.mono_size):
+            mono_feature = x[:, start:start + self.mono_size]
+            non_mono_feature = torch.cat((x[:, :start], x[:, start + self.mono_size:]), dim=1).reshape(x.shape[0], -1, self.mono_size)
+            invariant_output = self.invariant_model(non_mono_feature)
+            # Use in-place operation for concatenation
+            invariant_output = torch.cat((mono_feature,invariant_output), dim=1)
+            out[:, 1+ (start // self.mono_size)] = self.scalable_monotonic_network(invariant_output).squeeze()
+
+        return out
 
 
 

@@ -54,7 +54,7 @@ mlp_cfg = load_config(os.path.join(SCRIPT_PATH, 'MLP_PPO_settings.yaml'))
 
 make_env_parameters = {"graph": getattr(mlp_cfg.training_env, "graph", False),
                                     "observe_lambda": getattr(mlp_cfg.training_env, "observe_lambda", True),
-                                    "terminal_backlog": getattr(mlp_cfg.training_env, "terminal_backlog", None),
+                                    "terminal_backlog": None,
                                     "observation_keys": getattr(mlp_cfg.training_env, "observation_keys", ["Q", "Y"]),
                                     "observation_keys_scale": getattr(mlp_cfg.training_env, "observation_keys_scale", None),
                                     "negative_keys": getattr(mlp_cfg.training_env, "negative_keys", ["Y"]),
@@ -160,122 +160,121 @@ Each bar has the mean lta of the agent on the testing environment with error bar
 bar_width = 0.35
 n_environments = len(context_ids)
 
-for test_env_id in context_ids.values():
-    fig, ax = plt.subplots()
-    index = np.arange(n_environments)
 
-    means_list_mwn = [means[(test_env_id, "MWN", training_env)] for env_char, training_env in context_ids.items()]
-    stds_list_mwn = [stds[(test_env_id, "MWN", training_env)] for env_char, training_env in context_ids.items()]
-    ax.bar(index - bar_width / 2, means_list_mwn, bar_width, yerr=stds_list_mwn, label="MWN")
+fig, ax = plt.subplots()
+index = np.arange(n_environments)
 
-    means_list_mlp = [means[(test_env_id, "MLP", training_env)] for env_char, training_env in context_ids.items()]
-    stds_list_mlp = [stds[(test_env_id, "MLP", training_env)] for env_char, training_env in context_ids.items()]
-    ax.bar(index + bar_width / 2, means_list_mlp, bar_width, yerr=stds_list_mlp, label="MLP")
+means_list_pmn = [means[(training_env, "PMN", training_env)] for training_env in context_ids]
+stds_list_pmn = [stds[(training_env, "PMN", training_env)] for training_env in context_ids]
+ax.bar(index - bar_width / 2, means_list_pmn, bar_width, yerr=stds_list_pmn, label="PMN")
 
-    ax.set_xticks(index)
-    ax.set_xticklabels(context_ids.values())
-    ax.set_xlabel("Training Environment")
-    ax.set_ylabel("Mean LTA")
-    ax.legend()
-    ax.set_title(f"Environment {test_env_id}")
-    plt.show()
+means_list_mlp = [means[(training_env, "MLP", training_env)] for training_env in context_ids]
+stds_list_mlp = [stds[(training_env, "MLP", training_env)] for training_env in context_ids]
+ax.bar(index + bar_width / 2, means_list_mlp, bar_width, yerr=stds_list_mlp, label="MLP")
 
-# plot again but then normalize by the max weight lta
-for test_env_id in context_ids.values():
-    fig, ax = plt.subplots()
-    index = np.arange(n_environments)
-
-    max_weight_lta = context_set["context_dicts"][str(test_env_id)]["lta"]
-
-    means_list_mwn = [means[(test_env_id, "MWN", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
-    stds_list_mwn = [stds[(test_env_id, "MWN", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
-    ax.bar(index - bar_width / 2, means_list_mwn, bar_width, yerr=stds_list_mwn, label="MWN")
-
-    means_list_mlp = [means[(test_env_id, "MLP", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
-    stds_list_mlp = [stds[(test_env_id, "MLP", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
-    ax.bar(index + bar_width / 2, means_list_mlp, bar_width, yerr=stds_list_mlp, label="MLP")
-
-    ax.set_xticks(index)
-    ax.set_xticklabels(context_ids.values())
-    ax.set_xlabel("Training Environment")
-    ax.set_ylabel("Normalized Mean LTA")
-
-    ax.legend()
-    ax.set_title(f"Environment {test_env_id}: Normalized Performance")
-    plt.show()
-
-
-# Now plot normalized performance as a function of time by iterating through the lta_tds dict
-for test_env_id in context_ids.values():
-    fig, ax = plt.subplots()
-    for training_env_id in context_ids.values():
-        max_weight_lta = context_set["context_dicts"][str(test_env_id)]["lta"]
-
-        mwn_ltas = lta_tds[(test_env_id, "MWN", training_env_id)]/max_weight_lta
-        mlp_ltas = lta_tds[(test_env_id, "MLP", training_env_id)]/max_weight_lta
-
-        mean_mwn = mwn_ltas.mean(dim=0)
-        std_mwn = mwn_ltas.std(dim=0)
-
-        mean_mlp = mlp_ltas.mean(dim=0)
-        std_mlp = mlp_ltas.std(dim=0)
-
-        ax.plot(mean_mwn, label=f"MWN trained on Environment {training_env_id}")
-        ax.fill_between(range(len(mean_mwn)), mean_mwn - std_mwn, mean_mwn + std_mwn, alpha=0.2)
-
-        ax.plot(mean_mlp, label=f"MLP trained on Environment {training_env_id}")
-        ax.fill_between(range(len(mean_mlp)), mean_mlp - std_mlp, mean_mlp + std_mlp, alpha=0.2)
-
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Normalized Performance")
-    ax.legend()
-    ax.set_title(f"Environment {test_env_id}: Normalized Performance over Time")
-    plt.show()
-
-
-
-
-# Get all of the weights from the MWN agents
-mwn_weights = {}
-normalized_mwn_weights = {}
-for (agent_type, env_id), agent in agent_dict.items():
-    if agent_type == "MWN":
-        state_dict = agent.get_policy_operator().state_dict()
-        mwn_weights[env_id] = state_dict['module.0.module.weights'].detach().numpy()
-        normalized_mwn_weights[env_id] = mwn_weights[env_id]/mwn_weights[env_id].sum(axis=0, keepdims=True)
-
-
-# Get all of the arrival rates for each of the contexts
-arrival_rates = {}
-for env_id in context_ids.values():
-    arrival_rates[env_id] = context_set["context_dicts"][str(env_id)]["arrival_rates"]
-
-# Get the service rate for each of the contexts
-service_rates = {}
-for env_id in context_ids.values():
-    context_dict = context_set["context_dicts"][str(env_id)]
-    service_rates[env_id] = [params["service_rate"] for class_id,params in context_dict["env_params"]["Y_params"].items()]
-# plot the normalized MWN weights as a bar plot for each environment,a and plot the arrival rates
-# in the secod column
-fig, axes = plt.subplots(nrows=len(normalized_mwn_weights), ncols=2, figsize=(10, 10))
-ax_row = -1
-for env_id, weights in normalized_mwn_weights.items():
-    ax_row +=1
-    weights_ax = axes[ax_row][0]
-    arrival_rates_ax = axes[ax_row][1]
-    index = np.arange(1,weights.shape[0]+1)
-    weights_ax.bar(index, weights)
-    weights_ax.set_title(f"Environment {ax_row+1}: Normalized MWN Weights")
-    weights_ax.set_ylim(0, 0.5)
-
-    arrival_rate = arrival_rates[ax_row]
-    service_rate = service_rates[ax_row]
-    normalized_arrival_rates = arrival_rate/np.array(service_rate)
-    arrival_rates_ax.bar(index, normalized_arrival_rates)
-    arrival_rates_ax.set_title(f"Environment {ax_row+1}: Arrival Rate/Service Rate")
-    arrival_rates_ax.set_ylim(0, 0.5)
-    arrival_rates_ax.set_xlabel("Class")
-
-fig.tight_layout()
+ax.set_xticks(index)
+ax.set_xticklabels(context_ids)
+ax.set_xlabel("Training Environment")
+ax.set_ylabel("Mean LTA")
+ax.legend()
 plt.show()
-
+# #
+# # plot again but then normalize by the max weight lta
+# for test_env_id in context_ids.values():
+#     fig, ax = plt.subplots()
+#     index = np.arange(n_environments)
+#
+#     max_weight_lta = context_set["context_dicts"][str(test_env_id)]["lta"]
+#
+#     means_list_pmn = [means[(test_env_id, "PMN", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
+#     stds_list_pmn = [stds[(test_env_id, "PMN", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
+#     ax.bar(index - bar_width / 2, means_list_pmn, bar_width, yerr=stds_list_pmn, label="PMN")
+#
+#     means_list_mlp = [means[(test_env_id, "MLP", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
+#     stds_list_mlp = [stds[(test_env_id, "MLP", training_env)]/max_weight_lta for env_char, training_env in context_ids.items()]
+#     ax.bar(index + bar_width / 2, means_list_mlp, bar_width, yerr=stds_list_mlp, label="MLP")
+#
+#     ax.set_xticks(index)
+#     ax.set_xticklabels(context_ids.values())
+#     ax.set_xlabel("Training Environment")
+#     ax.set_ylabel("Normalized Mean LTA")
+#
+#     ax.legend()
+#     ax.set_title(f"Environment {test_env_id}: Normalized Performance")
+#     plt.show()
+# #
+# #
+# # Now plot normalized performance as a function of time by iterating through the lta_tds dict
+# for test_env_id in context_ids.values():
+#     fig, ax = plt.subplots()
+#     for training_env_id in context_ids.values():
+#         max_weight_lta = context_set["context_dicts"][str(test_env_id)]["lta"]
+#
+#         mwn_ltas = lta_tds[(test_env_id, "MWN", training_env_id)]/max_weight_lta
+#         mlp_ltas = lta_tds[(test_env_id, "MLP", training_env_id)]/max_weight_lta
+#
+#         mean_mwn = mwn_ltas.mean(dim=0)
+#         std_mwn = mwn_ltas.std(dim=0)
+#
+#         mean_mlp = mlp_ltas.mean(dim=0)
+#         std_mlp = mlp_ltas.std(dim=0)
+#
+#         ax.plot(mean_mwn, label=f"MWN trained on Environment {training_env_id}")
+#         ax.fill_between(range(len(mean_mwn)), mean_mwn - std_mwn, mean_mwn + std_mwn, alpha=0.2)
+#
+#         ax.plot(mean_mlp, label=f"MLP trained on Environment {training_env_id}")
+#         ax.fill_between(range(len(mean_mlp)), mean_mlp - std_mlp, mean_mlp + std_mlp, alpha=0.2)
+#
+#     ax.set_xlabel("Time")
+#     ax.set_ylabel("Normalized Performance")
+#     ax.legend()
+#     ax.set_title(f"Environment {test_env_id}: Normalized Performance over Time")
+#     plt.show()
+#
+#
+#
+#
+# # Get all of the weights from the MWN agents
+# mwn_weights = {}
+# normalized_mwn_weights = {}
+# for (agent_type, env_id), agent in agent_dict.items():
+#     if agent_type == "MWN":
+#         state_dict = agent.get_policy_operator().state_dict()
+#         mwn_weights[env_id] = state_dict['module.0.module.weights'].detach().numpy()
+#         normalized_mwn_weights[env_id] = mwn_weights[env_id]/mwn_weights[env_id].sum(axis=0, keepdims=True)
+#
+#
+# # Get all of the arrival rates for each of the contexts
+# arrival_rates = {}
+# for env_id in context_ids.values():
+#     arrival_rates[env_id] = context_set["context_dicts"][str(env_id)]["arrival_rates"]
+#
+# # Get the service rate for each of the contexts
+# service_rates = {}
+# for env_id in context_ids.values():
+#     context_dict = context_set["context_dicts"][str(env_id)]
+#     service_rates[env_id] = [params["service_rate"] for class_id,params in context_dict["env_params"]["Y_params"].items()]
+# # plot the normalized MWN weights as a bar plot for each environment,a and plot the arrival rates
+# # in the secod column
+# fig, axes = plt.subplots(nrows=len(normalized_mwn_weights), ncols=2, figsize=(10, 10))
+# ax_row = -1
+# for env_id, weights in normalized_mwn_weights.items():
+#     ax_row +=1
+#     weights_ax = axes[ax_row][0]
+#     arrival_rates_ax = axes[ax_row][1]
+#     index = np.arange(1,weights.shape[0]+1)
+#     weights_ax.bar(index, weights)
+#     weights_ax.set_title(f"Environment {ax_row+1}: Normalized MWN Weights")
+#     weights_ax.set_ylim(0, 0.5)
+#
+#     arrival_rate = arrival_rates[ax_row]
+#     service_rate = service_rates[ax_row]
+#     normalized_arrival_rates = arrival_rate/np.array(service_rate)
+#     arrival_rates_ax.bar(index, normalized_arrival_rates)
+#     arrival_rates_ax.set_title(f"Environment {ax_row+1}: Arrival Rate/Service Rate")
+#     arrival_rates_ax.set_ylim(0, 0.5)
+#     arrival_rates_ax.set_xlabel("Class")
+#
+# fig.tight_layout()
+# plt.show()
+#

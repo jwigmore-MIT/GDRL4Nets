@@ -44,7 +44,7 @@ from copy import deepcopy
 from tensordict import TensorDict
 from torchrl.envs import Compose, ActionMask
 from torchrl_development.actors import create_independent_actor_critic
-
+from torchrl_development.SMNN import DeepSetScalableMonotonicNeuralNetwork as DSMNN
 """ Script Description
 This script is used to experiment with using DQN to solve for the optimal policy of SingleHop environments.
 Its mostly based off the dqn_atary.py script from torchrl library
@@ -449,6 +449,26 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
             actor_depth=cfg.agent.hidden_sizes.__len__(),
             actor_cells=cfg.agent.hidden_sizes[-1],
         )
+    if getattr(cfg.agent, "actor_type", "MLP") == "DSMNN":
+        nn = DSMNN(N,
+                    D,
+                    latent_dim = 64,
+                    deepset_width=16,
+                    deepset_out_dim=16,
+                    exp_unit_size= (64, 64),
+                    relu_unit_size = (64, 64),
+                    conf_unit_size = (64, 64),
+                    )
+        agent = create_actor_critic(
+            input_shape,
+            output_shape,
+            actor_nn=nn,
+            in_keys=["observation"],
+            action_spec=action_spec,
+            temperature=cfg.agent.temperature,
+
+        )
+
 
     if getattr(cfg.agent, "actor_type", "MLP") == "MLP_independent":
 

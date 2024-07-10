@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="d")
     parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH2u2") # or SH2u
     # parser.add_argument('--env_params', type=str, help='reference_to_context_set', default="SH1E") # or SH2u
-    parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_independent_PPO")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="DSMNN")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
@@ -60,7 +60,8 @@ if __name__ == "__main__":
                 "MLP_independent_PPO": 'MLP_Independent_PPO_settings.yaml',
                 "LMN_independent_PPO": 'LMN_Independent_PPO_settings.yaml',
                 "PMN_independent_PPO": 'PMN_Independent_PPO_settings.yaml',
-                "PMN_PPO": 'PMN_PPO_settings.yaml',}
+                "PMN_PPO": 'PMN_PPO_settings.yaml',
+                "DSMNN": 'DSMNN_PPO_settings.yaml',}
 
     context_set_jsons = {"SH3": "SH3_context_set_100_03251626.json",
                          "SH2u": "SH2u_context_set_10_03211514.json",
