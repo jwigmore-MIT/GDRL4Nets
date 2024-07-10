@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from typing import Union, Iterable, Sized, Tuple
-from DeepSets import create_deep_set_nn
+from torchrl_development.DeepSets import create_deep_set_nn
 
 
 def truncated_normal_(tensor, mean: float = 0., std: float = 1.):
