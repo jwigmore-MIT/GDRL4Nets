@@ -89,6 +89,15 @@ if __name__ == "__main__":
     cfg.context_set = args.context_set
     all_context_dicts = context_set['context_dicts']
 
+    if args.cfg:
+        for key_value in args.cfg:
+            keys, value = key_value
+            keys = keys.split('.')
+            target = cfg
+            for key in keys[:-1]:
+                target = getattr(target, key)
+            setattr(target, keys[-1], value)
+
     # env_params = parse_env_json(f"{args.env_params}.json")
 
     # Create the Training Env Generators
