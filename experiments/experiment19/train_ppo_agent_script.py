@@ -150,7 +150,7 @@ if __name__ == "__main__":
             experiment_name= experiment_name,
             wandb_kwargs={
                 "config": cfg.as_dict(),
-                "project": "Experiment19",
+                "project": "Experiment20",
             },
         )
 
