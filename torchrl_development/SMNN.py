@@ -212,7 +212,7 @@ class DeepSetScalableMonotonicNeuralNetwork(torch.nn.Module):
                  exp_unit: ActivationLayer = ExpUnit,
                  relu_unit: ActivationLayer = ReLUUnit,
                  conf_unit: ActivationLayer = ConfluenceUnit,
-                 fully_connected_layer: ActivationLayer = FCLayer):
+                 fully_connected_layer: ActivationLayer = FCLayer_notexp):
 
         super(DeepSetScalableMonotonicNeuralNetwork,self).__init__()
 
