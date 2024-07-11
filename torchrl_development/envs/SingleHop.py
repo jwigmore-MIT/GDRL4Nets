@@ -82,6 +82,9 @@ class SingleHop(EnvBase):
         # Whether or not the state includes arrival rates
         self.obs_lambda = net_para.get("obs_lambda", False)
 
+        # Whether or not the state includes capacity rates
+        self.obs_mu = net_para.get("obs_mu", False)
+
         # Add baseline lta performance for maxweight
         self.baseline_lta = net_para.get("baseline_lta", None)
 
@@ -254,6 +257,13 @@ class SingleHop(EnvBase):
                 shape=(len(self.nodes) - 1,),
                 dtype=torch.float
             ))
+        if self.obs_mu:
+            self.observation_spec.set("mu", BoundedTensorSpec(
+                low = 0,
+                high = 1000,
+                shape=(len(self.nodes) - 1,),
+                dtype=torch.float
+            ))
         if self.track_stdev:
             self.observation_spec.set("ta_stdev", UnboundedContinuousTensorSpec(
                 shape = (1,),
@@ -387,6 +397,8 @@ class SingleHop(EnvBase):
                 }, batch_size=[])
         if self.obs_lambda:
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
+        if self.obs_mu:
+            out.set("mu", torch.tensor(self.link_rates, dtype = torch.float))
         if self.track_stdev:
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
             out.set("ta_mean", torch.Tensor([self.time_avg_stats.mean]))
@@ -416,6 +428,8 @@ class SingleHop(EnvBase):
                          batch_size=[])
         if self.obs_lambda:
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
+        if self.obs_mu:
+            out.set("mu", torch.tensor(self.link_rates, dtype=torch.float))
         if self.track_stdev:
             # self.time_avg_stats.reset()
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))

@@ -103,10 +103,11 @@ if __name__ == "__main__":
     # Create the Training Env Generators
     training_make_env_parameters = {"graph": getattr(cfg.training_env, "graph", False),
                                     "observe_lambda": getattr(cfg.training_env, "observe_lambda", True),
+                                    "observe_mu": getattr(cfg.training_env, "observe_mu", True),
                                     "terminal_backlog": getattr(cfg.training_env, "terminal_backlog", None),
                                     "observation_keys": getattr(cfg.training_env, "observation_keys", ["Q", "Y"]),
                                     "observation_keys_scale": getattr(cfg.training_env, "observation_keys_scale", None),
-                                    "negative_keys": getattr(cfg.training_env, "negative_keys", ["Y"]),
+                                    "negative_keys": getattr(cfg.training_env, "negative_keys", ["mu"]),
                                     "symlog_obs": getattr(cfg.training_env, "symlog_obs", False),
                                     "symlog_reward": getattr(cfg.training_env, "symlog_reward", False),
                                     "inverse_reward": getattr(cfg.training_env, "inverse_reward", False),

@@ -40,6 +40,7 @@ def parse_env_json(rel_json_path = None, full_path = None, config_args = None):
 def make_env(env_params,
              graph= False,
              observe_lambda = False,
+             observe_mu = False,
              seed=0,
              device = None, # device is not used
              terminal_backlog=None,
@@ -72,6 +73,9 @@ def make_env(env_params,
     if observe_lambda and "lambda":
         env_params["obs_lambda"] = True
         if "lambda" not in observation_keys: observation_keys.append("lambda")
+    if observe_mu:
+        env_params["obs_mu"] = True
+        if "mu" not in observation_keys: observation_keys.append("mu")
 
     env_params["terminate_on_convergence"] = terminate_on_convergence
     env_params["convergence_threshold"] = convergence_threshold
