@@ -398,7 +398,7 @@ class SingleHop(EnvBase):
         if self.obs_lambda:
             out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
         if self.obs_mu:
-            out.set("mu", torch.tensor(self.link_rates, dtype = torch.float))
+            out.set("mu", 1/torch.tensor(self.link_rates, dtype = torch.float))
         if self.track_stdev:
             out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
             out.set("ta_mean", torch.Tensor([self.time_avg_stats.mean]))
