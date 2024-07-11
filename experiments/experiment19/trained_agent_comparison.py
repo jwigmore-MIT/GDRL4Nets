@@ -30,7 +30,8 @@ rollout_length =30000
 num_rollouts = 3
 env_generator_seed = 4162024
 lta_tds = {}
-test_context_set_path = 'SH2u2_context_set_20_07091947.json'
+# test_context_set_path = 'SH2u2_context_set_20_07091947.json'
+test_context_set_path = "SH3_context_set_100_03251626.json"
 context_set = json.load(open(test_context_set_path, 'rb'))
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -74,7 +75,7 @@ N = int(base_env.base_env.N)
 D = int(input_shape[0]/N)
 
 
-agent_dir = 'SH2u2_trained_agents'
+agent_dir = 'SH3_trained_agents'
 
 agent_dict = {}
 # iterate through all agents in agent_dir
@@ -176,8 +177,13 @@ ax.set_xticks(index)
 ax.set_xticklabels(context_ids)
 ax.set_xlabel("Training Environment")
 ax.set_ylabel("Mean LTA")
+ax.set_ylim(0,200)
 ax.legend()
 plt.show()
+
+results = {"lta_tds": lta_tds, "means": means, "stds": stds}
+with open(f"{agent_dir}/{agent_dir}_results.pkl", "wb") as f:
+    pickle.dump(results, f)
 # #
 # # plot again but then normalize by the max weight lta
 # for test_env_id in context_ids.values():
