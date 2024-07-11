@@ -153,9 +153,9 @@ def plot_single_mdp_policy(mdp, lim = 20):
     df["Action"] = df["Action"].apply(lambda x: np.argmax(x))
     df = df[(df["Y1"] == 1) & (df["Y2"] == 1)]
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    # plot_state_action_map(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], policy_type="PI",
-    #                       plot_type="Action", lim=lim)
-    plot_state_action_heatmap(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], lim=lim)
+    plot_state_action_map(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], policy_type="PI",
+                           plot_type="Action", lim=lim)
+    # plot_state_action_heatmap(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], lim=lim)
     ax.set_title(f"PI Policy for {mdp.name}")
     plt.show()
 

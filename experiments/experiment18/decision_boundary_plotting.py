@@ -49,7 +49,7 @@ mw_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
 #%% Now create an MDP from the generated environment
 mdp = SingleHopMDP(env, name = mdp_name, q_max = 30, value_iterator = 'minus')
 #%% Load MDP
-mdp.load_VI(f"saved_mdps/{mdp_name}_qmax30_discount0.99_VI_dict.p")
+mdp.load_VI(f"saved_mdps/{mdp_name}_qmax40_discount0.99_VI_dict.p")
 
 #%% Create a dataframe from the vi_policy
 """

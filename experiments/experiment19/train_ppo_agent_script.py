@@ -47,10 +47,10 @@ def smart_type(value):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
-    parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="d")
-    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH2u2") # or SH2u
+    parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
+    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="nSH2u") # or SH2u
     # parser.add_argument('--env_params', type=str, help='reference_to_context_set', default="SH1E") # or SH2u
-    parser.add_argument('--train_type', type=str, help='base configuration file', default="DSMNN")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
@@ -66,7 +66,8 @@ if __name__ == "__main__":
     context_set_jsons = {"SH3": "SH3_context_set_100_03251626.json",
                          "SH2u": "SH2u_context_set_10_03211514.json",
                          "SH2u2": "SH2u2_context_set_20_07091947.json",
-                         "SH4": "SH4_context_set_50_05160828.json"}
+                         "SH4": "SH4_context_set_50_05160828.json",
+                         "nSH2u": "nSH2u_context_set_l1_m3_s30.json"}
 
     train_sets = {"a": {"train": [0], "test": [7,8,9]}, # lta backlog = 135.10
                   "b": {"train": [0,1,2], "test": [7,8,9]}, # 53.94
