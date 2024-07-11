@@ -523,8 +523,14 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
             actor_depth=cfg.agent.hidden_sizes.__len__(),
             actor_cells=cfg.agent.hidden_sizes[-1],
         )
-
-
+    elif getattr(cfg.agent, "actor_type", "MLP") == "MWN":
+        agent = create_maxweight_actor_critic(
+            input_shape=base_env.observation_spec["observation"].shape,
+            in_keys=["Q", "Y", "lambda", "mu"],
+            action_spec=base_env.action_spec,
+            temperature=cfg.agent.temperature,
+            init_weights=torch.ones([1, N]) * cfg.agent.init_weight
+        )
     actor = agent.get_policy_operator().to(device)
     critic = agent.get_value_operator().to(device)
 

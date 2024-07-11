@@ -12,7 +12,7 @@ agent:
 
 # Environment
 training_env:
-  terminal_backlog: 100
+  terminal_backlog: 250
   inverse_reward: True
   negative_keys: ~
   symlog_obs: True
