@@ -6,6 +6,7 @@ agent:
   critic_type: MLP
   hidden_sizes: [64, 64]
   observe_lambda: True
+  observe_mu: True
   mask: True
   temperature: 0.1
 
