@@ -8,7 +8,7 @@ agent:
   observe_lambda: True
   observe_mu: True
   mask: True
-  temperature: 1
+  temperature: 0.1
 
 # Environment
 training_env:
