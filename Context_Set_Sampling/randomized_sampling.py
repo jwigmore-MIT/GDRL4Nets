@@ -29,10 +29,10 @@ def plot_sample(mean_lta, arrival_rates, service_rates, id):
     plt.show()
 
 # Define the environment parameters
-base_params = "SH2u"
+base_params = "SH4"
 env_params = parse_env_json(f"{base_params}.json")
 K = len(env_params["nodes"])-1
-lambda_max = 2
+lambda_max = 3
 mu_max = 3
 
 
@@ -41,11 +41,11 @@ lambda_range = np.linspace(0, lambda_max, 101)# arrival rates
 mu_range = np.linspace(0, mu_max, 101) # service rates
 
 # Define the number of samples to take
-num_samples = 10
+num_samples = 100
 valid_samples = 0
 invalid_samples = 0
 terminal_backlog = 300
-rollout_length = 20000
+rollout_length = 50000
 num_rollouts = 3
 
 # Create MaxWeight Actor
