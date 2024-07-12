@@ -43,8 +43,8 @@ agent_types = args.agent_types
 
 
 
-rollout_length = 20
-num_rollouts = 1
+rollout_length = 30000
+num_rollouts = 3
 env_generator_seed = 4162024
 lta_tds = {}
 # test_context_set_path = 'SH2u2_context_set_20_07091947.json'
