@@ -288,6 +288,8 @@ def create_independent_actor_critic(number_nodes,
         actor_network = IndependentNodeNetwork(actor_input_dimension, number_nodes,actor_depth, actor_cells, network_type, relu_max)
     elif type == 2:
         actor_network = IndependentNodeNetwork2(number_nodes, actor_depth, actor_cells)
+    elif type == 3:
+        actor_network = SharedIndependentNodeNetwork(actor_input_dimension, number_nodes,actor_depth, actor_cells, network_type, relu_max)
 
     actor_module = Ind_NN_Actor(actor_network, N = number_nodes, d = actor_input_dimension, in_keys=actor_in_keys, out_keys=["logits"])
 
@@ -409,6 +411,78 @@ class IndependentNodeNetwork(nn.Module):
         output_tensor = torch.stack(output_list, dim=-2)
 
         return output_tensor.squeeze(-1)
+
+
+class SharedIndependentNodeNetwork(nn.Module):
+    """
+    The state-space is broken up into (s_11, s_12, ... s_1d, s_21, s_22, ... s_2d, ... s_N1, s_N2, ... s_Nd)
+    We want to run each s_i1:s_id through a shared neural network independently
+    e.g. We get input s, and must reshape it to (B, D, N) where N is the number of nodes and D is the dimension of each node
+    Then we pass each (B, D) tensor through the same neural network to get (B, N) logits
+    Then take the softmax over dimension 1 to get the probabalities
+    """
+    def __init__(self, input_dim, num_nodes, depth, cells, network_type = "MLP", relu_max = 1):
+        super(SharedIndependentNodeNetwork, self).__init__()
+        self.input_dim = input_dim
+        self.num_nodes = num_nodes
+        # create num_nodes independent neural networks, each with depth and cells
+        if network_type == "MLP":
+            self.module = MLP(in_features=input_dim,
+                                                  out_features=1,
+                                                    depth=depth,
+                                                    num_cells=cells,
+                                                    activation_class=nn.ReLU,
+                                                    )
+        # elif network_type == "LMN":
+        #     module_list = []
+        #     for _ in range(num_nodes):
+        #         lip_nn = torch.nn.Sequential(
+        #         lmn.LipschitzLinear(input_dim, cells, kind="one", lipschitz_const=1),
+        #         lmn.GroupSort(2),
+        #         lmn.LipschitzLinear(cells,  cells, kind="one", lipschitz_const=1),
+        #         lmn.GroupSort(2),
+        #         lmn.LipschitzLinear(cells, 1, kind="one", lipschitz_const=1))
+        #         mono_nn = lmn.MonotonicWrapper(lip_nn, monotonic_constraints=[1]*input_dim)
+        #         module_list.append(mono_nn)
+        #     self.node_nns= torch.nn.ModuleList(module_list)
+        elif network_type == "PMN":
+            from torchrl_development.SMNN import PureMonotonicNeuralNetwork as PMN
+            from copy import deepcopy
+
+            self.module = PMN(input_size = input_dim, output_size = 1, hidden_sizes = [cells]*depth, relu_max = relu_max)
+
+
+        self.bias_0 = nn.Parameter(torch.ones(1, 1))
+    def forward(self, X):
+        """
+        X will be a B x N x d tensor where N = self.num_nodes and D = input_dim
+        Want to pass each B x 1  x d tensor through the neural shared self.module
+        This will produce a B x N x 1 tensor of logits
+
+        :param X:
+        :return:
+        """
+        # Handle the case where X is a N x D tensor
+        if X.dim() == 2:
+            X.unsqueeze_(0)
+
+        # Create a B x 1 Tensor of zeros
+        zeros = torch.zeros(X.shape[0], 1)
+        # Initialize an empty list to store the output of each node's neural network
+        output_list = [zeros]
+
+        # Pass the node inputs through the shared neural network
+        for i in range(self.num_nodes):
+            output_list.append(self.module(X[:, :, i]))
+
+
+
+
+        # Stack the outputs to form a tensor of shape (B, N+1)
+        output_tensor = torch.stack(output_list, dim=-2)
+
+        return output_tensor.squeeze(-1)
+
 
 class IndependentLMNNetwork(nn.Module):
     """
