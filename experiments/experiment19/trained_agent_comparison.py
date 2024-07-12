@@ -31,13 +31,15 @@ num_rollouts = 3
 env_generator_seed = 4162024
 lta_tds = {}
 # test_context_set_path = 'SH2u2_context_set_20_07091947.json'
-test_context_set_path = "SH3_context_set_100_03251626.json"
+#test_context_set_path = "SH3_context_set_100_03251626.json"
+test_context_set_path = "n2SH2u_context_set_l1_m3_s30.json"
 context_set = json.load(open(test_context_set_path, 'rb'))
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 pmn_cfg = load_config(os.path.join(SCRIPT_PATH, 'PMN_Independent_PPO_settings.yaml'))
 mlp_cfg = load_config(os.path.join(SCRIPT_PATH, 'MLP_PPO_settings.yaml'))
+
 
 # Create environment generator
 # make_env_parameters = {"graph": getattr(pmn_cfg.training_env, "graph", False),
@@ -55,10 +57,11 @@ mlp_cfg = load_config(os.path.join(SCRIPT_PATH, 'MLP_PPO_settings.yaml'))
 
 make_env_parameters = {"graph": getattr(mlp_cfg.training_env, "graph", False),
                                     "observe_lambda": getattr(mlp_cfg.training_env, "observe_lambda", True),
+                                    "observe_mu": getattr(mlp_cfg.training_env, "observe_mu", True),
                                     "terminal_backlog": None,
                                     "observation_keys": getattr(mlp_cfg.training_env, "observation_keys", ["Q", "Y"]),
                                     "observation_keys_scale": getattr(mlp_cfg.training_env, "observation_keys_scale", None),
-                                    "negative_keys": getattr(mlp_cfg.training_env, "negative_keys", ["Y"]),
+                                    "negative_keys": getattr(mlp_cfg.training_env, "negative_keys", None),
                                     "symlog_obs": getattr(mlp_cfg.training_env, "symlog_obs", False),
                                     "symlog_reward": getattr(mlp_cfg.training_env, "symlog_reward", False),
                                     "inverse_reward": getattr(mlp_cfg.training_env, "inverse_reward", False),
@@ -75,7 +78,7 @@ N = int(base_env.base_env.N)
 D = int(input_shape[0]/N)
 
 
-agent_dir = 'SH3_trained_agents'
+agent_dir = 'n2SH2u_trained_agents'
 
 agent_dict = {}
 # iterate through all agents in agent_dir
@@ -88,10 +91,10 @@ for file in os.listdir(agent_dir):
         if agent_type == "MWN":
             agent = create_maxweight_actor_critic(
                 input_shape,
-                output_shape,
-                in_keys=["Q", "Y"],
+                in_keys=["Q", "Y", "lambda", "mu"],
                 action_spec=base_env.action_spec,
                 temperature=5,
+                init_weights=torch.ones([1, N])
             )
         elif agent_type == "MLP":
             agent = create_actor_critic(
@@ -150,12 +153,15 @@ with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
             # reset env_generator seed
             env_generator.reseed(env_generator_seed)
 
-
+results = {"lta_tds": lta_tds, "means": means, "stds": stds}
+with open(f"{agent_dir}/{agent_dir}_results.pkl", "wb") as f:
+    pickle.dump(results, f)
 """ Plot results
 The results keys are (testing_env_id, agent_type, training_env_id)
 We want a single bar plot for each testing_env_id with a bar for each agent_type, training_env_id combination
 Each bar has the mean lta of the agent on the testing environment with error bars representing the standard deviation
 """
+
 
 
 bar_width = 0.35
@@ -181,9 +187,9 @@ ax.set_ylim(0,200)
 ax.legend()
 plt.show()
 
-results = {"lta_tds": lta_tds, "means": means, "stds": stds}
-with open(f"{agent_dir}/{agent_dir}_results.pkl", "wb") as f:
-    pickle.dump(results, f)
+# results = {"lta_tds": lta_tds, "means": means, "stds": stds}
+# with open(f"{agent_dir}/{agent_dir}_results.pkl", "wb") as f:
+#     pickle.dump(results, f)
 # #
 # # plot again but then normalize by the max weight lta
 # for test_env_id in context_ids.values():
