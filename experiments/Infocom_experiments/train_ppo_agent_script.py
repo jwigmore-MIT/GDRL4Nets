@@ -47,8 +47,10 @@ def smart_type(value):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
-    parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
-    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="n2SH2u") # or SH2u
+    # parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
+    # add training code which will be a tuple of integers (start, number)
+    parser.add_argument('--training_code', type = tuple, help='range of integers to train on', default=(0 , 5))
+    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH4") # or SH2u
     # parser.add_argument('--env_params', type=str, help='reference_to_context_set', default="SH1E") # or SH2u
     parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_shared_PPO")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
@@ -65,10 +67,8 @@ if __name__ == "__main__":
                 "MWN": 'PPO_MWN_training_params.yaml',
                 "PMN_shared_PPO": 'PMN_Shared_PPO_settings.yaml',}
 
-    context_set_jsons = {"SH3": "SH3_context_set_100_03251626.json",
-                         "SH2u": "SH2u_context_set_10_03211514.json",
-                         "SH2u2": "SH2u2_context_set_20_07091947.json",
-                         "SH4": "SH4_context_set_50_05160828.json",
+    context_set_jsons = {
+                         "SH4": "SH4_context_set_l3_m3_s100.json",
                          "nSH2u": "nSH2u_context_set_l1_m3_s30.json",
                          "n2SH2u": "n2SH2u_context_set_l1_m3_s30.json"}
 
@@ -77,6 +77,14 @@ if __name__ == "__main__":
                   "c": {"train": [0,1,2,3,4,5], "test": [7,8,9]},
                   "d": {"train": [0], "test": []},
                   "e": {"train": [0, 9, 19], "test": []}} # 12.048
+
+    # instead of training sets want a training code which is a tuple of integers (start, number)
+    # the straining set will be the range of integers from start to start + number
+    # there will be no test set
+    args = parser.parse_args()
+
+    training_env_ind = range(args.training_code[0], args.training_code[0] + args.training_code[1])
+
 
     args = parser.parse_args()
 
@@ -122,7 +130,7 @@ if __name__ == "__main__":
                                     "reward_scale": getattr(cfg.training_env, "reward_scale", 1.0),
                                     "stat_window_size": getattr(cfg.training_env, "stat_window_size", 5000),}
 
-    training_env_ind = train_sets[args.training_set]["train"]
+    # training_env_ind = train_sets[args.training_set]["train"]
 
     training_env_generator_input_params = {"context_dicts": {i: all_context_dicts[str(i)] for i in training_env_ind},
                                            "num_envs": len(training_env_ind), }
@@ -134,7 +142,7 @@ if __name__ == "__main__":
 
     # Create Test Env Generators
     test_make_env_parameters = training_make_env_parameters.copy()
-    test_env_ind = train_sets[args.training_set]["test"]
+    test_env_ind = []
     test_env_ind.extend(training_env_ind)
 
     test_env_generator_input_params = {"context_dicts": {i: all_context_dicts[str(i)] for i in test_env_ind},
@@ -145,7 +153,7 @@ if __name__ == "__main__":
                                       env_generator_seed=cfg.training_env.env_generator_seed, )
 
     # Create Logger
-    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}_{args.training_set}")
+    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}_({args.training_code[0]}_{args.training_code[1]})")
     logger = get_logger(
             "wandb",
             logger_name="..\\logs",
