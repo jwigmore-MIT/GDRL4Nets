@@ -5,10 +5,10 @@ import numpy as np
 import os
 import matplotlib as mpl
 
-context_set_folder = "n2SH2u"
-context_set_file_name = "n2SH2u_context_set_l1_m3_s30.json"
-trained_agent_folder = os.path.join("trained_agents",context_set_folder)
-test_context_set_path = os.path.join(trained_agent_folder, context_set_file_name)
+training_set_folder = "SH4_0-5"
+context_set_file_name = "SH4_context_set_l3_m3_s100.json"
+trained_agent_folder = os.path.join("trained_agents", training_set_folder)
+test_context_set_path = os.path.join("context_sets", context_set_file_name)
 context_set = json.load(open(test_context_set_path, 'rb'))
 training_ids = list(range(0, 6))
 test_ids = [x for x in range(0,context_set["num_envs"]) if x not in training_ids]
@@ -60,5 +60,5 @@ ax.legend()
 
 plt.show()
 # Save figure as a pdf
-fig.savefig(os.path.join(trained_agent_folder, f"{context_set_folder}_comparison.pdf"), bbox_inches='tight')
+fig.savefig(os.path.join(trained_agent_folder, f"{training_set_folder}_comparison.pdf"), bbox_inches='tight')
 

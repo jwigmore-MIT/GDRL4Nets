@@ -17,9 +17,9 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Test Agents')
 # add argument for context set folder
-parser.add_argument('--context_set_folder', type=str, help='folder containing context set', default="n2SH2u")
+parser.add_argument('--training_set_folder', type=str, help='folder containing agents trained according to a particular training set', default="SH4_0-5")
 # add argument for context set file name
-parser.add_argument('--context_set_file_name', type=str, help='file name of context set', default="n2SH2u_context_set_l1_m3_s30.json")
+parser.add_argument('--context_set_file_name', type=str, help='file name of context set', default="SH4_context_set_l3_m3_s100.json")
 # add argument for agent types (list of strings)
 parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["MWN", "MLP", "PMN"])
 
@@ -37,20 +37,20 @@ Want to asses the performance of the MWN and MLP agents on all three SH3 context
 
 
 
-context_set_folder = args.context_set_folder
+training_set_folder = args.training_set_folder
 context_set_file_name = args.context_set_file_name
 agent_types = args.agent_types
 
 
 
-rollout_length = 30000
-num_rollouts = 3
+rollout_length = 20
+num_rollouts = 1
 env_generator_seed = 4162024
 lta_tds = {}
 # test_context_set_path = 'SH2u2_context_set_20_07091947.json'
 #test_context_set_path = "SH3_context_set_100_03251626.json"
-trained_agent_folder = os.path.join("trained_agents",context_set_folder)
-test_context_set_path = os.path.join(trained_agent_folder, context_set_file_name)
+trained_agent_folder = os.path.join("trained_agents",training_set_folder)
+test_context_set_path = os.path.join("context_sets", context_set_file_name)
 context_set = json.load(open(test_context_set_path, 'rb'))
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
