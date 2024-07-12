@@ -8,7 +8,7 @@ agent:
   observe_lambda: True
   observe_mu: True
   mask: True
-  temperature: 0.1
+  temperature: 1
 
 # Environment
 training_env:
@@ -60,7 +60,7 @@ loss:
   critic_coef: 0.5
   entropy_coef: 0.01
   loss_critic_type: l2
-  norm_advantage: True
+  norm_advantage: False
 
 eval:
   num_eval_envs: 3
