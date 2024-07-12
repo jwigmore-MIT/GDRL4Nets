@@ -153,7 +153,7 @@ if __name__ == "__main__":
                                       env_generator_seed=cfg.training_env.env_generator_seed, )
 
     # Create Logger
-    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}-({args.training_code[0]}_{args.training_code[1]}")
+    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}_{args.training_code[0]}_{args.training_code[1]}")
     logger = get_logger(
             "wandb",
             logger_name="..\\logs",
