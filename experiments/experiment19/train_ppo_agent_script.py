@@ -74,7 +74,8 @@ if __name__ == "__main__":
     train_sets = {"a": {"train": [0], "test": [7,8,9]}, # lta backlog = 135.10
                   "b": {"train": [0,1,2], "test": [7,8,9]}, # 53.94
                   "c": {"train": [0,1,2,3,4,5], "test": [7,8,9]},
-                  "d": {"train": [0], "test": []}} # 12.048
+                  "d": {"train": [0], "test": []},
+                  "e": {"train": [0, 9, 19], "test": []}} # 12.048
 
     args = parser.parse_args()
 
