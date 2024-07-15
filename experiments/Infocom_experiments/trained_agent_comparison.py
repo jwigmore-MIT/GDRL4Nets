@@ -17,11 +17,11 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Test Agents')
 # add argument for context set folder
-parser.add_argument('--training_set_folder', type=str, help='folder containing agents trained according to a particular training set', default="SH4_0-5")
+parser.add_argument('--training_set_folder', type=str, help='folder containing agents trained according to a particular training set', default="SH4_0-5_b")
 # add argument for context set file name
 parser.add_argument('--context_set_file_name', type=str, help='file name of context set', default="SH4_context_set_l3_m3_s100.json")
 # add argument for agent types (list of strings)
-parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["MWN", "MLP", "PMN"])
+parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["MLP"])
 
 args = parser.parse_args()
 
