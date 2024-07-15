@@ -21,7 +21,7 @@ parser.add_argument('--training_set_folder', type=str, help='folder containing a
 # add argument for context set file name
 parser.add_argument('--context_set_file_name', type=str, help='file name of context set', default="SH4_context_set_l3_m3_s100.json")
 # add argument for agent types (list of strings)
-parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["MLP"])
+parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["PMN"])
 
 args = parser.parse_args()
 
