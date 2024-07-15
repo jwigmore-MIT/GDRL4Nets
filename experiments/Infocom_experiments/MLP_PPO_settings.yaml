@@ -4,9 +4,9 @@ device: null
 agent:
   actor_type: MLP
   critic_type: MLP
-  hidden_sizes: [128, 128]
+  hidden_sizes: [64, 64]
   observe_lambda: True
-  observe_mu: True
+  observe_mu: False
   mask: True
   temperature: 0.1
 
