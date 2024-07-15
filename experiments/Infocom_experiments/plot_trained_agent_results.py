@@ -5,7 +5,7 @@ import numpy as np
 import os
 import matplotlib as mpl
 
-training_set_folder = "SH4_0-5"
+training_set_folder = "SH4_65_5"
 context_set_file_name = "SH4_context_set_l3_m3_s100.json"
 trained_agent_folder = os.path.join("trained_agents", training_set_folder)
 test_context_set_path = os.path.join("context_sets", context_set_file_name)
@@ -50,6 +50,14 @@ for agent, agent_results in results.items():
     agent_results["test_set_performance_excluding_outliers"] = np.mean([x for x in agent_norm_means if x < 5])
     agent_results["context_set_performance"] = np.mean(agent_norm_means)
     agent_results["context_set_performance_excluding_outliers"] = np.mean([x for x in agent_norm_means if x < 5])
+    print('*'*50)
+    print(f"{agent} training set performance: {agent_results['training_set_performance']}")
+    print(f"{agent} test set performance: {agent_results['test_set_performance']}")
+    print(f"{agent} context set performance: {agent_results['context_set_performance']}")
+    print(f"{agent} test set performance excluding outliers: {agent_results['test_set_performance_excluding_outliers']}")
+    print(f"{agent} context set performance excluding outliers: {agent_results['context_set_performance_excluding_outliers']}")
+    print("\n")
+
 ax.set_xticks(index)  # Set x-ticks at the center of each group of bars
 ax.hlines(1, -3*bar_width, len(mw_backlogs)*1.5, colors='r', linestyles='dashed', label="MaxWeight")  # Add a horizontal line at y=1
 ax.set_xticklabels(context_set["context_dicts"].keys(), rotation=45)  # Rotate x labels for better visibility
