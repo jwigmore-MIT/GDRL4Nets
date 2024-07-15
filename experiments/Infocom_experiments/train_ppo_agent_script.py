@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument('--training_code', type = tuple, help='range of integers to train on', default=(0,10))
     parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH4") # or SH2u
     # parser.add_argument('--env_params', type=str, help='reference_to_context_set', default="SH1E") # or SH2u
-    parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_shared_PPO")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',

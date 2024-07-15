@@ -6,7 +6,7 @@ agent:
   critic_type: MLP
   hidden_sizes: [64, 64]
   observe_lambda: True
-  observe_mu: False
+  observe_mu: True
   mask: True
   temperature: 0.1
 
@@ -41,7 +41,7 @@ logger:
 
 # Optim
 optim:
-  lr: 3.0e-4
+  lr: 3.0e-3
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
