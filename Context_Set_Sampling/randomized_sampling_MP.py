@@ -30,7 +30,7 @@ def plot_sample(mean_lta, arrival_rates, service_rates, id):
     plt.show()
 
 # Define the environment parameters
-base_params = "MP4"
+base_params = "MP5"
 env_params = parse_env_json(f"{base_params}.json")
 env_type = env_params["env_type"]
 K = env_params["servers"]
