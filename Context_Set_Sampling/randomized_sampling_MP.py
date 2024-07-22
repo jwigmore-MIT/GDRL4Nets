@@ -30,7 +30,7 @@ def plot_sample(mean_lta, arrival_rates, service_rates, id):
     plt.show()
 
 # Define the environment parameters
-base_params = "MP2"
+base_params = "MP4"
 env_params = parse_env_json(f"{base_params}.json")
 env_type = env_params["env_type"]
 K = env_params["servers"]
@@ -44,7 +44,7 @@ mu_max = 1
 mu_range = np.linspace(0, mu_max, 101) # service rates
 
 # Define the number of samples to take
-num_samples = 10
+num_samples = 100
 valid_samples = 0
 invalid_samples = 0
 terminal_backlog = 300

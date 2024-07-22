@@ -1,0 +1,32 @@
+{
+  "problem_instance": {
+    "name": "Multipath2",
+    "env_type": "MP",
+    "arrival_distribution": "poisson",
+    "service_distribution": "poisson",
+    "servers": 6,
+    "X_params": {
+        "arrival_rate": 1
+    },
+    "Y_params": {
+      "1": {
+        "service_rate": 0.2
+      },
+      "2": {
+          "service_rate": 0.1
+      },
+      "3": {
+        "service_rate": 0.25
+      },
+      "4": {
+          "service_rate": 0.15
+      },
+        "5": {
+            "service_rate": 0.2
+        },
+        "6": {
+            "service_rate": 0.1
+        }
+    }
+  }
+}
