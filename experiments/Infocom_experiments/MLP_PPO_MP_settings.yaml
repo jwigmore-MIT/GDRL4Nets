@@ -14,13 +14,15 @@ agent:
 training_env:
   terminal_backlog: 250
   inverse_reward: True
-  negative_keys: ~
+  negative_keys: [ "Q" ]
   symlog_obs: True
   cost_based: False
   symlog_reward: False
   env_generator_seed: 19970503
   stat_window_size: 5000
   observation_keys_scale: ~
+  observation_keys: [ "Q","Y" ]
+
 
 
 
