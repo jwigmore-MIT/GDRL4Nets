@@ -106,7 +106,7 @@ while valid_samples < num_samples:
         ltas.append(mean_lta[-1])
         contexts[str(valid_samples-1)] = {"arrival_rates": arrival_rates, "service_rates": service_rates,
                                         "env_params": new_env_params, "lta": mean_lta[-1]}
-        plot_sample(mean_lta, arrival_rates, service_rates, valid_samples)
+        # plot_sample(mean_lta, arrival_rates, service_rates, valid_samples)
 
 json_dict = {"context_dicts": contexts, "ltas": ltas, "num_envs": num_samples}
 
