@@ -5,8 +5,8 @@ import numpy as np
 import os
 import matplotlib as mpl
 
-training_set_folder = "SH4_0-5_b"
-context_set_file_name = "SH4_context_set_l3_m3_s100.json"
+training_set_folder = "MP2_7-3"
+context_set_file_name = "MP2_context_set_l3_m1_s10.json"
 trained_agent_folder = os.path.join("trained_agents", training_set_folder)
 test_context_set_path = os.path.join("context_sets", context_set_file_name)
 context_set = json.load(open(test_context_set_path, 'rb'))
@@ -16,6 +16,8 @@ test_ids = [x for x in range(0,context_set["num_envs"]) if x not in training_ids
 # iterate through each folder in the trained_agents folder and get the results from the respective pickle file
 results = {}
 for folder in os.listdir(trained_agent_folder):
+    # if folder == "PMN":
+    #     continue
     if os.path.isdir(os.path.join(trained_agent_folder, folder)):
         results[folder] = pickle.load(open(os.path.join(trained_agent_folder, folder, f"{folder}_results.pkl"), "rb"))
 

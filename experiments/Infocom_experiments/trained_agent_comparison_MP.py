@@ -17,11 +17,11 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Test Agents')
 # add argument for context set folder
-parser.add_argument('--training_set_folder', type=str, help='folder containing agents trained according to a particular training set', default="SH4_0-5_b")
+parser.add_argument('--training_set_folder', type=str, help='folder containing agents trained according to a particular training set', default="MP2_7-3")
 # add argument for context set file name
-parser.add_argument('--context_set_file_name', type=str, help='file name of context set', default="SH4_context_set_l3_m3_s100.json")
+parser.add_argument('--context_set_file_name', type=str, help='file name of context set', default="MP2_context_set_l3_m1_s10.json")
 # add argument for agent types (list of strings)
-parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["PMN"])
+parser.add_argument('--agent_types', nargs='+', type=str, help='list of agent types', default=["MLP"])
 
 args = parser.parse_args()
 
@@ -55,18 +55,18 @@ context_set = json.load(open(test_context_set_path, 'rb'))
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
-pmn_cfg = load_config(os.path.join(SCRIPT_PATH, 'PMN_Shared_PPO_settings_MP.yaml'))
-mlp_cfg = load_config(os.path.join(SCRIPT_PATH, 'MLP_PPO_settings_MP.yaml'))
+pmn_cfg = load_config(os.path.join(SCRIPT_PATH, 'PMN_Shared_PPO_MP_settings.yaml'))
+mlp_cfg = load_config(os.path.join(SCRIPT_PATH, 'MLP_PPO_MP_settings.yaml'))
 
 
 
 make_env_parameters = {"graph": False,
-                                    "observe_lambda": True,
+                                    "observe_lambda": False,
                                     "observe_mu": True,
                                     "terminal_backlog": None,
                                     "observation_keys": ["Q", "Y"],
                                     "observation_keys_scale": None,
-                                    "negative_keys": None,
+                                    "negative_keys": ["Q"],
                                     "symlog_obs": True,
                                     "symlog_reward": False,
                                     "inverse_reward": True,
@@ -119,7 +119,7 @@ for agent_type in agent_types:
     elif agent_type == "PMN":
         agent = create_independent_actor_critic(number_nodes=N,
                                                 actor_input_dimension=D,
-                                                actor_in_keys=["Q", "Y", "lambda"],
+                                                actor_in_keys=["Q", "Y", "lambda", "mu"],
                                                 critic_in_keys=["observation"],
                                                 action_spec=action_spec,
                                                 temperature=pmn_cfg.agent.temperature,
@@ -127,7 +127,9 @@ for agent_type in agent_types:
                                                 actor_cells=pmn_cfg.agent.hidden_sizes[-1],
                                                 type=3,
                                                 network_type="PMN",
-                                                relu_max=getattr(pmn_cfg, "relu_max", 10), )
+                                                relu_max=getattr(pmn_cfg, "relu_max", 10),
+                                                add_zero = False
+                                                )
 
     agent.load_state_dict(torch.load(os.path.join(agent_dir, agent_file)))
     # Store agents
