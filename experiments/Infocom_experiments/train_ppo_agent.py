@@ -419,7 +419,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
     output_shape = base_env.action_spec.space.n
     action_spec = base_env.action_spec
     N = int(base_env.base_env.N)
-    D = int(input_shape[0]/N)
+    D = int(input_shape[0]//N)
    # create actor and critic
     if getattr(cfg.agent, "actor_type", "MLP") == "MLP":
         agent = create_actor_critic(
@@ -509,7 +509,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
     elif getattr(cfg.agent, "actor_type", "MLP") == "PMN_shared":
         agent = create_independent_actor_critic(number_nodes=N,
                                                 actor_input_dimension=D,
-                                                actor_in_keys=["Q", "Y", "lambda"],
+                                                actor_in_keys=["Q", "Y", "lambda", "mu"],
                                                 critic_in_keys=["observation"],
                                                 action_spec=action_spec,
                                                 temperature=cfg.agent.temperature,
@@ -517,6 +517,19 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
                                                 actor_cells=cfg.agent.hidden_sizes[-1],
                                                 type=3,
                                                 network_type="PMN",
+                                                relu_max=getattr(cfg, "relu_max", 10),
+                                                add_zero = base_env.base_env.__str__() != 'MultipathRouting()')
+    elif getattr(cfg.agent, "actor_type", "MLP") == "SMN_shared":
+        agent = create_independent_actor_critic(number_nodes=N,
+                                                actor_input_dimension=D,
+                                                actor_in_keys=["Q", "Y", "lambda", "mu"],
+                                                critic_in_keys=["observation"],
+                                                action_spec=action_spec,
+                                                temperature=cfg.agent.temperature,
+                                                actor_depth=cfg.agent.hidden_sizes.__len__(),
+                                                actor_cells=cfg.agent.hidden_sizes[-1],
+                                                type=3,
+                                                network_type="SMN",
                                                 relu_max=getattr(cfg, "relu_max", 10), )
 
     elif getattr(cfg.agent, "actor_type", "MLP") == "PMN":
@@ -534,6 +547,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
             temperature=cfg.agent.temperature,
             actor_depth=cfg.agent.hidden_sizes.__len__(),
             actor_cells=cfg.agent.hidden_sizes[-1],
+
         )
     elif getattr(cfg.agent, "actor_type", "MLP") == "MWN":
         agent = create_maxweight_actor_critic(
@@ -562,6 +576,7 @@ def train_ppo_agent(cfg, training_env_generator, eval_env_generator, device, log
                                 "context_id": i}
 
     if "PMN" not in getattr(cfg.agent, "actor_type", "MLP") and "LMN" not in getattr(cfg.agent, "actor_type", "MLP"):
+
         collector = MultiSyncDataCollector(
             create_env_fn= make_env_funcs,
             policy=agent.get_policy_operator(),

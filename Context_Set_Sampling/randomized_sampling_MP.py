@@ -1,5 +1,6 @@
 import numpy as np
 from torchrl_development.maxweight import MaxWeightActor
+from torchrl_development.shortest_queue import ShortestQueueActor
 from torchrl_development.envs.env_generators import make_env, parse_env_json
 from torchrl_development.utils.metrics import compute_lta
 from copy import deepcopy
@@ -29,20 +30,21 @@ def plot_sample(mean_lta, arrival_rates, service_rates, id):
     plt.show()
 
 # Define the environment parameters
-base_params = "SH4"
+base_params = "MP2"
 env_params = parse_env_json(f"{base_params}.json")
 env_type = env_params["env_type"]
-K = len(env_params["nodes"])-1
+K = env_params["servers"]
 lambda_max = 3
-mu_max = 3
+lambda_min=2
+mu_max = 1
 
 
 # Define the range of arrival rates and service rates
-lambda_range = np.linspace(0, lambda_max, 101)# arrival rates
+# lambda_range = np.linspace(lambda_min, lambda_max, 101)# arrival rates
 mu_range = np.linspace(0, mu_max, 101) # service rates
 
 # Define the number of samples to take
-num_samples = 100
+num_samples = 10
 valid_samples = 0
 invalid_samples = 0
 terminal_backlog = 300
@@ -50,7 +52,7 @@ rollout_length = 50000
 num_rollouts = 3
 
 # Create MaxWeight Actor
-max_weight_actor = MaxWeightActor(in_keys=["Q", "Y"], out_keys=["action"])
+sq_actor = ShortestQueueActor(in_keys=["Q"], out_keys=["action"])
 
 # Create dicitonary to store the samples
 context_set_name = f"{base_params}_context_set_l{lambda_max}_m{mu_max}_s{num_samples}.json"
@@ -60,13 +62,14 @@ pbar = tqdm(total=num_samples)
 while valid_samples < num_samples:
     pbar.set_postfix({"valid_samples": valid_samples, "invalid_samples": invalid_samples})
     # Generate random arrival rates and service rates
-    arrival_rates = np.random.choice(lambda_range, size=K)
+    arrival_rates = np.array([1])
     service_rates = np.random.choice(mu_range, size=K)
-    if (arrival_rates > service_rates).any():
+    if arrival_rates > service_rates.sum():
         continue
     new_env_params = deepcopy(env_params)
+    new_env_params["X_params"]["arrival_rate"] = arrival_rates
+
     for i in range(K):
-        new_env_params["X_params"][str(i+1)]["arrival_rate"] = arrival_rates[i]
         new_env_params["Y_params"][str(i+1)]["service_rate"] = service_rates[i]
     env_ltas = []
     for i in range(num_rollouts):
@@ -81,7 +84,7 @@ while valid_samples < num_samples:
                      convergence_threshold=0.001,
                      terminate_on_lta_threshold=False)
 
-        td = env.rollout(policy = max_weight_actor, max_steps=rollout_length)
+        td = env.rollout(policy = sq_actor, max_steps=rollout_length)
         if td["next", "backlog"][-1] >= terminal_backlog:
             invalid_samples+=1
             break

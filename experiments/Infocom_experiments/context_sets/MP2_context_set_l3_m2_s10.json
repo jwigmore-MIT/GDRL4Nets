@@ -1,0 +1,397 @@
+{
+  "context_dicts": {
+    "0": {
+      "arrival_rates": [
+        2.2199999999999998
+      ],
+      "service_rates": [
+        1.96,
+        0.14,
+        0.98,
+        0.2
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            2.2199999999999998
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 1.96
+          },
+          "2": {
+            "service_rate": 0.14
+          },
+          "3": {
+            "service_rate": 0.98
+          },
+          "4": {
+            "service_rate": 0.2
+          }
+        }
+      },
+      "lta": 11.500206666666665
+    },
+    "1": {
+      "arrival_rates": [
+        0.72
+      ],
+      "service_rates": [
+        0.98,
+        1.6400000000000001,
+        1.04,
+        1.76
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            0.72
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.98
+          },
+          "2": {
+            "service_rate": 1.6400000000000001
+          },
+          "3": {
+            "service_rate": 1.04
+          },
+          "4": {
+            "service_rate": 1.76
+          }
+        }
+      },
+      "lta": 1.24274497587103
+    },
+    "2": {
+      "arrival_rates": [
+        0.6599999999999999
+      ],
+      "service_rates": [
+        1.28,
+        1.94,
+        1.36,
+        1.62
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            0.6599999999999999
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 1.28
+          },
+          "2": {
+            "service_rate": 1.94
+          },
+          "3": {
+            "service_rate": 1.36
+          },
+          "4": {
+            "service_rate": 1.62
+          }
+        }
+      },
+      "lta": 0.9898705141902373
+    },
+    "3": {
+      "arrival_rates": [
+        0.72
+      ],
+      "service_rates": [
+        0.58,
+        0.46,
+        1.58,
+        0.98
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            0.72
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.58
+          },
+          "2": {
+            "service_rate": 0.46
+          },
+          "3": {
+            "service_rate": 1.58
+          },
+          "4": {
+            "service_rate": 0.98
+          }
+        }
+      },
+      "lta": 1.8985644773195016
+    },
+    "4": {
+      "arrival_rates": [
+        0.54
+      ],
+      "service_rates": [
+        1.58,
+        0.58,
+        1.56,
+        1.94
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            0.54
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 1.58
+          },
+          "2": {
+            "service_rate": 0.58
+          },
+          "3": {
+            "service_rate": 1.56
+          },
+          "4": {
+            "service_rate": 1.94
+          }
+        }
+      },
+      "lta": 0.9487938543935449
+    },
+    "5": {
+      "arrival_rates": [
+        1.8599999999999999
+      ],
+      "service_rates": [
+        0.04,
+        0.14,
+        1.36,
+        1.1400000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            1.8599999999999999
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.04
+          },
+          "2": {
+            "service_rate": 0.14
+          },
+          "3": {
+            "service_rate": 1.36
+          },
+          "4": {
+            "service_rate": 1.1400000000000001
+          }
+        }
+      },
+      "lta": 13.515333333333333
+    },
+    "6": {
+      "arrival_rates": [
+        2.6399999999999997
+      ],
+      "service_rates": [
+        1.3800000000000001,
+        1.32,
+        0.56,
+        0.58
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            2.6399999999999997
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 1.3800000000000001
+          },
+          "2": {
+            "service_rate": 1.32
+          },
+          "3": {
+            "service_rate": 0.56
+          },
+          "4": {
+            "service_rate": 0.58
+          }
+        }
+      },
+      "lta": 9.0024
+    },
+    "7": {
+      "arrival_rates": [
+        1.5899999999999999
+      ],
+      "service_rates": [
+        0.38,
+        1.18,
+        1.94,
+        0.0
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            1.5899999999999999
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.38
+          },
+          "2": {
+            "service_rate": 1.18
+          },
+          "3": {
+            "service_rate": 1.94
+          },
+          "4": {
+            "service_rate": 0.0
+          }
+        }
+      },
+      "lta": 9.352277601317915
+    },
+    "8": {
+      "arrival_rates": [
+        2.52
+      ],
+      "service_rates": [
+        0.28,
+        1.22,
+        1.7,
+        1.32
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            2.52
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.28
+          },
+          "2": {
+            "service_rate": 1.22
+          },
+          "3": {
+            "service_rate": 1.7
+          },
+          "4": {
+            "service_rate": 1.32
+          }
+        }
+      },
+      "lta": 8.025253333333334
+    },
+    "9": {
+      "arrival_rates": [
+        1.29
+      ],
+      "service_rates": [
+        1.84,
+        1.94,
+        0.12,
+        0.3
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 4,
+        "X_params": {
+          "arrival_rate": [
+            1.29
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 1.84
+          },
+          "2": {
+            "service_rate": 1.94
+          },
+          "3": {
+            "service_rate": 0.12
+          },
+          "4": {
+            "service_rate": 0.3
+          }
+        }
+      },
+      "lta": 3.4368500492718765
+    }
+  },
+  "ltas": [
+    11.500206666666665,
+    1.24274497587103,
+    0.9898705141902373,
+    1.8985644773195016,
+    0.9487938543935449,
+    13.515333333333333,
+    9.0024,
+    9.352277601317915,
+    8.025253333333334,
+    3.4368500492718765
+  ],
+  "num_envs": 10
+}

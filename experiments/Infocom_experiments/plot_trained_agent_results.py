@@ -5,7 +5,7 @@ import numpy as np
 import os
 import matplotlib as mpl
 
-training_set_folder = "SH4_0-5"
+training_set_folder = "SH4_0-5_b"
 context_set_file_name = "SH4_context_set_l3_m3_s100.json"
 trained_agent_folder = os.path.join("trained_agents", training_set_folder)
 test_context_set_path = os.path.join("context_sets", context_set_file_name)
@@ -43,23 +43,39 @@ for agent, agent_results in results.items():
     # save the normalized means for each agent
     for i in range(len(agent_norm_means)):
         agent_results[i]["norm_mean"] = agent_norm_means[i]
+    clipped_norm_means = np.clip(agent_norm_means, 0, 5)
+    # create a 0-1 vector that indicates if the value is clipped
+    clipped = np.array(agent_norm_means) > 5
+    # count the number clipped
     ax.bar(index+ offset, agent_norm_means, bar_width, label=label, edgecolor='black')
     agent_results["training_set_performance"] = np.mean(np.array(agent_norm_means)[training_ids])# how to get agent_norm_means for each ind in training ind
     agent_results["training_set_performance_std"] = np.std(np.array(agent_norm_means)[training_ids])# how to get agent_norm_means for each ind in training ind
+    agent_results["clipped_training_set_performance"] = np.mean(np.array(clipped_norm_means)[training_ids])# how to get agent_norm_means for each ind in training ind
+    agent_results["training_set_performance_excluding_outliers"] = np.mean(np.array([x for x in np.array(agent_norm_means)[training_ids] if x < 5]))
 
     agent_results["test_set_performance"] = np.mean(np.array(agent_norm_means)[test_ids])
     agent_results["test_set_performance_std"] = np.std(np.array(agent_norm_means)[test_ids])
+    agent_results["clipped_test_set_performance"] = np.mean(np.array(clipped_norm_means)[test_ids])
     # take the mean again but excluding any values greater than 5
-    agent_results["test_set_performance_excluding_outliers"] = np.mean([x for x in agent_norm_means if x < 5])
+    agent_results["test_set_performance_excluding_outliers"] = np.mean(np.array([x for x in np.array(agent_norm_means)[test_ids] if x < 5]))
     agent_results["test_set_performance_excluding_outliers_std"] = np.std([x for x in agent_norm_means if x < 5])
     agent_results["context_set_performance"] = np.mean(agent_norm_means)
     agent_results["context_set_performance_std"] = np.std(agent_norm_means)
+    agent_results["clipped_context_set_performance"] = np.mean(clipped_norm_means)
     agent_results["context_set_performance_excluding_outliers"] = np.mean([x for x in agent_norm_means if x < 5])
     agent_results["context_set_performance_excluding_outliers_std"] = np.std([x for x in agent_norm_means if x < 5])
     print('*'*50)
     print(f"{agent} training set performance: {agent_results['training_set_performance']}/{agent_results['training_set_performance_std']}")
+    print(f"{agent} clipped training set performance: {agent_results['clipped_training_set_performance']}")
+    print(f"{agent} clipped training count {clipped[training_ids].sum()} ")
     print(f"{agent} test set performance: {agent_results['test_set_performance']}/{agent_results['test_set_performance_std']}")
+    print(f"{agent} clipped test set performance: {agent_results['clipped_test_set_performance']}")
+    print(f"{agent} clipped test count {clipped[test_ids].sum()}")
     print(f"{agent} context set performance: {agent_results['context_set_performance']}/{agent_results['context_set_performance_std']}")
+    print(f"{agent} clipped context set performance: {agent_results['clipped_context_set_performance']}")
+    print(f"{agent} clipped context count {clipped.sum()}")
+    print(f"{agent} training set performance excluding outliers: {agent_results['training_set_performance_excluding_outliers']}/{agent_results['test_set_performance_excluding_outliers_std']}")
+
     print(f"{agent} test set performance excluding outliers: {agent_results['test_set_performance_excluding_outliers']}/{agent_results['test_set_performance_excluding_outliers_std']}")
     print(f"{agent} context set performance excluding outliers: {agent_results['context_set_performance_excluding_outliers']}/{agent_results['context_set_performance_excluding_outliers_std']}")
     print("\n")
@@ -70,10 +86,16 @@ for agent, agent_results in results.items():
     # get norm means
     temp_norm_means = np.array(agent_norm_means).clip(max=5)
     ax2[0].hist(temp_norm_means[training_ids], bins=10, alpha=0.5, label='Training Set Performance')
-    ax2[1].hist(temp_norm_means[test_ids], bins=50, alpha=0.5, label='Test Set Performance')
-    ax2[2].hist(temp_norm_means, bins=50, alpha=0.5, label='Context Set Performance')
-    fig2.legend()
-    fig2.suptitle(f"{agent} Performance")
+    ax2[1].hist(temp_norm_means[test_ids], bins=20, alpha=0.5, label='Test Set Performance')
+    ax2[2].hist(temp_norm_means, bins=20, alpha=0.5, label='Context Set Performance')
+    ax2[0].set_xlim(0, 5)
+    ax2[1].set_xlim(0, 5)
+    ax2[2].set_xlim(0, 5)
+    ax2[0].set_title(f"Training Set Performance")
+    ax2[1].set_title(f"Testing Set Performance")
+    ax2[2].set_title(f"Context Set Performance")
+    # fig2.legend()
+    fig2.suptitle(f"{label} Performance")
     fig2.show()
 
 

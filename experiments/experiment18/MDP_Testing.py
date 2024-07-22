@@ -1,3 +1,5 @@
+import pandas as pd
+
 from torchrl_development.envs.env_generators import parse_env_json, make_env
 from torchrl_development.actors import MaxWeightActor
 import matplotlib.pyplot as plt
@@ -57,7 +59,7 @@ def plot_state_action_heatmap(df, hold_tuples, ax = None, axis_keys = ["Q1", "Q2
 
 
 def plot_state_action_map(df, hold_tuples, ax = None, axis_keys = ["Q1", "Q2"], policy_type = "MLP", plot_type = "Action_Probs", collected_frames = None, lim = 30):
-
+    # increase fontsize for the x and y axis labels and ticks
     figures = {}
     pt = plot_type
     new_df = df.copy()
@@ -98,17 +100,34 @@ def plot_state_action_map(df, hold_tuples, ax = None, axis_keys = ["Q1", "Q2"], 
                 color.append(2)
             else:
                 color.append(1)
-    sc = ax.scatter(new_df[axis_names[0]], new_df[axis_names[1]], c = color, cmap = 'bwr')
+    sc = ax.scatter(new_df[axis_names[0]], new_df[axis_names[1]], c = color, cmap = 'bwr', s= 100) # how to increase marker size? s = 100
     # sc = ax.imshow
     # fig.colorbar(sc, ax = ax, label = "Action 2 Probability", ticks = [0,1,2])
     if "Y1" in axis_names:
-        ax.set_ylim(-0.5, 3)
-        ax.set_xlim(-0.5, 3)
+        ax.set_ylim(-0.5, 2.5)
+        ax.set_xlim(-0.5, 2.5)
+        ax.set_xticks(range(0, 3))
+        ax.set_yticks(range(0, 3))
+    elif "lam1" in axis_names:
+        ax.set_xlim(0,1)
+        ax.set_ylim(0,1)
     else:
-        ax.set_ylim(-0.5, lim)
-        ax.set_xlim(-0.5, lim)
-    ax.set_xlabel(axis_names[0])
-    ax.set_ylabel(axis_names[1])
+        ax.set_ylim(-0.5, lim+1)
+        ax.set_xlim(-0.5, lim+1)
+        ax.set_xticks(range(0, lim + 1, 5))
+        ax.set_yticks(range(0, lim + 1, 5))
+    axis_label_dict = {"Q1": f"$q_1$",
+                         "Q2": f"$q_2$",
+                         "Y1": f"$y_1$",
+                         "Y2": f"$y_2$",
+                         "lam1": f"$\lambda_1$",
+                         "lam2": f"$\lambda_2$",
+                         "mu1": f"$\mu_1$",
+                         "mu2": f"$\mu_2$"}
+    ax.set_xlabel(axis_label_dict[axis_names[0]])
+    ax.set_ylabel(axis_label_dict[axis_names[1]])
+    # set x axis label frequency
+
     hold_names = ", ".join([f"{x[0]}={x[1]}" for x in hold_tuples])
     # combine hold names to create a string
     policy_add = "Deterministic" if pt == "Action" else "Stochastic"
@@ -117,6 +136,7 @@ def plot_state_action_map(df, hold_tuples, ax = None, axis_keys = ["Q1", "Q2"], 
         title = title + f" (Collected Frames: {collected_frames})"
     title = hold_names
     ax.set_title(title)
+
 
 
 def plot_state_action_map_comparison(df, hold_tuples, ax = None, axis_keys = ["Q1", "Q2"], policy_type = "MLP", plot_type = "Action_Probs", collected_frames = None, lim = 30):
@@ -146,27 +166,99 @@ def get_mdp(param_key, q_max):
 
     return mdp
 
-def plot_single_mdp_policy(mdp, lim = 20):
+def plot_single_mdp_policy(mdp, lim = 20, y_val = (1,1)):
+    # use latex for the title labels
+    #plt.rc('text', usetex=True)
     policy_table = mdp.pi_policy.policy_table
     df = pd.DataFrame(policy_table.keys(), columns=["Q1", "Q2", "Y1", "Y2"])
     df["Action"] = list(policy_table.values())
     df["Action"] = df["Action"].apply(lambda x: np.argmax(x))
-    df = df[(df["Y1"] == 1) & (df["Y2"] == 1)]
+    df = df[(df["Y1"] == y_val[0]) & (df["Y2"] == y_val[1])]
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    plot_state_action_map(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], policy_type="PI",
+    plot_state_action_map(df, [("Y1", y_val[0]), ("Y2", y_val[1])], ax=ax, axis_keys=["Q1", "Q2"], policy_type="PI",
                            plot_type="Action", lim=lim)
     # plot_state_action_heatmap(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], lim=lim)
-    ax.set_title(f"PI Policy for {mdp.name}")
+    # Set the title to be \mathbf c^{(mdp.name)} with the mdp.name as a superscript
+    ax.set_title(f"$\mathbf{{{'c'}}}^{{({mdp.name})}}$ \n $ \mathbf{{{'y'}}} = {y_val}$ , $\lambda_1 = {{{mdp.env.base_env.arrival_rates[0]}}}$, $\mu_1 = {{{mdp.env.base_env.service_rates[0]}}}$")
+
     plt.show()
+    return fig
+
+def plot_single_mdp_y_policy(mdp, lim = 2, q_val = (5,5)):
+    policy_table = mdp.pi_policy.policy_table
+    df = pd.DataFrame(policy_table.keys(), columns=["Q1", "Q2", "Y1", "Y2"])
+    df["Action"] = list(policy_table.values())
+    df["Action"] = df["Action"].apply(lambda x: np.argmax(x))
+    df = df[(df["Q1"] == q_val[0]) & (df["Q2"] == q_val[1])]
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    plot_state_action_map(df, [("Q1", q_val[0]), ("Q2", q_val[1])], ax=ax, axis_keys=["Y1", "Y2"], policy_type="PI",
+                            plot_type="Action", lim=lim)
+    ax.set_title(f"$\mathbf{{{'c'}}}^{{({mdp.name})}}$ \n $ \mathbf{{{'q'}}} = {q_val}$ , $\lambda_1 = {{{mdp.env.base_env.arrival_rates[0]}}}$, $\mu_1 = {{{mdp.env.base_env.service_rates[0]}}}$")
+    plt.show()
+    return fig
+
+
+def plot_multi_mdp_policy(mdps: dict):
+    # first we want to create a policy table with columns Q1, Q2, Y1, Y2, lam1, lam2, mu1, mu2, action
+    df = pd.DataFrame()
+    for mdps_key, mdp in mdps.items():
+        policy_table = mdp.pi_policy.policy_table
+        temp_df = pd.DataFrame(policy_table.keys(), columns=["Q1", "Q2", "Y1", "Y2"])
+        temp_df["lam1"], temp_df["lam2"] = mdp.env.base_env.arrival_rates
+        temp_df["mu1"], temp_df["mu2"] = mdp.env.base_env.service_rates
+        temp_df["Action"] = list(policy_table.values())
+        temp_df["Action"] = temp_df["Action"].apply(lambda x: np.argmax(x))
+        temp_df["MDP"] = mdps_key
+        # concatentate to the main df
+        df = pd.concat([df, temp_df], axis = 0)
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    hold_tuples= [("Y1", 1), ("Y2", 1), ("Q1", 5), ("Q2", 7)]
+    # for tup in hold_tuples:
+    #     df = df[df[tup[0]] == tup[1]]
+    # want to plot over the dimension of lam1 and mu1 for fixed lam2 and mu2
+    plot_state_action_map(df, hold_tuples, ax=ax, axis_keys=["lam1", "mu1"], policy_type="PI", plot_type="Action")
+    plt.show()
+    return fig
+
+
+
+
 
 if __name__ == "__main__":
+    plt.rcParams.update({'font.size': 20})
+    # use latex for the title labels
+    # plt.rc('text', usetex=True)
+
     mdps = {}
+    name_dict = {"base": 1,
+                 "a": 2,
+                 "b": 3,
+                 "c": 4,
+                 "d": 5,
+                 "e": 6}
+
+
     for mdp in ["base", "a", "b", "c", "d", 'e']:
         mdps[mdp] = get_mdp(mdp, 40)
+        mdps[mdp].name = name_dict[mdp]
+
+    # plot_multi_mdp_policy({"base": mdps["base"],"a": mdps["a"], "b": mdps["b"], "c": mdps["c"], "d": mdps["d"]})
 
     for mdp in mdps.values():
-        plot_single_mdp_policy(mdp)
-
+        fig = plot_single_mdp_policy(mdp)
+        # save the figure as a PDF
+        fig.savefig(open(f"saved_figs/SingleHopMDP_{mdp.name}_Policy.pdf", "wb"), format = "pdf")
+    fig = plot_single_mdp_y_policy(mdps["e"], q_val = (5,5))
+    fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y_Policy.pdf", "wb"), format = "pdf")
+    fig = plot_single_mdp_policy(mdps["e"], y_val = (1,1))
+    fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y1=1_Y2=1_Policy.pdf", "wb"), format = "pdf")
+    fig = plot_single_mdp_policy(mdps["e"], y_val = (1,2))
+    fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y1=1_Y2=2_Policy.pdf", "wb"), format = "pdf")
+    fig = plot_single_mdp_policy(mdps["e"], y_val = (2,1))
+    fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y1=2_Y2=1_Policy.pdf", "wb"), format = "pdf")
+    fig = plot_single_mdp_policy(mdps["e"], y_val = (2,2))
+    fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y1=2_Y2=2_Policy.pdf", "wb"), format = "pdf")
 
 
 

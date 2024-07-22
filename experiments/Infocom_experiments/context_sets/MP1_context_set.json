@@ -1,0 +1,29 @@
+{
+  "context_dicts": {
+    "0": {
+      "arrival_rate": 1,
+      "service_rates": [0.55, 0.55],
+      "lta": 3.9419,
+      "env_params": {
+      "name": "Multipath1",
+      "env_type": "MP",
+      "arrival_distribution": "discrete",
+      "service_distribution": "discrete",
+      "servers": 2,
+      "X_params": {
+        "arrival": 1,
+        "probability": 1
+      },
+      "Y_params": {
+        "1": {
+          "service": 1,
+          "probability": 0.55
+        },
+        "2": {
+          "service": 1,
+          "probability": 0.55
+        }
+      }}
+    }
+    }
+}

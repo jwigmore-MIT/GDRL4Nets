@@ -1,9 +1,10 @@
 # get directory of torchrl_development
 import os
 from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform, ObservationNorm
-from torchrl_development.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform
+from torchrl_development.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform
 from torchrl_development.envs.SingleHop import SingleHop
 from torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
+from torchrl_development.envs.MultipathRouting import MultipathRouting
 from copy import deepcopy
 import numpy as np
 
@@ -47,6 +48,7 @@ def make_env(env_params,
              observation_keys=["Q", "Y"],
              observation_keys_scale = None,
              negative_keys = None,
+             inverse_keys = None,
              symlog_obs = True,
              symlog_reward = False,
              inverse_reward= False,
@@ -81,12 +83,19 @@ def make_env(env_params,
     env_params["convergence_threshold"] = convergence_threshold
     env_params["stat_window_size"] = stat_window_size
     env_params["terminate_on_lta_threshold"] = terminate_on_lta_threshold
-    if graph:
-        base_env = SingleHopGraph(env_params, seed)
-    else:
-        base_env = SingleHop(env_params, seed)
+    env_type = env_params.get("env_type", "SH")
+    if env_type == "SH":
+        if graph:
+            base_env = SingleHopGraph(env_params, seed)
+        else:
+            base_env = SingleHop(env_params, seed)
+    elif env_type == "MP":
+        base_env = MultipathRouting(env_params, seed)
+
     if negative_keys is not None:
         base_env = TransformedEnv(base_env, ReverseSignTransform(in_keys=negative_keys, out_keys=negative_keys))
+    if inverse_keys is not None:
+        base_env = TransformedEnv(base_env, InverseTransform(in_keys=inverse_keys, out_keys=inverse_keys))
     if observation_keys_scale is not None:
         out_observation_keys = [f"{key}_scaled" for key in observation_keys]
         if observation_keys_scale.__len__() != observation_keys.__len__():
@@ -310,7 +319,7 @@ class EnvGenerator:
                 env_params_ind = true_ind
             env_params = self.context_dicts[env_params_ind]["env_params"]
             env_params["context_id"] = env_params_ind
-            env_params["baseline_lta"] = self.context_dicts[env_params_ind]["lta"]
+            env_params["baseline_lta"] = self.context_dicts[env_params_ind].get("lta", None)
         # if ind is not in the keys
         except KeyError:
             raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")

@@ -1,0 +1,71 @@
+device: null
+
+# Agent
+agent:
+  actor_type: SMN_shared
+  critic_type: MLP
+  hidden_sizes: [64, 64]
+  observe_lambda: True
+  observe_mu: True
+  mask: True
+  temperature: 5
+  relu_max: 1
+
+
+# Environment
+training_env:
+  terminal_backlog: 250
+  inverse_reward: True
+  negative_keys: ~
+  symlog_obs: True
+  cost_based: False
+  symlog_reward: False
+  env_generator_seed: 19970503
+  stat_window_size: 5000
+  observation_keys_scale: ~
+  observation_keys: ["Q", "Y", "lambda", "mu", "arrivals"]
+
+
+
+
+# collector
+collector:
+  total_frames: 10_000_000
+  frames_per_batch: 2000
+  max_frames_per_traj: 50_000
+  test_interval: 10_000_000
+  map_interval: 20_000
+
+
+
+# logger
+logger:
+  backend: wandb
+  project: Experiment19
+
+# Optim
+optim:
+  lr: 3.0e-3
+  eps: 1.0e-6
+  weight_decay: 0.00
+  max_grad_norm: 1.0
+  anneal_lr: True
+  clip_epsilon: False
+  alpha: 0.99
+
+# loss
+loss:
+  gamma: 0.99
+  mini_batch_size: 100
+  num_updates: 3
+  gae_lambda: 0.95
+  clip_epsilon: 0.1
+  anneal_clip_epsilon: False
+  critic_coef: 0.5
+  entropy_coef: 0.01
+  loss_critic_type: l2
+  norm_advantage: False
+
+eval:
+  num_eval_envs: 3
+  traj_steps: 50_000

@@ -49,11 +49,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     # parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
     # add training code which will be a tuple of integers (start, number)
-    parser.add_argument('--training_code', type = tuple, help='range of integers to train on', default=(0,5
-                                                                                                        ))
-    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH4") # or SH2u
+    parser.add_argument('--training_code', type = tuple, help='range of integers to train on', default=(0,1))
+    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="MP3") # or SH2u
     # parser.add_argument('--env_params', type=str, help='reference_to_context_set', default="SH1E") # or SH2u
-    parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO_MP")
+    parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_shared_PPO_MP")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
     base_cfg = {"PMN_DQN": 'PMN_DQN_settings.yaml',
@@ -67,12 +66,17 @@ if __name__ == "__main__":
                 "PMN_PPO": 'PMN_PPO_settings.yaml',
                 "DSMNN": 'DSMNN_PPO_settings.yaml',
                 "MWN": 'PPO_MWN_training_params.yaml',
-                "PMN_shared_PPO": 'PMN_Shared_PPO_settings.yaml',}
+                "PMN_shared_PPO": 'PMN_Shared_PPO_settings.yaml',
+                "PMN_shared_PPO_MP": 'PMN_Shared_PPO_MP_settings.yaml',
+                "SMN_Shared_PPO": "SMN_Shared_PPO_settings.yaml",}
 
     context_set_jsons = {
                          "SH4": "SH4_context_set_l3_m3_s100.json",
                          "nSH2u": "nSH2u_context_set_l1_m3_s30.json",
-                         "n2SH2u": "n2SH2u_context_set_l1_m3_s30.json"}
+                         "n2SH2u": "n2SH2u_context_set_l1_m3_s30.json",
+                          "MP1": "MP1_context_set.json",
+                          "MP3": "MP3_context_set.json",
+                           "MP2": "MP2_context_set_l3_m1_s10.json",}
 
     train_sets = {"a": {"train": [0], "test": [7,8,9]}, # lta backlog = 135.10
                   "b": {"train": [0,1,2], "test": [7,8,9]}, # 53.94
@@ -119,12 +123,13 @@ if __name__ == "__main__":
 
     # Create the Training Env Generators
     training_make_env_parameters = {"graph": getattr(cfg.training_env, "graph", False),
-                                    "observe_lambda": getattr(cfg.training_env, "observe_lambda", True),
-                                    "observe_mu": getattr(cfg.training_env, "observe_mu", True),
+                                    "observe_lambda": getattr(cfg.agent, "observe_lambda", True),
+                                    "observe_mu": getattr(cfg.agent, "observe_mu", True),
                                     "terminal_backlog": getattr(cfg.training_env, "terminal_backlog", None),
                                     "observation_keys": getattr(cfg.training_env, "observation_keys", ["Q", "Y"]),
                                     "observation_keys_scale": getattr(cfg.training_env, "observation_keys_scale", None),
                                     "negative_keys": getattr(cfg.training_env, "negative_keys", ["mu"]),
+                                    "inverse_keys": getattr(cfg.training_env, "inverse_keys", None),
                                     "symlog_obs": getattr(cfg.training_env, "symlog_obs", False),
                                     "symlog_reward": getattr(cfg.training_env, "symlog_reward", False),
                                     "inverse_reward": getattr(cfg.training_env, "inverse_reward", False),
@@ -162,7 +167,7 @@ if __name__ == "__main__":
             experiment_name= experiment_name,
             wandb_kwargs={
                 "config": cfg.as_dict(),
-                "project": "Experiment20",
+                "project": "Multipath_Testing2",
             },
         )
 

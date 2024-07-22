@@ -176,7 +176,7 @@ class SingleHop(EnvBase):
 
     def get_mask(self):
         # Mask 1
-        mask1 = self.Q[1:]*self.Y[1:] != 0 # evaluates to true if the queue is empty or the link is disconnected
+        mask1 = self.Q[1:]*self.Y[1:] != 0 # evaluates to true if the queue is not empty and the link is disconnected
         # Mask 2
         mask2 = (mask1 == False).all().reshape(1) # evaluates to true if all queues are empty or all links are disconnected
 
