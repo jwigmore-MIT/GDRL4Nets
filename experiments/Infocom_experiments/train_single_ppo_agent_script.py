@@ -99,9 +99,9 @@ if __name__ == "__main__":
     print(f"Device: {device}")
     cfg = load_config(os.path.join(SCRIPT_PATH, base_cfg[args.train_type]))
 
-    cfg.collector.total_frames = 3_002_000
+    cfg.collector.total_frames = 1_002_000
     cfg.collector.frames_per_batch = 2000
-    cfg.collector.test_interval = 3_000_000
+    cfg.collector.test_interval = 1_000_000
 
     cfg.device = device
     # cfg.optim.lr = 0
