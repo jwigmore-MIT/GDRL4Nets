@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     # parser.add_argument('--training_set', type=str, help='indices of the environments to train on', default="b")
     # add training code which will be a tuple of integers (start, number)
-    parser.add_argument('--training_code', type = tuple, help='range of integers to train on', default=(0,5))
+    parser.add_argument('--training_code', nargs = "+", type = int, help='range of integers to train on', default=[5,1])
     parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="MP5") # or SH2u
     # parser.add_argument('--env_params', type=str, help='reference_to_context_set', default="SH1E") # or SH2u
     parser.add_argument('--train_type', type=str, help='base configuration file', default="PMN_shared_PPO_MP")
@@ -104,6 +104,11 @@ if __name__ == "__main__":
     device = "cpu"
     print(f"Device: {device}")
     cfg = load_config(os.path.join(SCRIPT_PATH, base_cfg[args.train_type]))
+
+    cfg.collector.total_frames = 1_002_000
+    cfg.collector.frames_per_batch = 2000
+    cfg.collector.test_interval = 1_000_000
+
     cfg.device = device
     # cfg.optim.lr = 0
 
