@@ -138,10 +138,10 @@ for agent_type in agent_types:
 # The results will contain the mean and standard deviation of the lta of the agent on the environment
 results = {key: {} for key in agent_dict.keys()}
 
-context_ids = list(env_generator.context_dicts.keys())
+context_ids = [0,1]
 print("Testing agents...")
 pbar = tqdm(total= len(agent_dict)*num_rollouts*len(context_ids))
-
+tds = []
 with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
     for env_num in context_ids:
         for agent_type, agent in agent_dict.items():
@@ -162,14 +162,17 @@ with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
             # store the means and std of the ltas in the results dictionary
             results[agent_type][env_num]["mean"] = torch.stack(ltas).mean(dim=0)[-1].item()
             results[agent_type][env_num]["std"] = torch.stack(ltas).std(dim=0)[-1].item()
+            results[agent_type][env_num]["ltas"] = torch.stack(ltas)
 
             # reset env_generator seed
             env_generator.reseed(env_generator_seed)
 
 # now pickle each of the agents results in their respective directories
 for agent_type, agent_results in results.items():
-    with open(f"{trained_agent_folder}/{agent_type}/{agent_type}_results.pkl", "wb") as f:
+    with open(f"{trained_agent_folder}/{agent_type}/{agent_type}_results_full.pkl", "wb") as f:
         pickle.dump(agent_results, f)
+
+
 
 
 # results = {"lta_tds": lta_tds, "means": means, "stds": stds}

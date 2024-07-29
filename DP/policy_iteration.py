@@ -2,7 +2,7 @@ from DP.tabular_value_function import TabularValueFunction
 from DP.qtable import QTable
 from tqdm import tqdm
 import numpy as np
-
+import pandas as pd
 class PolicyIteration:
     def __init__(self, mdp, policy):
         self.mdp = mdp
@@ -21,6 +21,10 @@ class PolicyIteration:
                 delta = max(delta, abs(old_value - new_value))
             pbar.set_description(f"Policy Evaluation Phase: Delta: {delta}")
 
+            # df = pd.DataFrame(values.value_table.keys(), columns=["Q1", "Q2", "Y1", "Y2"])
+            # df["values"] = values.value_table.values()
+            # df2 = df[(df["Y1"] == 1) & (df["Y2"] == 1)]
+
             # terminate if the value function has converged
             if delta < theta:
                 break
@@ -32,7 +36,7 @@ class PolicyIteration:
     def policy_iteration(self, max_iterations=100, theta=0.001):
 
         # create a value function to hold details
-        values = TabularValueFunction(q_max=self.mdp.q_max, penalty=-500)
+        values = TabularValueFunction(q_max=self.mdp.q_max, penalty=-100)
         pbar = tqdm(range(int(max_iterations)))
 
         plot_policy_table(self.policy.policy_table, lim = self.mdp.q_max)
@@ -54,10 +58,11 @@ class PolicyIteration:
                 # V(s) = argmax_a Q(s,a)
                 if self.mdp.q_max in state and (np.array(state) > 0).all():
                     # return the action with the max queue size
-                    new_action = np.array([False, True, False]) if state[0] > state[1] else np.array([False, False, True])
+                    new_action = np.array([True, False]) if state[0] < state[1] else np.array([False, True])
                 else:
-                    (new_action, _) = q_values.get_max_q(state, self.mdp.get_actions(state))
-                self.policy.update(state, new_action)
+                    (new_action, new_q_value) = q_values.get_max_q(state, self.mdp.get_actions(state))
+                if new_q_value - values.get_q_value(self.mdp, state, old_action) > 0.0001 and (new_action != old_action).any():
+                    self.policy.update(state, new_action)
                 state_policy_change = sum(new_action*old_action)
                 if state_policy_change == 0:
                     policy_changes.append((state, old_action, new_action))
@@ -86,7 +91,7 @@ def plot_policy_table(policy_table, iteration = None, lim = 30):
     """
     df = pd.DataFrame(policy_table.keys(), columns = ["Q1", "Q2", "Y1", "Y2"])
     df["Action"] = list(policy_table.values())
-    df["Action"] = df["Action"].apply(lambda x: np.argmax(x))
+    df["Action"] = df["Action"].apply(lambda x: np.argmax(x) +1)
     df = df[(df["Y1"] == 1) & (df["Y2"] == 1)]
     fig, ax = plt.subplots(1,1, figsize = (10,10))
     plot_state_action_map(df, [("Y1", 1), ("Y2", 1)], ax = ax, axis_keys = ["Q1", "Q2"], policy_type = "PI", plot_type = "Action", collected_frames = iteration, lim = lim)

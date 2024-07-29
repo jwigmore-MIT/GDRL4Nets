@@ -1,0 +1,23 @@
+{
+  "problem_instance": {
+    "name": "Multipath1",
+    "env_type": "MP",
+    "arrival_distribution": "discrete",
+    "service_distribution": "discrete",
+    "servers": 2,
+    "X_params": {
+        "arrival": 1,
+        "probability": 1
+    },
+    "Y_params": {
+      "1": {
+        "service": 1,
+        "probability": 0.65
+      },
+      "2": {
+          "service": 1,
+          "probability": 0.65
+      }
+    }
+  }
+}

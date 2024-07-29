@@ -367,3 +367,9 @@ class MultipathRouting(EnvBase):
                 return td
         else:
             raise ValueError("Invalid type")
+
+    def set_state(self, state: list):
+        # input will be a list of length 2K, the first K elements will be the queue lengths and the next K elements will be the service rates
+        self.Q = np.array(state[:self.K])
+        self.Y = np.array(state[self.K:])
+
