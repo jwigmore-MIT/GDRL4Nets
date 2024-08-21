@@ -179,7 +179,8 @@ def plot_single_mdp_policy(mdp, lim = 20, y_val = (1,1)):
                            plot_type="Action", lim=lim)
     # plot_state_action_heatmap(df, [("Y1", 1), ("Y2", 1)], ax=ax, axis_keys=["Q1", "Q2"], lim=lim)
     # Set the title to be \mathbf c^{(mdp.name)} with the mdp.name as a superscript
-    ax.set_title(f"$\mathbf{{{'c'}}}^{{({mdp.name})}}$ \n $ \mathbf{{{'y'}}} = {y_val}$ , $\lambda_1 = {{{mdp.env.base_env.arrival_rates[0]}}}$, $\mu_1 = {{{mdp.env.base_env.service_rates[0]}}}$")
+    ax.set_title(f"$ \mathbf{{{'y'}}} = {y_val}$")
+    # ax.set_title(f"$\mathbf{{{'c'}}}^{{({mdp.name})}}$ \n $ \mathbf{{{'y'}}} = {y_val}$ , $\lambda_1 = {{{mdp.env.base_env.arrival_rates[0]}}}$, $\mu_1 = {{{mdp.env.base_env.service_rates[0]}}}$")
 
     plt.show()
     return fig
@@ -193,7 +194,8 @@ def plot_single_mdp_y_policy(mdp, lim = 2, q_val = (5,5)):
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     plot_state_action_map(df, [("Q1", q_val[0]), ("Q2", q_val[1])], ax=ax, axis_keys=["Y1", "Y2"], policy_type="PI",
                             plot_type="Action", lim=lim)
-    ax.set_title(f"$\mathbf{{{'c'}}}^{{({mdp.name})}}$ \n $ \mathbf{{{'q'}}} = {q_val}$ , $\lambda_1 = {{{mdp.env.base_env.arrival_rates[0]}}}$, $\mu_1 = {{{mdp.env.base_env.service_rates[0]}}}$")
+    # ax.set_title(f"$\mathbf{{{'c'}}}^{{({mdp.name})}}$ \n $ \mathbf{{{'q'}}} = {q_val}$ , $\lambda_1 = {{{mdp.env.base_env.arrival_rates[0]}}}$, $\mu_1 = {{{mdp.env.base_env.service_rates[0]}}}$")
+    ax.set_title(f"$\mathbf{{{'q'}}} = {q_val}$")
     plt.show()
     return fig
 
@@ -251,6 +253,8 @@ if __name__ == "__main__":
         fig.savefig(open(f"saved_figs/SingleHopMDP_{mdp.name}_Policy.pdf", "wb"), format = "pdf")
     fig = plot_single_mdp_y_policy(mdps["e"], q_val = (5,5))
     fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y_Policy.pdf", "wb"), format = "pdf")
+    fig = plot_single_mdp_y_policy(mdps["e"], q_val = (3,15))
+    fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y_Policy_2.pdf", "wb"), format = "pdf")
     fig = plot_single_mdp_policy(mdps["e"], y_val = (1,1))
     fig.savefig(open(f"saved_figs/SingleHopMDP_{mdps['e'].name}_Y1=1_Y2=1_Policy.pdf", "wb"), format = "pdf")
     fig = plot_single_mdp_policy(mdps["e"], y_val = (1,2))
