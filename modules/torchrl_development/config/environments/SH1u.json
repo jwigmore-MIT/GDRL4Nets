@@ -1,0 +1,37 @@
+{
+  "problem_instance": {
+    "name": "SingleHop1",
+    "env_type": "SH",
+    "nodes": [1, 2, 0],
+    "arrival_distribution": "poisson",
+    "service_distribution": "poisson",
+    "X_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival": 1,
+        "probability": 0.3
+      },
+      "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival": 1,
+          "probability": 0.7
+      }
+    },
+    "Y_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "capacity": 1,
+        "probability": 0.5
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "capacity": 1,
+        "probability": 0.5
+      }
+    }
+  }
+}

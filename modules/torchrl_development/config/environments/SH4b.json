@@ -1,0 +1,53 @@
+{
+  "problem_instance": {
+    "name": "SingleHop3",
+    "env_type": "SH",
+    "nodes": [1, 2, 3, 4, 0],
+    "arrival_distribution": "poisson",
+    "service_distribution": "poisson",
+    "X_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "arrival_rate": 1
+      },
+      "2": {
+          "source": 2,
+          "destination": 0,
+          "arrival_rate": 1
+      },
+      "3": {
+          "source": 3,
+          "destination": 0,
+          "arrival_rate": 1
+      },
+      "4": {
+            "source": 4,
+            "destination": 0,
+            "arrival_rate": 1
+        }
+    },
+    "Y_params": {
+      "1": {
+        "source": 1,
+        "destination": 0,
+        "service_rate": 3
+      },
+      "2": {
+        "source": 2,
+        "destination": 0,
+        "service_rate": 3
+      },
+      "3": {
+          "source": 3,
+          "destination": 0,
+          "service_rate": 3
+      },
+        "4": {
+            "source": 4,
+            "destination": 0,
+            "service_rate": 3
+        }
+    }
+  }
+}
