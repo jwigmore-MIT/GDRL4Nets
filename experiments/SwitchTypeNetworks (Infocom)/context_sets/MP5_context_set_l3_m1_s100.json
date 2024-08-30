@@ -1,0 +1,5507 @@
+{
+  "context_dicts": {
+    "0": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.93,
+        0.39,
+        0.31,
+        0.9400000000000001,
+        0.43,
+        0.07,
+        0.8200000000000001,
+        0.8300000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.93
+          },
+          "2": {
+            "service_rate": 0.39
+          },
+          "3": {
+            "service_rate": 0.31
+          },
+          "4": {
+            "service_rate": 0.9400000000000001
+          },
+          "5": {
+            "service_rate": 0.43
+          },
+          "6": {
+            "service_rate": 0.07
+          },
+          "7": {
+            "service_rate": 0.8200000000000001
+          },
+          "8": {
+            "service_rate": 0.8300000000000001
+          }
+        }
+      },
+      "lta": 3.4059463843222098
+    },
+    "1": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.3,
+        0.23,
+        0.22,
+        0.42,
+        0.5700000000000001,
+        0.75,
+        0.93,
+        0.21
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.3
+          },
+          "2": {
+            "service_rate": 0.23
+          },
+          "3": {
+            "service_rate": 0.22
+          },
+          "4": {
+            "service_rate": 0.42
+          },
+          "5": {
+            "service_rate": 0.5700000000000001
+          },
+          "6": {
+            "service_rate": 0.75
+          },
+          "7": {
+            "service_rate": 0.93
+          },
+          "8": {
+            "service_rate": 0.21
+          }
+        }
+      },
+      "lta": 5.069953941008237
+    },
+    "2": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.12,
+        0.77,
+        0.77,
+        0.37,
+        0.72,
+        0.03,
+        0.93,
+        0.14
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.12
+          },
+          "2": {
+            "service_rate": 0.77
+          },
+          "3": {
+            "service_rate": 0.77
+          },
+          "4": {
+            "service_rate": 0.37
+          },
+          "5": {
+            "service_rate": 0.72
+          },
+          "6": {
+            "service_rate": 0.03
+          },
+          "7": {
+            "service_rate": 0.93
+          },
+          "8": {
+            "service_rate": 0.14
+          }
+        }
+      },
+      "lta": 4.544012474787284
+    },
+    "3": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.13,
+        0.22,
+        0.86,
+        0.77,
+        0.18,
+        0.0,
+        0.22,
+        0.99
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.13
+          },
+          "2": {
+            "service_rate": 0.22
+          },
+          "3": {
+            "service_rate": 0.86
+          },
+          "4": {
+            "service_rate": 0.77
+          },
+          "5": {
+            "service_rate": 0.18
+          },
+          "6": {
+            "service_rate": 0.0
+          },
+          "7": {
+            "service_rate": 0.22
+          },
+          "8": {
+            "service_rate": 0.99
+          }
+        }
+      },
+      "lta": 7.6846505298473415
+    },
+    "4": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.59,
+        0.1,
+        0.31,
+        0.5,
+        0.3,
+        0.17,
+        0.15,
+        0.11
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.59
+          },
+          "2": {
+            "service_rate": 0.1
+          },
+          "3": {
+            "service_rate": 0.31
+          },
+          "4": {
+            "service_rate": 0.5
+          },
+          "5": {
+            "service_rate": 0.3
+          },
+          "6": {
+            "service_rate": 0.17
+          },
+          "7": {
+            "service_rate": 0.15
+          },
+          "8": {
+            "service_rate": 0.11
+          }
+        }
+      },
+      "lta": 5.61156
+    },
+    "5": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.35000000000000003,
+        0.71,
+        0.56,
+        0.89,
+        0.96,
+        0.43,
+        0.43,
+        0.9400000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.35000000000000003
+          },
+          "2": {
+            "service_rate": 0.71
+          },
+          "3": {
+            "service_rate": 0.56
+          },
+          "4": {
+            "service_rate": 0.89
+          },
+          "5": {
+            "service_rate": 0.96
+          },
+          "6": {
+            "service_rate": 0.43
+          },
+          "7": {
+            "service_rate": 0.43
+          },
+          "8": {
+            "service_rate": 0.9400000000000001
+          }
+        }
+      },
+      "lta": 3.210001335524314
+    },
+    "6": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.16,
+        0.86,
+        0.92,
+        0.03,
+        0.81,
+        0.54,
+        0.45,
+        0.9
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.16
+          },
+          "2": {
+            "service_rate": 0.86
+          },
+          "3": {
+            "service_rate": 0.92
+          },
+          "4": {
+            "service_rate": 0.03
+          },
+          "5": {
+            "service_rate": 0.81
+          },
+          "6": {
+            "service_rate": 0.54
+          },
+          "7": {
+            "service_rate": 0.45
+          },
+          "8": {
+            "service_rate": 0.9
+          }
+        }
+      },
+      "lta": 4.539823052862853
+    },
+    "7": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.13,
+        0.51,
+        0.47000000000000003,
+        0.04,
+        0.5,
+        0.59,
+        0.39,
+        0.7000000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.13
+          },
+          "2": {
+            "service_rate": 0.51
+          },
+          "3": {
+            "service_rate": 0.47000000000000003
+          },
+          "4": {
+            "service_rate": 0.04
+          },
+          "5": {
+            "service_rate": 0.5
+          },
+          "6": {
+            "service_rate": 0.59
+          },
+          "7": {
+            "service_rate": 0.39
+          },
+          "8": {
+            "service_rate": 0.7000000000000001
+          }
+        }
+      },
+      "lta": 5.7125332138665845
+    },
+    "8": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.86,
+        0.1,
+        0.29,
+        0.29,
+        0.71,
+        0.87,
+        0.35000000000000003,
+        0.03
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.86
+          },
+          "2": {
+            "service_rate": 0.1
+          },
+          "3": {
+            "service_rate": 0.29
+          },
+          "4": {
+            "service_rate": 0.29
+          },
+          "5": {
+            "service_rate": 0.71
+          },
+          "6": {
+            "service_rate": 0.87
+          },
+          "7": {
+            "service_rate": 0.35000000000000003
+          },
+          "8": {
+            "service_rate": 0.03
+          }
+        }
+      },
+      "lta": 4.604291728603574
+    },
+    "9": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.7000000000000001,
+        0.55,
+        0.4,
+        0.44,
+        0.46,
+        0.43,
+        0.43,
+        0.77
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.7000000000000001
+          },
+          "2": {
+            "service_rate": 0.55
+          },
+          "3": {
+            "service_rate": 0.4
+          },
+          "4": {
+            "service_rate": 0.44
+          },
+          "5": {
+            "service_rate": 0.46
+          },
+          "6": {
+            "service_rate": 0.43
+          },
+          "7": {
+            "service_rate": 0.43
+          },
+          "8": {
+            "service_rate": 0.77
+          }
+        }
+      },
+      "lta": 3.372754922582667
+    },
+    "10": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.36,
+        0.77,
+        1.0,
+        0.11,
+        0.62,
+        0.65,
+        0.35000000000000003,
+        0.85
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.36
+          },
+          "2": {
+            "service_rate": 0.77
+          },
+          "3": {
+            "service_rate": 1.0
+          },
+          "4": {
+            "service_rate": 0.11
+          },
+          "5": {
+            "service_rate": 0.62
+          },
+          "6": {
+            "service_rate": 0.65
+          },
+          "7": {
+            "service_rate": 0.35000000000000003
+          },
+          "8": {
+            "service_rate": 0.85
+          }
+        }
+      },
+      "lta": 3.6898925099997992
+    },
+    "11": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.51,
+        0.6900000000000001,
+        0.58,
+        0.02,
+        0.32,
+        0.86,
+        0.75,
+        0.58
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.51
+          },
+          "2": {
+            "service_rate": 0.6900000000000001
+          },
+          "3": {
+            "service_rate": 0.58
+          },
+          "4": {
+            "service_rate": 0.02
+          },
+          "5": {
+            "service_rate": 0.32
+          },
+          "6": {
+            "service_rate": 0.86
+          },
+          "7": {
+            "service_rate": 0.75
+          },
+          "8": {
+            "service_rate": 0.58
+          }
+        }
+      },
+      "lta": 4.509348712182487
+    },
+    "12": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.12,
+        0.46,
+        0.85,
+        0.43,
+        0.26,
+        0.66,
+        0.03,
+        0.64
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.12
+          },
+          "2": {
+            "service_rate": 0.46
+          },
+          "3": {
+            "service_rate": 0.85
+          },
+          "4": {
+            "service_rate": 0.43
+          },
+          "5": {
+            "service_rate": 0.26
+          },
+          "6": {
+            "service_rate": 0.66
+          },
+          "7": {
+            "service_rate": 0.03
+          },
+          "8": {
+            "service_rate": 0.64
+          }
+        }
+      },
+      "lta": 4.887426666666666
+    },
+    "13": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.99,
+        0.99,
+        0.27,
+        0.43,
+        0.13,
+        0.35000000000000003,
+        0.46,
+        0.86
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.99
+          },
+          "2": {
+            "service_rate": 0.99
+          },
+          "3": {
+            "service_rate": 0.27
+          },
+          "4": {
+            "service_rate": 0.43
+          },
+          "5": {
+            "service_rate": 0.13
+          },
+          "6": {
+            "service_rate": 0.35000000000000003
+          },
+          "7": {
+            "service_rate": 0.46
+          },
+          "8": {
+            "service_rate": 0.86
+          }
+        }
+      },
+      "lta": 3.031360403878581
+    },
+    "14": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.29,
+        0.99,
+        0.63,
+        0.75,
+        0.88,
+        0.93,
+        0.61,
+        0.62
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.29
+          },
+          "2": {
+            "service_rate": 0.99
+          },
+          "3": {
+            "service_rate": 0.63
+          },
+          "4": {
+            "service_rate": 0.75
+          },
+          "5": {
+            "service_rate": 0.88
+          },
+          "6": {
+            "service_rate": 0.93
+          },
+          "7": {
+            "service_rate": 0.61
+          },
+          "8": {
+            "service_rate": 0.62
+          }
+        }
+      },
+      "lta": 3.103548485925708
+    },
+    "15": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.93,
+        0.25,
+        0.18,
+        0.8200000000000001,
+        0.39,
+        0.35000000000000003,
+        0.99,
+        0.6
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.93
+          },
+          "2": {
+            "service_rate": 0.25
+          },
+          "3": {
+            "service_rate": 0.18
+          },
+          "4": {
+            "service_rate": 0.8200000000000001
+          },
+          "5": {
+            "service_rate": 0.39
+          },
+          "6": {
+            "service_rate": 0.35000000000000003
+          },
+          "7": {
+            "service_rate": 0.99
+          },
+          "8": {
+            "service_rate": 0.6
+          }
+        }
+      },
+      "lta": 3.943735624184909
+    },
+    "16": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.88,
+        0.36,
+        0.62,
+        0.33,
+        0.29,
+        0.44,
+        0.93,
+        0.67
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.88
+          },
+          "2": {
+            "service_rate": 0.36
+          },
+          "3": {
+            "service_rate": 0.62
+          },
+          "4": {
+            "service_rate": 0.33
+          },
+          "5": {
+            "service_rate": 0.29
+          },
+          "6": {
+            "service_rate": 0.44
+          },
+          "7": {
+            "service_rate": 0.93
+          },
+          "8": {
+            "service_rate": 0.67
+          }
+        }
+      },
+      "lta": 3.3854700660616253
+    },
+    "17": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.03,
+        0.27,
+        0.8300000000000001,
+        0.55,
+        0.32,
+        0.75,
+        0.58,
+        0.31
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.03
+          },
+          "2": {
+            "service_rate": 0.27
+          },
+          "3": {
+            "service_rate": 0.8300000000000001
+          },
+          "4": {
+            "service_rate": 0.55
+          },
+          "5": {
+            "service_rate": 0.32
+          },
+          "6": {
+            "service_rate": 0.75
+          },
+          "7": {
+            "service_rate": 0.58
+          },
+          "8": {
+            "service_rate": 0.31
+          }
+        }
+      },
+      "lta": 5.062316538388436
+    },
+    "18": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.24,
+        0.07,
+        0.55,
+        0.3,
+        0.46,
+        0.79,
+        0.31,
+        0.66
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.24
+          },
+          "2": {
+            "service_rate": 0.07
+          },
+          "3": {
+            "service_rate": 0.55
+          },
+          "4": {
+            "service_rate": 0.3
+          },
+          "5": {
+            "service_rate": 0.46
+          },
+          "6": {
+            "service_rate": 0.79
+          },
+          "7": {
+            "service_rate": 0.31
+          },
+          "8": {
+            "service_rate": 0.66
+          }
+        }
+      },
+      "lta": 5.486226746952759
+    },
+    "19": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.77,
+        0.06,
+        0.77,
+        0.99,
+        0.93,
+        0.34,
+        0.15,
+        0.78
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.77
+          },
+          "2": {
+            "service_rate": 0.06
+          },
+          "3": {
+            "service_rate": 0.77
+          },
+          "4": {
+            "service_rate": 0.99
+          },
+          "5": {
+            "service_rate": 0.93
+          },
+          "6": {
+            "service_rate": 0.34
+          },
+          "7": {
+            "service_rate": 0.15
+          },
+          "8": {
+            "service_rate": 0.78
+          }
+        }
+      },
+      "lta": 3.655561249575895
+    },
+    "20": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.62,
+        0.88,
+        0.31,
+        0.7000000000000001,
+        0.6,
+        0.47000000000000003,
+        0.31,
+        0.17
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.62
+          },
+          "2": {
+            "service_rate": 0.88
+          },
+          "3": {
+            "service_rate": 0.31
+          },
+          "4": {
+            "service_rate": 0.7000000000000001
+          },
+          "5": {
+            "service_rate": 0.6
+          },
+          "6": {
+            "service_rate": 0.47000000000000003
+          },
+          "7": {
+            "service_rate": 0.31
+          },
+          "8": {
+            "service_rate": 0.17
+          }
+        }
+      },
+      "lta": 3.0578026736677386
+    },
+    "21": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.11,
+        0.9,
+        0.1,
+        0.7000000000000001,
+        0.55,
+        0.15,
+        0.64,
+        0.96
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.11
+          },
+          "2": {
+            "service_rate": 0.9
+          },
+          "3": {
+            "service_rate": 0.1
+          },
+          "4": {
+            "service_rate": 0.7000000000000001
+          },
+          "5": {
+            "service_rate": 0.55
+          },
+          "6": {
+            "service_rate": 0.15
+          },
+          "7": {
+            "service_rate": 0.64
+          },
+          "8": {
+            "service_rate": 0.96
+          }
+        }
+      },
+      "lta": 5.098094125078691
+    },
+    "22": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.71,
+        0.49,
+        0.9,
+        0.44,
+        0.06,
+        0.2,
+        0.56,
+        0.18
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.71
+          },
+          "2": {
+            "service_rate": 0.49
+          },
+          "3": {
+            "service_rate": 0.9
+          },
+          "4": {
+            "service_rate": 0.44
+          },
+          "5": {
+            "service_rate": 0.06
+          },
+          "6": {
+            "service_rate": 0.2
+          },
+          "7": {
+            "service_rate": 0.56
+          },
+          "8": {
+            "service_rate": 0.18
+          }
+        }
+      },
+      "lta": 3.5720448254809507
+    },
+    "23": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.47000000000000003,
+        1.0,
+        0.88,
+        0.28,
+        0.04,
+        0.81,
+        0.85,
+        0.44
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.47000000000000003
+          },
+          "2": {
+            "service_rate": 1.0
+          },
+          "3": {
+            "service_rate": 0.88
+          },
+          "4": {
+            "service_rate": 0.28
+          },
+          "5": {
+            "service_rate": 0.04
+          },
+          "6": {
+            "service_rate": 0.81
+          },
+          "7": {
+            "service_rate": 0.85
+          },
+          "8": {
+            "service_rate": 0.44
+          }
+        }
+      },
+      "lta": 3.6036243926400484
+    },
+    "24": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.93,
+        0.47000000000000003,
+        0.53,
+        0.77,
+        0.52,
+        0.65,
+        0.8200000000000001,
+        0.25
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.93
+          },
+          "2": {
+            "service_rate": 0.47000000000000003
+          },
+          "3": {
+            "service_rate": 0.53
+          },
+          "4": {
+            "service_rate": 0.77
+          },
+          "5": {
+            "service_rate": 0.52
+          },
+          "6": {
+            "service_rate": 0.65
+          },
+          "7": {
+            "service_rate": 0.8200000000000001
+          },
+          "8": {
+            "service_rate": 0.25
+          }
+        }
+      },
+      "lta": 2.851690089836041
+    },
+    "25": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.71,
+        0.72,
+        1.0,
+        0.98,
+        0.72,
+        0.12,
+        0.81,
+        0.29
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.71
+          },
+          "2": {
+            "service_rate": 0.72
+          },
+          "3": {
+            "service_rate": 1.0
+          },
+          "4": {
+            "service_rate": 0.98
+          },
+          "5": {
+            "service_rate": 0.72
+          },
+          "6": {
+            "service_rate": 0.12
+          },
+          "7": {
+            "service_rate": 0.81
+          },
+          "8": {
+            "service_rate": 0.29
+          }
+        }
+      },
+      "lta": 2.4560446704740597
+    },
+    "26": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.9,
+        0.06,
+        0.8,
+        0.16,
+        0.56,
+        0.61,
+        0.67,
+        0.14
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.9
+          },
+          "2": {
+            "service_rate": 0.06
+          },
+          "3": {
+            "service_rate": 0.8
+          },
+          "4": {
+            "service_rate": 0.16
+          },
+          "5": {
+            "service_rate": 0.56
+          },
+          "6": {
+            "service_rate": 0.61
+          },
+          "7": {
+            "service_rate": 0.67
+          },
+          "8": {
+            "service_rate": 0.14
+          }
+        }
+      },
+      "lta": 4.368182827713191
+    },
+    "27": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.24,
+        0.46,
+        0.39,
+        0.73,
+        0.6,
+        0.55,
+        0.21,
+        0.44
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.24
+          },
+          "2": {
+            "service_rate": 0.46
+          },
+          "3": {
+            "service_rate": 0.39
+          },
+          "4": {
+            "service_rate": 0.73
+          },
+          "5": {
+            "service_rate": 0.6
+          },
+          "6": {
+            "service_rate": 0.55
+          },
+          "7": {
+            "service_rate": 0.21
+          },
+          "8": {
+            "service_rate": 0.44
+          }
+        }
+      },
+      "lta": 4.151175973280019
+    },
+    "28": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.84,
+        0.86,
+        0.4,
+        0.59,
+        0.6,
+        0.96,
+        0.45,
+        0.55
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.84
+          },
+          "2": {
+            "service_rate": 0.86
+          },
+          "3": {
+            "service_rate": 0.4
+          },
+          "4": {
+            "service_rate": 0.59
+          },
+          "5": {
+            "service_rate": 0.6
+          },
+          "6": {
+            "service_rate": 0.96
+          },
+          "7": {
+            "service_rate": 0.45
+          },
+          "8": {
+            "service_rate": 0.55
+          }
+        }
+      },
+      "lta": 2.6961503795376864
+    },
+    "29": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.22,
+        0.15,
+        0.37,
+        0.41000000000000003,
+        0.59,
+        0.73,
+        0.9500000000000001,
+        0.12
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.22
+          },
+          "2": {
+            "service_rate": 0.15
+          },
+          "3": {
+            "service_rate": 0.37
+          },
+          "4": {
+            "service_rate": 0.41000000000000003
+          },
+          "5": {
+            "service_rate": 0.59
+          },
+          "6": {
+            "service_rate": 0.73
+          },
+          "7": {
+            "service_rate": 0.9500000000000001
+          },
+          "8": {
+            "service_rate": 0.12
+          }
+        }
+      },
+      "lta": 5.227139156672847
+    },
+    "30": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.03,
+        0.72,
+        0.17,
+        0.68,
+        0.07,
+        0.76,
+        0.18,
+        0.87
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.03
+          },
+          "2": {
+            "service_rate": 0.72
+          },
+          "3": {
+            "service_rate": 0.17
+          },
+          "4": {
+            "service_rate": 0.68
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.76
+          },
+          "7": {
+            "service_rate": 0.18
+          },
+          "8": {
+            "service_rate": 0.87
+          }
+        }
+      },
+      "lta": 6.172031756352766
+    },
+    "31": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.66,
+        0.9500000000000001,
+        0.48,
+        0.88,
+        0.45,
+        0.74,
+        0.29,
+        0.84
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.66
+          },
+          "2": {
+            "service_rate": 0.9500000000000001
+          },
+          "3": {
+            "service_rate": 0.48
+          },
+          "4": {
+            "service_rate": 0.88
+          },
+          "5": {
+            "service_rate": 0.45
+          },
+          "6": {
+            "service_rate": 0.74
+          },
+          "7": {
+            "service_rate": 0.29
+          },
+          "8": {
+            "service_rate": 0.84
+          }
+        }
+      },
+      "lta": 2.697361410036019
+    },
+    "32": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.39,
+        0.17,
+        0.04,
+        0.59,
+        0.28,
+        0.45,
+        0.52,
+        0.85
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.39
+          },
+          "2": {
+            "service_rate": 0.17
+          },
+          "3": {
+            "service_rate": 0.04
+          },
+          "4": {
+            "service_rate": 0.59
+          },
+          "5": {
+            "service_rate": 0.28
+          },
+          "6": {
+            "service_rate": 0.45
+          },
+          "7": {
+            "service_rate": 0.52
+          },
+          "8": {
+            "service_rate": 0.85
+          }
+        }
+      },
+      "lta": 6.059549789672722
+    },
+    "33": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.73,
+        0.08,
+        0.46,
+        0.23,
+        0.77,
+        0.3,
+        0.89,
+        1.0
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.73
+          },
+          "2": {
+            "service_rate": 0.08
+          },
+          "3": {
+            "service_rate": 0.46
+          },
+          "4": {
+            "service_rate": 0.23
+          },
+          "5": {
+            "service_rate": 0.77
+          },
+          "6": {
+            "service_rate": 0.3
+          },
+          "7": {
+            "service_rate": 0.89
+          },
+          "8": {
+            "service_rate": 1.0
+          }
+        }
+      },
+      "lta": 4.665231135252425
+    },
+    "34": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.17,
+        0.3,
+        0.89,
+        0.39,
+        0.23,
+        0.27,
+        0.01,
+        0.22
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.17
+          },
+          "2": {
+            "service_rate": 0.3
+          },
+          "3": {
+            "service_rate": 0.89
+          },
+          "4": {
+            "service_rate": 0.39
+          },
+          "5": {
+            "service_rate": 0.23
+          },
+          "6": {
+            "service_rate": 0.27
+          },
+          "7": {
+            "service_rate": 0.01
+          },
+          "8": {
+            "service_rate": 0.22
+          }
+        }
+      },
+      "lta": 6.050420181855908
+    },
+    "35": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.66,
+        0.9500000000000001,
+        0.26,
+        0.2,
+        0.42,
+        0.99,
+        0.03,
+        0.6900000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.66
+          },
+          "2": {
+            "service_rate": 0.9500000000000001
+          },
+          "3": {
+            "service_rate": 0.26
+          },
+          "4": {
+            "service_rate": 0.2
+          },
+          "5": {
+            "service_rate": 0.42
+          },
+          "6": {
+            "service_rate": 0.99
+          },
+          "7": {
+            "service_rate": 0.03
+          },
+          "8": {
+            "service_rate": 0.6900000000000001
+          }
+        }
+      },
+      "lta": 3.70730104624946
+    },
+    "36": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.48,
+        0.63,
+        0.65,
+        0.76,
+        0.05,
+        0.64,
+        0.26,
+        0.41000000000000003
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.48
+          },
+          "2": {
+            "service_rate": 0.63
+          },
+          "3": {
+            "service_rate": 0.65
+          },
+          "4": {
+            "service_rate": 0.76
+          },
+          "5": {
+            "service_rate": 0.05
+          },
+          "6": {
+            "service_rate": 0.64
+          },
+          "7": {
+            "service_rate": 0.26
+          },
+          "8": {
+            "service_rate": 0.41000000000000003
+          }
+        }
+      },
+      "lta": 3.7182545652393095
+    },
+    "37": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.59,
+        0.66,
+        0.11,
+        0.19,
+        0.85,
+        0.37,
+        0.98,
+        0.55
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.59
+          },
+          "2": {
+            "service_rate": 0.66
+          },
+          "3": {
+            "service_rate": 0.11
+          },
+          "4": {
+            "service_rate": 0.19
+          },
+          "5": {
+            "service_rate": 0.85
+          },
+          "6": {
+            "service_rate": 0.37
+          },
+          "7": {
+            "service_rate": 0.98
+          },
+          "8": {
+            "service_rate": 0.55
+          }
+        }
+      },
+      "lta": 4.40831820864447
+    },
+    "38": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.33,
+        0.38,
+        0.3,
+        0.8300000000000001,
+        0.28,
+        0.29,
+        0.0,
+        0.65
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.33
+          },
+          "2": {
+            "service_rate": 0.38
+          },
+          "3": {
+            "service_rate": 0.3
+          },
+          "4": {
+            "service_rate": 0.8300000000000001
+          },
+          "5": {
+            "service_rate": 0.28
+          },
+          "6": {
+            "service_rate": 0.29
+          },
+          "7": {
+            "service_rate": 0.0
+          },
+          "8": {
+            "service_rate": 0.65
+          }
+        }
+      },
+      "lta": 6.982281630021423
+    },
+    "39": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.98,
+        0.89,
+        0.91,
+        0.64,
+        0.24,
+        0.92,
+        0.61,
+        0.6
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.98
+          },
+          "2": {
+            "service_rate": 0.89
+          },
+          "3": {
+            "service_rate": 0.91
+          },
+          "4": {
+            "service_rate": 0.64
+          },
+          "5": {
+            "service_rate": 0.24
+          },
+          "6": {
+            "service_rate": 0.92
+          },
+          "7": {
+            "service_rate": 0.61
+          },
+          "8": {
+            "service_rate": 0.6
+          }
+        }
+      },
+      "lta": 2.2578062937365275
+    },
+    "40": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.98,
+        0.05,
+        0.9500000000000001,
+        0.61,
+        0.5700000000000001,
+        0.44,
+        0.56,
+        0.32
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.98
+          },
+          "2": {
+            "service_rate": 0.05
+          },
+          "3": {
+            "service_rate": 0.9500000000000001
+          },
+          "4": {
+            "service_rate": 0.61
+          },
+          "5": {
+            "service_rate": 0.5700000000000001
+          },
+          "6": {
+            "service_rate": 0.44
+          },
+          "7": {
+            "service_rate": 0.56
+          },
+          "8": {
+            "service_rate": 0.32
+          }
+        }
+      },
+      "lta": 3.6436452886773627
+    },
+    "41": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.53,
+        0.02,
+        0.7000000000000001,
+        0.81,
+        0.87,
+        1.0,
+        0.25,
+        0.41000000000000003
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.53
+          },
+          "2": {
+            "service_rate": 0.02
+          },
+          "3": {
+            "service_rate": 0.7000000000000001
+          },
+          "4": {
+            "service_rate": 0.81
+          },
+          "5": {
+            "service_rate": 0.87
+          },
+          "6": {
+            "service_rate": 1.0
+          },
+          "7": {
+            "service_rate": 0.25
+          },
+          "8": {
+            "service_rate": 0.41000000000000003
+          }
+        }
+      },
+      "lta": 4.16366858327932
+    },
+    "42": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.12,
+        0.12,
+        0.38,
+        0.04,
+        0.12,
+        1.0,
+        0.24,
+        0.55
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.12
+          },
+          "2": {
+            "service_rate": 0.12
+          },
+          "3": {
+            "service_rate": 0.38
+          },
+          "4": {
+            "service_rate": 0.04
+          },
+          "5": {
+            "service_rate": 0.12
+          },
+          "6": {
+            "service_rate": 1.0
+          },
+          "7": {
+            "service_rate": 0.24
+          },
+          "8": {
+            "service_rate": 0.55
+          }
+        }
+      },
+      "lta": 8.038206666666667
+    },
+    "43": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.25,
+        0.24,
+        0.36,
+        0.24,
+        0.81,
+        0.26,
+        0.06,
+        0.21
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.25
+          },
+          "2": {
+            "service_rate": 0.24
+          },
+          "3": {
+            "service_rate": 0.36
+          },
+          "4": {
+            "service_rate": 0.24
+          },
+          "5": {
+            "service_rate": 0.81
+          },
+          "6": {
+            "service_rate": 0.26
+          },
+          "7": {
+            "service_rate": 0.06
+          },
+          "8": {
+            "service_rate": 0.21
+          }
+        }
+      },
+      "lta": 5.87105081142519
+    },
+    "44": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.56,
+        0.85,
+        0.46,
+        0.72,
+        0.54,
+        0.37,
+        0.16,
+        0.24
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.56
+          },
+          "2": {
+            "service_rate": 0.85
+          },
+          "3": {
+            "service_rate": 0.46
+          },
+          "4": {
+            "service_rate": 0.72
+          },
+          "5": {
+            "service_rate": 0.54
+          },
+          "6": {
+            "service_rate": 0.37
+          },
+          "7": {
+            "service_rate": 0.16
+          },
+          "8": {
+            "service_rate": 0.24
+          }
+        }
+      },
+      "lta": 2.9581224694541617
+    },
+    "45": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.99,
+        0.37,
+        0.64,
+        0.07,
+        0.01,
+        0.35000000000000003,
+        0.43,
+        0.87
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.99
+          },
+          "2": {
+            "service_rate": 0.37
+          },
+          "3": {
+            "service_rate": 0.64
+          },
+          "4": {
+            "service_rate": 0.07
+          },
+          "5": {
+            "service_rate": 0.01
+          },
+          "6": {
+            "service_rate": 0.35000000000000003
+          },
+          "7": {
+            "service_rate": 0.43
+          },
+          "8": {
+            "service_rate": 0.87
+          }
+        }
+      },
+      "lta": 5.2648602966511575
+    },
+    "46": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.78,
+        0.42,
+        0.36,
+        0.3,
+        0.72,
+        0.86,
+        0.75,
+        0.9500000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.78
+          },
+          "2": {
+            "service_rate": 0.42
+          },
+          "3": {
+            "service_rate": 0.36
+          },
+          "4": {
+            "service_rate": 0.3
+          },
+          "5": {
+            "service_rate": 0.72
+          },
+          "6": {
+            "service_rate": 0.86
+          },
+          "7": {
+            "service_rate": 0.75
+          },
+          "8": {
+            "service_rate": 0.9500000000000001
+          }
+        }
+      },
+      "lta": 3.5686443175671534
+    },
+    "47": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.14,
+        0.93,
+        0.21,
+        0.8,
+        0.6900000000000001,
+        0.79,
+        0.21,
+        0.81
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.14
+          },
+          "2": {
+            "service_rate": 0.93
+          },
+          "3": {
+            "service_rate": 0.21
+          },
+          "4": {
+            "service_rate": 0.8
+          },
+          "5": {
+            "service_rate": 0.6900000000000001
+          },
+          "6": {
+            "service_rate": 0.79
+          },
+          "7": {
+            "service_rate": 0.21
+          },
+          "8": {
+            "service_rate": 0.81
+          }
+        }
+      },
+      "lta": 4.198568655245771
+    },
+    "48": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.4,
+        0.24,
+        0.51,
+        0.6900000000000001,
+        0.73,
+        0.1,
+        0.47000000000000003,
+        0.26
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.4
+          },
+          "2": {
+            "service_rate": 0.24
+          },
+          "3": {
+            "service_rate": 0.51
+          },
+          "4": {
+            "service_rate": 0.6900000000000001
+          },
+          "5": {
+            "service_rate": 0.73
+          },
+          "6": {
+            "service_rate": 0.1
+          },
+          "7": {
+            "service_rate": 0.47000000000000003
+          },
+          "8": {
+            "service_rate": 0.26
+          }
+        }
+      },
+      "lta": 4.3164028960740035
+    },
+    "49": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.67,
+        0.56,
+        0.21,
+        0.99,
+        0.92,
+        0.35000000000000003,
+        0.92,
+        0.8
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.67
+          },
+          "2": {
+            "service_rate": 0.56
+          },
+          "3": {
+            "service_rate": 0.21
+          },
+          "4": {
+            "service_rate": 0.99
+          },
+          "5": {
+            "service_rate": 0.92
+          },
+          "6": {
+            "service_rate": 0.35000000000000003
+          },
+          "7": {
+            "service_rate": 0.92
+          },
+          "8": {
+            "service_rate": 0.8
+          }
+        }
+      },
+      "lta": 3.364608869689919
+    },
+    "50": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.05,
+        0.09,
+        0.74,
+        0.67,
+        0.07,
+        0.48,
+        0.63,
+        0.53
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.05
+          },
+          "2": {
+            "service_rate": 0.09
+          },
+          "3": {
+            "service_rate": 0.74
+          },
+          "4": {
+            "service_rate": 0.67
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.48
+          },
+          "7": {
+            "service_rate": 0.63
+          },
+          "8": {
+            "service_rate": 0.53
+          }
+        }
+      },
+      "lta": 6.290445789340068
+    },
+    "51": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.89,
+        0.1,
+        0.8300000000000001,
+        0.24,
+        0.73,
+        0.39,
+        0.15,
+        0.19
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.89
+          },
+          "2": {
+            "service_rate": 0.1
+          },
+          "3": {
+            "service_rate": 0.8300000000000001
+          },
+          "4": {
+            "service_rate": 0.24
+          },
+          "5": {
+            "service_rate": 0.73
+          },
+          "6": {
+            "service_rate": 0.39
+          },
+          "7": {
+            "service_rate": 0.15
+          },
+          "8": {
+            "service_rate": 0.19
+          }
+        }
+      },
+      "lta": 3.9650665738913484
+    },
+    "52": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.23,
+        0.42,
+        0.81,
+        0.24,
+        0.13,
+        0.42,
+        0.76,
+        0.85
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.23
+          },
+          "2": {
+            "service_rate": 0.42
+          },
+          "3": {
+            "service_rate": 0.81
+          },
+          "4": {
+            "service_rate": 0.24
+          },
+          "5": {
+            "service_rate": 0.13
+          },
+          "6": {
+            "service_rate": 0.42
+          },
+          "7": {
+            "service_rate": 0.76
+          },
+          "8": {
+            "service_rate": 0.85
+          }
+        }
+      },
+      "lta": 4.927279840353884
+    },
+    "53": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.47000000000000003,
+        0.17,
+        0.7000000000000001,
+        0.89,
+        0.81,
+        0.19,
+        0.9400000000000001,
+        0.99
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.47000000000000003
+          },
+          "2": {
+            "service_rate": 0.17
+          },
+          "3": {
+            "service_rate": 0.7000000000000001
+          },
+          "4": {
+            "service_rate": 0.89
+          },
+          "5": {
+            "service_rate": 0.81
+          },
+          "6": {
+            "service_rate": 0.19
+          },
+          "7": {
+            "service_rate": 0.9400000000000001
+          },
+          "8": {
+            "service_rate": 0.99
+          }
+        }
+      },
+      "lta": 3.8384988634853197
+    },
+    "54": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.45,
+        0.93,
+        0.89,
+        0.6900000000000001,
+        0.07,
+        0.35000000000000003,
+        0.97,
+        0.15
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.45
+          },
+          "2": {
+            "service_rate": 0.93
+          },
+          "3": {
+            "service_rate": 0.89
+          },
+          "4": {
+            "service_rate": 0.6900000000000001
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.35000000000000003
+          },
+          "7": {
+            "service_rate": 0.97
+          },
+          "8": {
+            "service_rate": 0.15
+          }
+        }
+      },
+      "lta": 3.1375669821767027
+    },
+    "55": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.46,
+        0.23,
+        0.26,
+        0.8,
+        0.88,
+        0.58,
+        0.93,
+        0.32
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.46
+          },
+          "2": {
+            "service_rate": 0.23
+          },
+          "3": {
+            "service_rate": 0.26
+          },
+          "4": {
+            "service_rate": 0.8
+          },
+          "5": {
+            "service_rate": 0.88
+          },
+          "6": {
+            "service_rate": 0.58
+          },
+          "7": {
+            "service_rate": 0.93
+          },
+          "8": {
+            "service_rate": 0.32
+          }
+        }
+      },
+      "lta": 4.208965607994153
+    },
+    "56": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.76,
+        0.19,
+        0.92,
+        0.21,
+        0.19,
+        0.9,
+        0.99,
+        0.9500000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.76
+          },
+          "2": {
+            "service_rate": 0.19
+          },
+          "3": {
+            "service_rate": 0.92
+          },
+          "4": {
+            "service_rate": 0.21
+          },
+          "5": {
+            "service_rate": 0.19
+          },
+          "6": {
+            "service_rate": 0.9
+          },
+          "7": {
+            "service_rate": 0.99
+          },
+          "8": {
+            "service_rate": 0.9500000000000001
+          }
+        }
+      },
+      "lta": 4.09296535502186
+    },
+    "57": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.88,
+        0.92,
+        0.56,
+        0.7000000000000001,
+        1.0,
+        0.0,
+        0.7000000000000001,
+        0.04
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.88
+          },
+          "2": {
+            "service_rate": 0.92
+          },
+          "3": {
+            "service_rate": 0.56
+          },
+          "4": {
+            "service_rate": 0.7000000000000001
+          },
+          "5": {
+            "service_rate": 1.0
+          },
+          "6": {
+            "service_rate": 0.0
+          },
+          "7": {
+            "service_rate": 0.7000000000000001
+          },
+          "8": {
+            "service_rate": 0.04
+          }
+        }
+      },
+      "lta": 4.339360100385205
+    },
+    "58": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.28,
+        0.9400000000000001,
+        0.49,
+        0.23,
+        0.08,
+        0.42,
+        0.84,
+        0.66
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.28
+          },
+          "2": {
+            "service_rate": 0.9400000000000001
+          },
+          "3": {
+            "service_rate": 0.49
+          },
+          "4": {
+            "service_rate": 0.23
+          },
+          "5": {
+            "service_rate": 0.08
+          },
+          "6": {
+            "service_rate": 0.42
+          },
+          "7": {
+            "service_rate": 0.84
+          },
+          "8": {
+            "service_rate": 0.66
+          }
+        }
+      },
+      "lta": 4.547516424720105
+    },
+    "59": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.43,
+        0.45,
+        0.87,
+        0.39,
+        0.07,
+        0.09,
+        0.07,
+        0.62
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.43
+          },
+          "2": {
+            "service_rate": 0.45
+          },
+          "3": {
+            "service_rate": 0.87
+          },
+          "4": {
+            "service_rate": 0.39
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.09
+          },
+          "7": {
+            "service_rate": 0.07
+          },
+          "8": {
+            "service_rate": 0.62
+          }
+        }
+      },
+      "lta": 4.816860614700232
+    },
+    "60": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.88,
+        0.3,
+        0.22,
+        0.24,
+        0.07,
+        0.61,
+        0.9,
+        0.99
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.88
+          },
+          "2": {
+            "service_rate": 0.3
+          },
+          "3": {
+            "service_rate": 0.22
+          },
+          "4": {
+            "service_rate": 0.24
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.61
+          },
+          "7": {
+            "service_rate": 0.9
+          },
+          "8": {
+            "service_rate": 0.99
+          }
+        }
+      },
+      "lta": 4.956856354787708
+    },
+    "61": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.26,
+        0.77,
+        0.08,
+        0.88,
+        0.81,
+        0.99,
+        0.78,
+        0.48
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.26
+          },
+          "2": {
+            "service_rate": 0.77
+          },
+          "3": {
+            "service_rate": 0.08
+          },
+          "4": {
+            "service_rate": 0.88
+          },
+          "5": {
+            "service_rate": 0.81
+          },
+          "6": {
+            "service_rate": 0.99
+          },
+          "7": {
+            "service_rate": 0.78
+          },
+          "8": {
+            "service_rate": 0.48
+          }
+        }
+      },
+      "lta": 4.262013572820627
+    },
+    "62": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.17,
+        0.53,
+        0.64,
+        0.55,
+        0.09,
+        0.11,
+        0.16,
+        0.78
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.17
+          },
+          "2": {
+            "service_rate": 0.53
+          },
+          "3": {
+            "service_rate": 0.64
+          },
+          "4": {
+            "service_rate": 0.55
+          },
+          "5": {
+            "service_rate": 0.09
+          },
+          "6": {
+            "service_rate": 0.11
+          },
+          "7": {
+            "service_rate": 0.16
+          },
+          "8": {
+            "service_rate": 0.78
+          }
+        }
+      },
+      "lta": 5.3585866666666675
+    },
+    "63": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.9500000000000001,
+        0.47000000000000003,
+        0.36,
+        0.28,
+        0.93,
+        0.51,
+        0.29,
+        0.05
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.9500000000000001
+          },
+          "2": {
+            "service_rate": 0.47000000000000003
+          },
+          "3": {
+            "service_rate": 0.36
+          },
+          "4": {
+            "service_rate": 0.28
+          },
+          "5": {
+            "service_rate": 0.93
+          },
+          "6": {
+            "service_rate": 0.51
+          },
+          "7": {
+            "service_rate": 0.29
+          },
+          "8": {
+            "service_rate": 0.05
+          }
+        }
+      },
+      "lta": 3.3190833311134806
+    },
+    "64": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.25,
+        0.06,
+        0.93,
+        0.61,
+        0.86,
+        0.53,
+        0.25,
+        0.9
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.25
+          },
+          "2": {
+            "service_rate": 0.06
+          },
+          "3": {
+            "service_rate": 0.93
+          },
+          "4": {
+            "service_rate": 0.61
+          },
+          "5": {
+            "service_rate": 0.86
+          },
+          "6": {
+            "service_rate": 0.53
+          },
+          "7": {
+            "service_rate": 0.25
+          },
+          "8": {
+            "service_rate": 0.9
+          }
+        }
+      },
+      "lta": 4.54325406390127
+    },
+    "65": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.34,
+        0.62,
+        0.55,
+        0.84,
+        0.08,
+        0.74,
+        0.74,
+        0.79
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.34
+          },
+          "2": {
+            "service_rate": 0.62
+          },
+          "3": {
+            "service_rate": 0.55
+          },
+          "4": {
+            "service_rate": 0.84
+          },
+          "5": {
+            "service_rate": 0.08
+          },
+          "6": {
+            "service_rate": 0.74
+          },
+          "7": {
+            "service_rate": 0.74
+          },
+          "8": {
+            "service_rate": 0.79
+          }
+        }
+      },
+      "lta": 3.9396012606962714
+    },
+    "66": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.68,
+        0.59,
+        0.8300000000000001,
+        0.88,
+        0.9,
+        0.34,
+        0.37,
+        0.19
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.68
+          },
+          "2": {
+            "service_rate": 0.59
+          },
+          "3": {
+            "service_rate": 0.8300000000000001
+          },
+          "4": {
+            "service_rate": 0.88
+          },
+          "5": {
+            "service_rate": 0.9
+          },
+          "6": {
+            "service_rate": 0.34
+          },
+          "7": {
+            "service_rate": 0.37
+          },
+          "8": {
+            "service_rate": 0.19
+          }
+        }
+      },
+      "lta": 2.685093133108586
+    },
+    "67": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.39,
+        0.58,
+        0.05,
+        0.44,
+        0.64,
+        0.4,
+        0.9,
+        0.66
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.39
+          },
+          "2": {
+            "service_rate": 0.58
+          },
+          "3": {
+            "service_rate": 0.05
+          },
+          "4": {
+            "service_rate": 0.44
+          },
+          "5": {
+            "service_rate": 0.64
+          },
+          "6": {
+            "service_rate": 0.4
+          },
+          "7": {
+            "service_rate": 0.9
+          },
+          "8": {
+            "service_rate": 0.66
+          }
+        }
+      },
+      "lta": 4.858640641965935
+    },
+    "68": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.41000000000000003,
+        0.79,
+        0.55,
+        0.23,
+        0.55,
+        0.16,
+        0.13,
+        0.27
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.41000000000000003
+          },
+          "2": {
+            "service_rate": 0.79
+          },
+          "3": {
+            "service_rate": 0.55
+          },
+          "4": {
+            "service_rate": 0.23
+          },
+          "5": {
+            "service_rate": 0.55
+          },
+          "6": {
+            "service_rate": 0.16
+          },
+          "7": {
+            "service_rate": 0.13
+          },
+          "8": {
+            "service_rate": 0.27
+          }
+        }
+      },
+      "lta": 3.7628477074726714
+    },
+    "69": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.05,
+        0.38,
+        0.07,
+        0.5,
+        0.42,
+        0.76,
+        0.65,
+        0.84
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.05
+          },
+          "2": {
+            "service_rate": 0.38
+          },
+          "3": {
+            "service_rate": 0.07
+          },
+          "4": {
+            "service_rate": 0.5
+          },
+          "5": {
+            "service_rate": 0.42
+          },
+          "6": {
+            "service_rate": 0.76
+          },
+          "7": {
+            "service_rate": 0.65
+          },
+          "8": {
+            "service_rate": 0.84
+          }
+        }
+      },
+      "lta": 6.1385030962484715
+    },
+    "70": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.33,
+        0.72,
+        0.24,
+        0.92,
+        0.22,
+        0.84,
+        0.28,
+        0.96
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.33
+          },
+          "2": {
+            "service_rate": 0.72
+          },
+          "3": {
+            "service_rate": 0.24
+          },
+          "4": {
+            "service_rate": 0.92
+          },
+          "5": {
+            "service_rate": 0.22
+          },
+          "6": {
+            "service_rate": 0.84
+          },
+          "7": {
+            "service_rate": 0.28
+          },
+          "8": {
+            "service_rate": 0.96
+          }
+        }
+      },
+      "lta": 4.021250024936757
+    },
+    "71": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.42,
+        0.9400000000000001,
+        0.75,
+        0.38,
+        0.32,
+        0.0,
+        0.67,
+        0.66
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.42
+          },
+          "2": {
+            "service_rate": 0.9400000000000001
+          },
+          "3": {
+            "service_rate": 0.75
+          },
+          "4": {
+            "service_rate": 0.38
+          },
+          "5": {
+            "service_rate": 0.32
+          },
+          "6": {
+            "service_rate": 0.0
+          },
+          "7": {
+            "service_rate": 0.67
+          },
+          "8": {
+            "service_rate": 0.66
+          }
+        }
+      },
+      "lta": 4.126992153119264
+    },
+    "72": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.58,
+        0.88,
+        0.73,
+        0.68,
+        0.43,
+        0.81,
+        0.46,
+        0.98
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.58
+          },
+          "2": {
+            "service_rate": 0.88
+          },
+          "3": {
+            "service_rate": 0.73
+          },
+          "4": {
+            "service_rate": 0.68
+          },
+          "5": {
+            "service_rate": 0.43
+          },
+          "6": {
+            "service_rate": 0.81
+          },
+          "7": {
+            "service_rate": 0.46
+          },
+          "8": {
+            "service_rate": 0.98
+          }
+        }
+      },
+      "lta": 2.7107254224122777
+    },
+    "73": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.5,
+        0.89,
+        0.72,
+        0.47000000000000003,
+        0.98,
+        0.18,
+        0.25,
+        0.44
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.5
+          },
+          "2": {
+            "service_rate": 0.89
+          },
+          "3": {
+            "service_rate": 0.72
+          },
+          "4": {
+            "service_rate": 0.47000000000000003
+          },
+          "5": {
+            "service_rate": 0.98
+          },
+          "6": {
+            "service_rate": 0.18
+          },
+          "7": {
+            "service_rate": 0.25
+          },
+          "8": {
+            "service_rate": 0.44
+          }
+        }
+      },
+      "lta": 2.8838809039951965
+    },
+    "74": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.23,
+        0.79,
+        0.5700000000000001,
+        0.05,
+        0.34,
+        0.48,
+        0.71,
+        0.22
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.23
+          },
+          "2": {
+            "service_rate": 0.79
+          },
+          "3": {
+            "service_rate": 0.5700000000000001
+          },
+          "4": {
+            "service_rate": 0.05
+          },
+          "5": {
+            "service_rate": 0.34
+          },
+          "6": {
+            "service_rate": 0.48
+          },
+          "7": {
+            "service_rate": 0.71
+          },
+          "8": {
+            "service_rate": 0.22
+          }
+        }
+      },
+      "lta": 4.882356168720034
+    },
+    "75": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.56,
+        0.84,
+        0.47000000000000003,
+        0.46,
+        0.15,
+        0.01,
+        0.4,
+        0.92
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.56
+          },
+          "2": {
+            "service_rate": 0.84
+          },
+          "3": {
+            "service_rate": 0.47000000000000003
+          },
+          "4": {
+            "service_rate": 0.46
+          },
+          "5": {
+            "service_rate": 0.15
+          },
+          "6": {
+            "service_rate": 0.01
+          },
+          "7": {
+            "service_rate": 0.4
+          },
+          "8": {
+            "service_rate": 0.92
+          }
+        }
+      },
+      "lta": 4.252211475854085
+    },
+    "76": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.26,
+        0.23,
+        0.37,
+        0.75,
+        0.55,
+        0.7000000000000001,
+        0.66,
+        0.12
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.26
+          },
+          "2": {
+            "service_rate": 0.23
+          },
+          "3": {
+            "service_rate": 0.37
+          },
+          "4": {
+            "service_rate": 0.75
+          },
+          "5": {
+            "service_rate": 0.55
+          },
+          "6": {
+            "service_rate": 0.7000000000000001
+          },
+          "7": {
+            "service_rate": 0.66
+          },
+          "8": {
+            "service_rate": 0.12
+          }
+        }
+      },
+      "lta": 4.580970717178113
+    },
+    "77": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.14,
+        0.93,
+        0.99,
+        1.0,
+        0.21,
+        0.49,
+        0.93,
+        0.61
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.14
+          },
+          "2": {
+            "service_rate": 0.93
+          },
+          "3": {
+            "service_rate": 0.99
+          },
+          "4": {
+            "service_rate": 1.0
+          },
+          "5": {
+            "service_rate": 0.21
+          },
+          "6": {
+            "service_rate": 0.49
+          },
+          "7": {
+            "service_rate": 0.93
+          },
+          "8": {
+            "service_rate": 0.61
+          }
+        }
+      },
+      "lta": 3.409131780014958
+    },
+    "78": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.78,
+        0.61,
+        0.3,
+        0.72,
+        0.21,
+        0.9,
+        0.9500000000000001,
+        0.41000000000000003
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.78
+          },
+          "2": {
+            "service_rate": 0.61
+          },
+          "3": {
+            "service_rate": 0.3
+          },
+          "4": {
+            "service_rate": 0.72
+          },
+          "5": {
+            "service_rate": 0.21
+          },
+          "6": {
+            "service_rate": 0.9
+          },
+          "7": {
+            "service_rate": 0.9500000000000001
+          },
+          "8": {
+            "service_rate": 0.41000000000000003
+          }
+        }
+      },
+      "lta": 3.322323463967497
+    },
+    "79": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.03,
+        0.19,
+        0.11,
+        0.29,
+        0.55,
+        0.97,
+        0.63,
+        0.35000000000000003
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.03
+          },
+          "2": {
+            "service_rate": 0.19
+          },
+          "3": {
+            "service_rate": 0.11
+          },
+          "4": {
+            "service_rate": 0.29
+          },
+          "5": {
+            "service_rate": 0.55
+          },
+          "6": {
+            "service_rate": 0.97
+          },
+          "7": {
+            "service_rate": 0.63
+          },
+          "8": {
+            "service_rate": 0.35000000000000003
+          }
+        }
+      },
+      "lta": 6.736964094143672
+    },
+    "80": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.1,
+        0.78,
+        0.49,
+        0.98,
+        0.55,
+        0.19,
+        0.77,
+        0.39
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.1
+          },
+          "2": {
+            "service_rate": 0.78
+          },
+          "3": {
+            "service_rate": 0.49
+          },
+          "4": {
+            "service_rate": 0.98
+          },
+          "5": {
+            "service_rate": 0.55
+          },
+          "6": {
+            "service_rate": 0.19
+          },
+          "7": {
+            "service_rate": 0.77
+          },
+          "8": {
+            "service_rate": 0.39
+          }
+        }
+      },
+      "lta": 3.980711293793116
+    },
+    "81": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.68,
+        0.22,
+        0.68,
+        0.9400000000000001,
+        0.85,
+        0.97,
+        0.78,
+        0.4
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.68
+          },
+          "2": {
+            "service_rate": 0.22
+          },
+          "3": {
+            "service_rate": 0.68
+          },
+          "4": {
+            "service_rate": 0.9400000000000001
+          },
+          "5": {
+            "service_rate": 0.85
+          },
+          "6": {
+            "service_rate": 0.97
+          },
+          "7": {
+            "service_rate": 0.78
+          },
+          "8": {
+            "service_rate": 0.4
+          }
+        }
+      },
+      "lta": 3.3204520899092045
+    },
+    "82": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.65,
+        0.64,
+        0.33,
+        0.18,
+        0.07,
+        0.47000000000000003,
+        0.87,
+        0.18
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.65
+          },
+          "2": {
+            "service_rate": 0.64
+          },
+          "3": {
+            "service_rate": 0.33
+          },
+          "4": {
+            "service_rate": 0.18
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.47000000000000003
+          },
+          "7": {
+            "service_rate": 0.87
+          },
+          "8": {
+            "service_rate": 0.18
+          }
+        }
+      },
+      "lta": 4.570554717051908
+    },
+    "83": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.42,
+        0.16,
+        0.42,
+        0.42,
+        0.8200000000000001,
+        0.48,
+        0.26,
+        0.18
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.42
+          },
+          "2": {
+            "service_rate": 0.16
+          },
+          "3": {
+            "service_rate": 0.42
+          },
+          "4": {
+            "service_rate": 0.42
+          },
+          "5": {
+            "service_rate": 0.8200000000000001
+          },
+          "6": {
+            "service_rate": 0.48
+          },
+          "7": {
+            "service_rate": 0.26
+          },
+          "8": {
+            "service_rate": 0.18
+          }
+        }
+      },
+      "lta": 4.6171158418515015
+    },
+    "84": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.8200000000000001,
+        0.1,
+        0.52,
+        0.08,
+        0.64,
+        0.85,
+        0.65,
+        0.93
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.8200000000000001
+          },
+          "2": {
+            "service_rate": 0.1
+          },
+          "3": {
+            "service_rate": 0.52
+          },
+          "4": {
+            "service_rate": 0.08
+          },
+          "5": {
+            "service_rate": 0.64
+          },
+          "6": {
+            "service_rate": 0.85
+          },
+          "7": {
+            "service_rate": 0.65
+          },
+          "8": {
+            "service_rate": 0.93
+          }
+        }
+      },
+      "lta": 4.784199601646803
+    },
+    "85": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.68,
+        0.84,
+        0.14,
+        0.6,
+        0.53,
+        0.9,
+        0.32,
+        0.4
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.68
+          },
+          "2": {
+            "service_rate": 0.84
+          },
+          "3": {
+            "service_rate": 0.14
+          },
+          "4": {
+            "service_rate": 0.6
+          },
+          "5": {
+            "service_rate": 0.53
+          },
+          "6": {
+            "service_rate": 0.9
+          },
+          "7": {
+            "service_rate": 0.32
+          },
+          "8": {
+            "service_rate": 0.4
+          }
+        }
+      },
+      "lta": 3.4715795925898245
+    },
+    "86": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.34,
+        0.84,
+        0.62,
+        0.6900000000000001,
+        0.07,
+        0.77,
+        0.32,
+        0.9400000000000001
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.34
+          },
+          "2": {
+            "service_rate": 0.84
+          },
+          "3": {
+            "service_rate": 0.62
+          },
+          "4": {
+            "service_rate": 0.6900000000000001
+          },
+          "5": {
+            "service_rate": 0.07
+          },
+          "6": {
+            "service_rate": 0.77
+          },
+          "7": {
+            "service_rate": 0.32
+          },
+          "8": {
+            "service_rate": 0.9400000000000001
+          }
+        }
+      },
+      "lta": 3.756706950998808
+    },
+    "87": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.62,
+        0.74,
+        0.47000000000000003,
+        0.06,
+        0.11,
+        0.36,
+        0.5,
+        0.72
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.62
+          },
+          "2": {
+            "service_rate": 0.74
+          },
+          "3": {
+            "service_rate": 0.47000000000000003
+          },
+          "4": {
+            "service_rate": 0.06
+          },
+          "5": {
+            "service_rate": 0.11
+          },
+          "6": {
+            "service_rate": 0.36
+          },
+          "7": {
+            "service_rate": 0.5
+          },
+          "8": {
+            "service_rate": 0.72
+          }
+        }
+      },
+      "lta": 4.619803157589593
+    },
+    "88": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.63,
+        0.9,
+        0.63,
+        0.89,
+        0.92,
+        0.38,
+        0.42,
+        0.68
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.63
+          },
+          "2": {
+            "service_rate": 0.9
+          },
+          "3": {
+            "service_rate": 0.63
+          },
+          "4": {
+            "service_rate": 0.89
+          },
+          "5": {
+            "service_rate": 0.92
+          },
+          "6": {
+            "service_rate": 0.38
+          },
+          "7": {
+            "service_rate": 0.42
+          },
+          "8": {
+            "service_rate": 0.68
+          }
+        }
+      },
+      "lta": 2.614595864687134
+    },
+    "89": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.32,
+        0.37,
+        0.93,
+        0.19,
+        0.14,
+        0.42,
+        0.05,
+        0.97
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.32
+          },
+          "2": {
+            "service_rate": 0.37
+          },
+          "3": {
+            "service_rate": 0.93
+          },
+          "4": {
+            "service_rate": 0.19
+          },
+          "5": {
+            "service_rate": 0.14
+          },
+          "6": {
+            "service_rate": 0.42
+          },
+          "7": {
+            "service_rate": 0.05
+          },
+          "8": {
+            "service_rate": 0.97
+          }
+        }
+      },
+      "lta": 5.202673333333333
+    },
+    "90": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.15,
+        0.98,
+        0.21,
+        0.53,
+        0.78,
+        0.88,
+        0.58,
+        0.15
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.15
+          },
+          "2": {
+            "service_rate": 0.98
+          },
+          "3": {
+            "service_rate": 0.21
+          },
+          "4": {
+            "service_rate": 0.53
+          },
+          "5": {
+            "service_rate": 0.78
+          },
+          "6": {
+            "service_rate": 0.88
+          },
+          "7": {
+            "service_rate": 0.58
+          },
+          "8": {
+            "service_rate": 0.15
+          }
+        }
+      },
+      "lta": 4.219314485486358
+    },
+    "91": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.62,
+        0.37,
+        0.87,
+        0.27,
+        0.05,
+        0.92,
+        0.53,
+        0.24
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.62
+          },
+          "2": {
+            "service_rate": 0.37
+          },
+          "3": {
+            "service_rate": 0.87
+          },
+          "4": {
+            "service_rate": 0.27
+          },
+          "5": {
+            "service_rate": 0.05
+          },
+          "6": {
+            "service_rate": 0.92
+          },
+          "7": {
+            "service_rate": 0.53
+          },
+          "8": {
+            "service_rate": 0.24
+          }
+        }
+      },
+      "lta": 4.242837210466212
+    },
+    "92": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.51,
+        0.66,
+        0.56,
+        0.91,
+        0.45,
+        0.07,
+        0.53,
+        0.05
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.51
+          },
+          "2": {
+            "service_rate": 0.66
+          },
+          "3": {
+            "service_rate": 0.56
+          },
+          "4": {
+            "service_rate": 0.91
+          },
+          "5": {
+            "service_rate": 0.45
+          },
+          "6": {
+            "service_rate": 0.07
+          },
+          "7": {
+            "service_rate": 0.53
+          },
+          "8": {
+            "service_rate": 0.05
+          }
+        }
+      },
+      "lta": 3.2419776009965755
+    },
+    "93": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.37,
+        0.18,
+        0.54,
+        1.0,
+        0.05,
+        0.86,
+        0.03,
+        0.0
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.37
+          },
+          "2": {
+            "service_rate": 0.18
+          },
+          "3": {
+            "service_rate": 0.54
+          },
+          "4": {
+            "service_rate": 1.0
+          },
+          "5": {
+            "service_rate": 0.05
+          },
+          "6": {
+            "service_rate": 0.86
+          },
+          "7": {
+            "service_rate": 0.03
+          },
+          "8": {
+            "service_rate": 0.0
+          }
+        }
+      },
+      "lta": 7.158108740533362
+    },
+    "94": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.27,
+        0.18,
+        0.58,
+        0.53,
+        0.43,
+        0.52,
+        0.32,
+        0.27
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.27
+          },
+          "2": {
+            "service_rate": 0.18
+          },
+          "3": {
+            "service_rate": 0.58
+          },
+          "4": {
+            "service_rate": 0.53
+          },
+          "5": {
+            "service_rate": 0.43
+          },
+          "6": {
+            "service_rate": 0.52
+          },
+          "7": {
+            "service_rate": 0.32
+          },
+          "8": {
+            "service_rate": 0.27
+          }
+        }
+      },
+      "lta": 4.7197461656853585
+    },
+    "95": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.73,
+        0.72,
+        0.21,
+        0.9,
+        0.64,
+        0.58,
+        0.8,
+        0.66
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.73
+          },
+          "2": {
+            "service_rate": 0.72
+          },
+          "3": {
+            "service_rate": 0.21
+          },
+          "4": {
+            "service_rate": 0.9
+          },
+          "5": {
+            "service_rate": 0.64
+          },
+          "6": {
+            "service_rate": 0.58
+          },
+          "7": {
+            "service_rate": 0.8
+          },
+          "8": {
+            "service_rate": 0.66
+          }
+        }
+      },
+      "lta": 3.1713146958022644
+    },
+    "96": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.56,
+        0.65,
+        0.79,
+        0.9,
+        0.58,
+        0.51,
+        0.27,
+        0.09
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.56
+          },
+          "2": {
+            "service_rate": 0.65
+          },
+          "3": {
+            "service_rate": 0.79
+          },
+          "4": {
+            "service_rate": 0.9
+          },
+          "5": {
+            "service_rate": 0.58
+          },
+          "6": {
+            "service_rate": 0.51
+          },
+          "7": {
+            "service_rate": 0.27
+          },
+          "8": {
+            "service_rate": 0.09
+          }
+        }
+      },
+      "lta": 2.8316309316841015
+    },
+    "97": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.86,
+        0.8,
+        0.78,
+        0.18,
+        0.85,
+        0.38,
+        0.27,
+        0.68
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.86
+          },
+          "2": {
+            "service_rate": 0.8
+          },
+          "3": {
+            "service_rate": 0.78
+          },
+          "4": {
+            "service_rate": 0.18
+          },
+          "5": {
+            "service_rate": 0.85
+          },
+          "6": {
+            "service_rate": 0.38
+          },
+          "7": {
+            "service_rate": 0.27
+          },
+          "8": {
+            "service_rate": 0.68
+          }
+        }
+      },
+      "lta": 2.7704872294301004
+    },
+    "98": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        0.11,
+        0.91,
+        1.0,
+        0.9400000000000001,
+        0.64,
+        0.7000000000000001,
+        0.5700000000000001,
+        0.71
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 0.11
+          },
+          "2": {
+            "service_rate": 0.91
+          },
+          "3": {
+            "service_rate": 1.0
+          },
+          "4": {
+            "service_rate": 0.9400000000000001
+          },
+          "5": {
+            "service_rate": 0.64
+          },
+          "6": {
+            "service_rate": 0.7000000000000001
+          },
+          "7": {
+            "service_rate": 0.5700000000000001
+          },
+          "8": {
+            "service_rate": 0.71
+          }
+        }
+      },
+      "lta": 3.3152525378113604
+    },
+    "99": {
+      "arrival_rates": [
+        1
+      ],
+      "service_rates": [
+        1.0,
+        0.85,
+        0.66,
+        0.6,
+        0.93,
+        0.23,
+        0.37,
+        0.21
+      ],
+      "env_params": {
+        "name": "Multipath2",
+        "env_type": "MP",
+        "arrival_distribution": "poisson",
+        "service_distribution": "poisson",
+        "servers": 8,
+        "X_params": {
+          "arrival_rate": [
+            1
+          ]
+        },
+        "Y_params": {
+          "1": {
+            "service_rate": 1.0
+          },
+          "2": {
+            "service_rate": 0.85
+          },
+          "3": {
+            "service_rate": 0.66
+          },
+          "4": {
+            "service_rate": 0.6
+          },
+          "5": {
+            "service_rate": 0.93
+          },
+          "6": {
+            "service_rate": 0.23
+          },
+          "7": {
+            "service_rate": 0.37
+          },
+          "8": {
+            "service_rate": 0.21
+          }
+        }
+      },
+      "lta": 2.3301381440103643
+    }
+  },
+  "ltas": [
+    3.4059463843222098,
+    5.069953941008237,
+    4.544012474787284,
+    7.6846505298473415,
+    5.61156,
+    3.210001335524314,
+    4.539823052862853,
+    5.7125332138665845,
+    4.604291728603574,
+    3.372754922582667,
+    3.6898925099997992,
+    4.509348712182487,
+    4.887426666666666,
+    3.031360403878581,
+    3.103548485925708,
+    3.943735624184909,
+    3.3854700660616253,
+    5.062316538388436,
+    5.486226746952759,
+    3.655561249575895,
+    3.0578026736677386,
+    5.098094125078691,
+    3.5720448254809507,
+    3.6036243926400484,
+    2.851690089836041,
+    2.4560446704740597,
+    4.368182827713191,
+    4.151175973280019,
+    2.6961503795376864,
+    5.227139156672847,
+    6.172031756352766,
+    2.697361410036019,
+    6.059549789672722,
+    4.665231135252425,
+    6.050420181855908,
+    3.70730104624946,
+    3.7182545652393095,
+    4.40831820864447,
+    6.982281630021423,
+    2.2578062937365275,
+    3.6436452886773627,
+    4.16366858327932,
+    8.038206666666667,
+    5.87105081142519,
+    2.9581224694541617,
+    5.2648602966511575,
+    3.5686443175671534,
+    4.198568655245771,
+    4.3164028960740035,
+    3.364608869689919,
+    6.290445789340068,
+    3.9650665738913484,
+    4.927279840353884,
+    3.8384988634853197,
+    3.1375669821767027,
+    4.208965607994153,
+    4.09296535502186,
+    4.339360100385205,
+    4.547516424720105,
+    4.816860614700232,
+    4.956856354787708,
+    4.262013572820627,
+    5.3585866666666675,
+    3.3190833311134806,
+    4.54325406390127,
+    3.9396012606962714,
+    2.685093133108586,
+    4.858640641965935,
+    3.7628477074726714,
+    6.1385030962484715,
+    4.021250024936757,
+    4.126992153119264,
+    2.7107254224122777,
+    2.8838809039951965,
+    4.882356168720034,
+    4.252211475854085,
+    4.580970717178113,
+    3.409131780014958,
+    3.322323463967497,
+    6.736964094143672,
+    3.980711293793116,
+    3.3204520899092045,
+    4.570554717051908,
+    4.6171158418515015,
+    4.784199601646803,
+    3.4715795925898245,
+    3.756706950998808,
+    4.619803157589593,
+    2.614595864687134,
+    5.202673333333333,
+    4.219314485486358,
+    4.242837210466212,
+    3.2419776009965755,
+    7.158108740533362,
+    4.7197461656853585,
+    3.1713146958022644,
+    2.8316309316841015,
+    2.7704872294301004,
+    3.3152525378113604,
+    2.3301381440103643
+  ],
+  "num_envs": 100
+}

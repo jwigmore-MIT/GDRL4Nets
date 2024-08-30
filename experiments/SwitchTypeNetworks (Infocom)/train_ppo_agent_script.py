@@ -44,7 +44,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('--training_code', type = tuple, help='range of integers to train on', default=(0,5))
     parser.add_argument('--testing_code', type = tuple, help='range of integers to test on', default=None)
-    parser.add_argument('--context_set', type=str, help='reference_to_context_set', default="SH4")
     parser.add_argument('--train_type', type=str, help='base configuration file', default="MLP_PPO")
     parser.add_argument('--cfg', nargs = '+', action='append', type = smart_type, help = 'Modify the cfg object')
 
@@ -54,16 +53,6 @@ if __name__ == "__main__":
                 "STN_shared_PPO": 'STN_Shared_PPO_settings.yaml',
                 "STN_shared_PPO_MP": 'STN_Shared_PPO_MP_settings.yaml',}
 
-        # Context Set JSONs -- each context corresponds to a different environment
-    context_set_jsons = {
-        "SH4": "SH4_context_set_l3_m3_s100.json",
-        "nSH2u": "nSH2u_context_set_l1_m3_s30.json",
-        "n2SH2u": "n2SH2u_context_set_l1_m3_s30.json",
-        "MP1": "MP1_context_set.json",
-        "MP3": "MP3_context_set.json",
-        "MP2": "MP2_context_set_l3_m1_s10.json",
-        "MP4": "MP4_context_set_l3_m1_s100.json",
-        "MP5": "MP5_context_set_l3_m1_s100.json", }
 
     # Parse the arguments
     args = parser.parse_args()
@@ -80,14 +69,11 @@ if __name__ == "__main__":
     cfg = load_config(os.path.join(SCRIPT_PATH, 'config', base_cfg[args.train_type]))
     cfg.device = device
 
-    # Settings for Multi-path training (TODO: Move to config files )
-    if "MP" in args.train_type:
-        cfg.collector.total_frames = 1_002_000
-        cfg.collector.frames_per_batch = 2000
-        cfg.collector.test_interval = 1_000_000
+
+    context_set_json = "MP5_context_set_l3_m1_s100.json" if "MP" in args.train_type else "SH4_context_set_l3_m3_s100.json"
 
     # Select the Context Set
-    context_set = json.load(open(os.path.join(SCRIPT_PATH, 'context_sets', context_set_jsons[args.context_set]), "r"))
+    context_set = json.load(open(os.path.join(SCRIPT_PATH, 'context_sets', context_set_json), "r"))
     cfg.context_set = args.context_set
     all_context_dicts = context_set['context_dicts']
 
