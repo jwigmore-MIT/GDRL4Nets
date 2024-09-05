@@ -6,10 +6,11 @@ import numpy as np
 
 from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform, ObservationNorm
 
-from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform
+from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, RunningAverageTransform
 from modules.torchrl_development.envs.SingleHop import SingleHop
 from modules.torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from modules.torchrl_development.envs.MultipathRouting import MultipathRouting
+from modules.torchrl_development.envs.ConflictGraphScheduling import ConflictGraphScheduling
 
 
 
@@ -45,6 +46,29 @@ def parse_env_json(full_path = None, rel_path = None, config_args = None) -> dic
     return env_para
 
 
+
+
+def make_env_cgs(env_params,
+                 seed: int = None,
+                 max_queue_size = 1000,
+                 observation_keys: list[str] =["q", "s"],
+                 symlog_obs = True,
+                 symlog_reward = False,
+                 ):
+    env_params = deepcopy(env_params)
+    env_params["seed"] = seed
+    env_params["max_queue_size"] = max_queue_size
+    env = ConflictGraphScheduling(**env_params)
+    env = TransformedEnv(
+        env,
+        Compose(
+            CatTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
+        ))
+    if symlog_obs:
+        env = TransformedEnv(env, SymLogTransform(in_keys=["observation"], out_keys=["observation"]))
+    if symlog_reward:
+        env = TransformedEnv(env, SymLogTransform(in_keys=["reward"], out_keys=["reward"]))
+    return env
 
 
 
@@ -100,6 +124,8 @@ def make_env(env_params,
             base_env = SingleHop(env_params, seed)
     elif env_type == "MP":
         base_env = MultipathRouting(env_params, seed)
+    elif env_type == "CGS":
+        base_env = ConflictGraphScheduling(**env_params)
 
     if negative_keys is not None:
         base_env = TransformedEnv(base_env, ReverseSignTransform(in_keys=negative_keys, out_keys=negative_keys))

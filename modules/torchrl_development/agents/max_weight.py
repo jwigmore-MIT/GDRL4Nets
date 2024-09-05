@@ -12,6 +12,9 @@ from utils import MaskedOneHotCategorical
 from actors import NN_Actor
 
 
+
+def create_cgs_maxweight_actor_critic(input_shape,
+
 def create_maxweight_actor_critic(input_shape,
                 in_keys,
                 action_spec,

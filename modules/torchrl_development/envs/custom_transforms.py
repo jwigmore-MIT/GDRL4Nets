@@ -9,12 +9,15 @@ from torchrl.data.tensor_specs import (
     ContinuousBox,
     TensorSpec,
     UnboundedContinuousTensorSpec,
+    Unbounded
 )
 
 from tensordict import (
     TensorDictBase,
 
 )
+
+from modules.torchrl_development.envs.utils import TimeAverageStatsCalculator
 
 class SymLogTransform(ObservationTransform):
     def __init__(self,
@@ -183,3 +186,43 @@ class InverseTransform(Transform):
             device=reward_spec.device,
             shape=reward_spec.shape,
         )
+
+class RunningAverageTransform(Transform):
+    """
+    Computes a running average of the corresponding keys
+    UNUSED - DOING COMPUTATION IN THE TRAINING LOOP
+    """
+
+    def __init__(
+        self,
+        in_key: Sequence[NestedKey] | None = None,
+        out_keys: Sequence[NestedKey] | None = None,
+        window_size: int = 10000,
+    ):
+        self.time_avg_stats = TimeAverageStatsCalculator(window_size)
+        if in_key is None:
+            in_key = ["reward"]
+        if in_key.__len__() >1:
+            raise ValueError("Only one input key is allowed")
+        if out_keys is None:
+            out_keys = ["ta_mean_" + copy(in_key[0]), "ta_stdev_" + copy(in_key[0])]
+        super().__init__(in_keys=in_key, out_keys=out_keys)
+        self.window_size = window_size
+
+
+    def _apply_transform(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        self.time_avg_stats.update(input_tensor)
+        return self.time_avg_stats.mean, self.time_avg_stats.sampleStdev
+    @_apply_to_composite
+    def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
+        observation_spec["ta_mean_" + self.in_keys[0]] = Unbounded(
+            dtype=torch.float,
+            device=observation_spec.device,
+            shape=observation_spec.shape,
+        )
+        observation_spec["ta_stdev_" + self.in_keys[0]] = Unbounded(
+            dtype=torch.float,
+            device=observation_spec.device,
+            shape=observation_spec.shape,
+        )
+        return observation_spec

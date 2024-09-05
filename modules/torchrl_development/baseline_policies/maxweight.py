@@ -4,6 +4,34 @@ from tensordict.nn import TensorDictModule
 from tensordict import TensorDict
 
 
+class CGSMaxWeightActor(TensorDictModule):
+    """
+    Max Weight actor for Conflict Graph Scheduling environments
+    """
+
+    def __init__(self, in_keys = ["q", "s"], out_keys = ["action"], valid_actions = None):
+        if valid_actions is None:
+            raise ValueError("valid_actions must be provided")
+        super().__init__(module= cgs_maxweight, in_keys = in_keys, out_keys=out_keys)
+        self.valid_actions = valid_actions
+
+    def forward(self, td: TensorDict):
+        td["action"] = self.module(self.valid_actions, td["q"], td["s"])
+        return td
+def cgs_maxweight(valid_actions, q, s):
+    """
+    Compute the maxweight scheduling policy
+    argmax(q*y*a) where a is a valid action
+    :param valid_actions: (K, N) binary tensor where K is the number of valid actions
+    :param q: (B,N) tensor of queue sizes
+    :param s: (B, N) tensor of service states
+    :return: (B, N) tensor of the maxweight action
+    """
+    if q.ndim == 1:
+        q = q.unsqueeze(0)
+        s = s.unsqueeze(0)
+
+    return valid_actions[torch.argmax(torch.sum(q * s * valid_actions, dim = 1), dim=0)]
 class MaxWeightActor(TensorDictModule):
 
     def __init__(self, in_keys = ["Q", "Y"], out_keys = ["action"], index = 'min'):
