@@ -74,7 +74,6 @@ if __name__ == "__main__":
 
     # Select the Context Set
     context_set = json.load(open(os.path.join(SCRIPT_PATH, 'context_sets', context_set_json), "r"))
-    cfg.context_set = args.context_set
     all_context_dicts = context_set['context_dicts']
 
 
@@ -129,7 +128,7 @@ if __name__ == "__main__":
                                       env_generator_seed=cfg.training_env.env_generator_seed, )
 
     # Create wandb Logger
-    experiment_name = generate_exp_name(f"{args.train_type}", f"{cfg.context_set}_{args.training_code[0]}_{args.training_code[1]}")
+    experiment_name = generate_exp_name(f"{args.train_type}", f"{context_set_json.split('.')[0]}_{args.training_code[0]}_{args.training_code[1]}")
     logger = get_logger(
             "wandb",
             logger_name=LOGGING_PATH,

@@ -3,10 +3,11 @@ import json
 import os
 from copy import deepcopy
 import numpy as np
+from typing import List
 
 from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform, ObservationNorm
 
-from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, RunningAverageTransform
+from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, RunningAverageTransform, CatStackTensors, StackTensors
 from modules.torchrl_development.envs.SingleHop import SingleHop
 from modules.torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from modules.torchrl_development.envs.MultipathRouting import MultipathRouting
@@ -49,25 +50,31 @@ def parse_env_json(full_path = None, rel_path = None, config_args = None) -> dic
 
 
 def make_env_cgs(env_params,
-                 seed: int = None,
+                 seed: int = 0,
                  max_queue_size = 1000,
-                 observation_keys: list[str] =["q", "s"],
+                 observation_keys: List[str] =["q", "s"],
                  symlog_obs = True,
-                 symlog_reward = False,
+                 symlog_reward = False, # DONT USE
+                 inverse_reward = True,
+                 stack_observation = False,
                  ):
     env_params = deepcopy(env_params)
     env_params["seed"] = seed
     env_params["max_queue_size"] = max_queue_size
     env = ConflictGraphScheduling(**env_params)
-    env = TransformedEnv(
-        env,
-        Compose(
-            CatTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
-        ))
+    if stack_observation:
+        env = TransformedEnv(env, StackTensors(in_keys=observation_keys, out_key="observation", del_keys=False))
+    else:
+        env = TransformedEnv(
+            env, CatStackTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
+            )
     if symlog_obs:
         env = TransformedEnv(env, SymLogTransform(in_keys=["observation"], out_keys=["observation"]))
     if symlog_reward:
         env = TransformedEnv(env, SymLogTransform(in_keys=["reward"], out_keys=["reward"]))
+        print("USING SYMLOG TRANSFORM FOR REWARD -- NOT RECOMMENDED -- USE INVERSE REWARD INSTEAD")
+    if inverse_reward:
+        env = TransformedEnv(env, InverseReward())
     return env
 
 
@@ -78,10 +85,10 @@ def make_env(env_params,
              observe_mu: bool = False,
              seed: int =0,
              terminal_backlog: int =None,
-             observation_keys: list[str] =["Q", "Y"],
+             observation_keys: List[str] =["Q", "Y"],
              observation_keys_scale: float = None,
-             negative_keys: list[str] = None,
-             inverse_keys: list[str] = None,
+             negative_keys: List[str] = None,
+             inverse_keys: List[str] = None,
              symlog_obs = True,
              symlog_reward = False,
              inverse_reward= False,
@@ -267,7 +274,7 @@ def make_gen_from_params(env_params_list,
 
 
 def make_scaled_gen_from_params(env_params_list,
-                                lambda_scales: list= [1.0],
+                                lambda_scales: List= [1.0],
                                 make_env_keywords = None,
                                 env_generator_seed = 0):
     """
@@ -287,8 +294,14 @@ class EnvGenerator:
     def __init__(self, input_params,
                  make_env_keywords = None,
                  env_generator_seed = 0,
-                 cycle_sample = False
+                 cycle_sample = False,
+                 cgs = False,
                  ):
+        if cgs:
+            self.make_env_fn = make_env_cgs
+        else:
+            self.make_env_fn = make_env
+
         # if env_params has a key "key_params" then is the parameters of many environments
         self.context_dicts = None
 
@@ -360,7 +373,7 @@ class EnvGenerator:
             raise ValueError(f"Index {rel_ind} is not in the keys of the environment parameters")
         if seed is None:
             seed = self.seed_generator.integers(low = 0, high = 100000)
-        env = make_env(env_params, seed = seed, **self._make_env_keywords)
+        env = self.make_env_fn(env_params, seed = seed, **self._make_env_keywords)
         # env.base_env.baseline_lta = self.context_dicts[env_params_ind]["lta"]
         self.history.append(env_params_ind)
         return env
@@ -373,7 +386,7 @@ class EnvGenerator:
         return self.sample_from_multi(self.last_sample_ind)
 
     def sample_from_solo(self):
-        env = make_env(self.context_dicts, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
+        env = self.make_env_fn(self.context_dicts, seed = self.seed_generator.integers(low = 0, high = 100000), **self._make_env_keywords)
         env.baseline_lta = self.baseline_lta
         self.history.append(0)
         return env
@@ -386,7 +399,7 @@ class EnvGenerator:
             env_params = self.context_dicts[key]
             if "env_params" in env_params.keys():
                 env_params = env_params["env_params"]
-            env = make_env(env_params, **self._make_env_keywords)
+            env = self.make_env_fn(env_params, **self._make_env_keywords)
             envs[i] = {"env":env,
                       "env_params":env_params,
                       "ind": i,

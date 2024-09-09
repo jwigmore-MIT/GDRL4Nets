@@ -24,6 +24,7 @@ from modules.torchrl_development.agents.actors import create_independent_actor_c
 from experiment_utils import evaluate_agent
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+LOGGING_PATH = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_PATH)), "logs")
 
 """ Script Description
 This script is used to train a PPO agent on a set of environments. The script will train the agent on the specified environments and log the results to wandb.

@@ -5,6 +5,7 @@ import numpy as np
 from modules.torchrl_development.envs.ConflictGraphScheduling import ConflictGraphScheduling, compute_valid_actions
 from torchrl.envs.utils import check_env_specs
 from modules.torchrl_development.baseline_policies.maxweight import CGSMaxWeightActor
+from modules.torchrl_development.envs.env_creation import make_env_cgs
 
 
 @pytest.fixture
@@ -116,6 +117,29 @@ def test_get_valid_action(env_setup2):
 def test_check_env_specs(env_setup2):
     check_env_specs(env_setup2)
 
+
+
+
+def test_make_env_cgs(env_setup):
+    adj, arrival_rate, service_rate = env_setup
+    env_params = {"adj": adj, "arrival_rate": arrival_rate, "service_rate": service_rate, "arrival_dist": "Bernoulli", "service_dist": "Fixed"}
+
+    make_env_keywords = {"observation_keys": ["q", "s"]}
+    env = make_env_cgs(env_params, **make_env_keywords)
+    td = env.reset()
+    # check to make sure in td["observation"] tensor, elements 0, 2, ... are the same and 1, 3, ... are the same
+    assert torch.all(td["observation"][0::2] == td["observation"][0])
+    assert torch.all(td["observation"][1::2] == td["observation"][1])
+
+def test_make_env_cgs_stack(env_setup):
+    adj, arrival_rate, service_rate = env_setup
+    env_params = {"adj": adj, "arrival_rate": arrival_rate, "service_rate": service_rate, "arrival_dist": "Bernoulli", "service_dist": "Fixed"}
+
+    make_env_keywords = {"observation_keys": ["q", "s"], "stack_observation": True}
+    env = make_env_cgs(env_params, **make_env_keywords)
+    td = env.reset()
+    print()
+
 def test_maxweight_actor(env_setup3):
     env = env_setup3
     # create cgs actor
@@ -126,7 +150,8 @@ def test_maxweight_actor(env_setup3):
 
     action_means = td["action"].mean(dim=0)
 
-    assert torch.all(torch.abs(action_means - 0.4*torch.ones_like(action_means)) < 0.25)
+    assert torch.all(torch.abs(action_means - 0.4 * torch.ones_like(action_means)) < 0.25)
+
 
 
 

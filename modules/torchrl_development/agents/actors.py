@@ -23,7 +23,8 @@ from torchrl.modules import ReparamGradientStrategy
 
 
 # For standard actors
-def create_actor_critic(input_shape: Tuple[int, ...],
+
+def create_mlp_actor_critic(input_shape: Tuple[int, ...],
          output_shape,
          in_keys,
          action_spec,
@@ -104,6 +105,20 @@ def create_actor_critic(input_shape: Tuple[int, ...],
     return actor_critic
 
 
+def create_actor_critic(input_shape: Tuple[int, ...],
+         output_shape,
+         in_keys,
+         action_spec,
+         actor_nn = None,
+         critic_nn = None,
+         temperature = 1.0,
+         actor_depth = 2,
+         actor_cells = 32,
+         ):
+    """
+    DEPRECATED: creates an MLP actor critic model
+    """
+    return create_mlp_actor_critic(input_shape, output_shape, in_keys, action_spec, actor_nn, critic_nn, temperature, actor_depth, actor_cells)
 
 
 class NN_Actor(TensorDictModule):

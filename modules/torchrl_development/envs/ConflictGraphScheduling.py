@@ -8,12 +8,11 @@ import torch
 from tensordict import TensorDict
 ListLike = Union[List, np.ndarray, torch.Tensor]
 
-from torchrl.data import BoundedTensorSpec, CompositeSpec, OneHotDiscreteTensorSpec, UnboundedContinuousTensorSpec, Bounded, MultiOneHot, Unbounded, Binary
-from torchrl.data import Categorical, DiscreteTensorSpec
+from torchrl.data import BoundedTensorSpec, CompositeSpec, Bounded, Unbounded, Binary
 from torchrl.envs import (
     EnvBase,
 )
-from modules.torchrl_development.envs.utils import TimeAverageStatsCalculator, create_discrete_rv, create_poisson_rv, FakeRV, create_uniform_rv
+
 
 # ignore UserWarnings
 import warnings
@@ -67,10 +66,16 @@ class ConflictGraphScheduling(EnvBase):
                  seed: Optional[int] = None,
                  batch_size: int = 1,
                  max_queue_size: Optional[int] = None,
+
+                 context_id: Optional[int] = -1,
+                 interference_penalty: Optional[float] = 0.0,
+                 reset_penalty: Optional[float] = 0.0,
                  **kwargs):
 
         super().__init__(batch_size = ())
-
+        self.context_id = torch.Tensor([context_id])
+        self.interference_penalty = interference_penalty
+        self.reset_penalty = reset_penalty
         self.adj = torch.Tensor(adj)
         self.num_nodes = self.adj.shape[0]
         self.num_edges = torch.sum(self.adj) // 2
@@ -127,20 +132,25 @@ class ConflictGraphScheduling(EnvBase):
         self.s = self._sim_services()
 
         # calculate reward
-        reward =  -torch.sum(self.q)
+        reward =  -torch.sum(self.q) - self.interference_penalty*(td["action"]-action).sum()
 
         # check if terminated
         if self.max_queue_size is not None:
             terminated = torch.Tensor([reward < -self.max_queue_size]).bool()
+            reward -= self.reset_penalty
         else:
             terminated = torch.Tensor([False]).bool()
 
         out = TensorDict({
             "q": self.q,
             "s": self.s,
+            "valid_action": action,
             "adj": self.adj,
             "reward": reward,
             "terminated": terminated,
+            "arrival_rate": self.arrival_rate,
+            "service_rate": self.service_rate,
+            "context_id": self.context_id,
         }, td.shape)
         return out
 
@@ -152,16 +162,22 @@ class ConflictGraphScheduling(EnvBase):
         out = TensorDict({
             "q": self.q,
             "s": self.s,
+            "valid_action": torch.zeros_like(self.q),
             "adj": self.adj,
             "terminated": torch.Tensor([False]).bool(),
-            "reward": torch.Tensor([0.0])},
+            "reward": torch.Tensor([0.0]),
+            "arrival_rate": self.arrival_rate,
+            "service_rate": self.service_rate,
+            "context_id": self.context_id,
+        },
+
             self.batch_size)
 
         return out
 
     def _set_seed(self, seed: Optional[int]):
         if seed is not None:
-            self.rng.manual_seed(seed)
+            self.rng.manual_seed(int(seed))
 
 
     def _make_specs(self):
@@ -172,8 +188,12 @@ class ConflictGraphScheduling(EnvBase):
         self.observation_spec = CompositeSpec({
             "q": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
             "s": Bounded(low = 0, high = 100, shape = (self.num_nodes,), dtype = torch.float32),
+            "valid_action": Binary(n = self.num_nodes, shape = (self.num_nodes,), dtype = torch.float32),
             "adj": BoundedTensorSpec(low = 0, high = 1, shape = (self.num_nodes, self.num_nodes), dtype = torch.float32),
-            "reward": Bounded(low = -100_000, high = 0, shape = (1,), dtype = torch.float32),
+            "reward": Unbounded(shape = (1,), dtype = torch.float32),
+            "arrival_rate": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
+            "service_rate": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
+            "context_id": Unbounded(shape = (1,), dtype = torch.float32),
         })
 
         self.action_spec = Binary(n = self.num_nodes, shape = (self.num_nodes,), dtype = torch.float32)
