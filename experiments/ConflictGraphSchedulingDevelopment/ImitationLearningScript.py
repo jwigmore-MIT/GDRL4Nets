@@ -32,14 +32,14 @@ minibatches =100
 num_training_epochs = 50
 lr_decay = True
 
-new_maxweight_data = False
+new_maxweight_data = True
 training_data_amount = [10_000, 3]
 max_weight_data_type = "rollout" # "rollout" or "enumerate"
 batch_dataloader = True
 train_gnn = True
 test_gnn = True
-train_mlp = False
-test_mlp = False
+train_mlp = True
+test_mlp = True
 
 test_length = 5000
 test_rollouts = 3
@@ -119,7 +119,7 @@ def make_line_graph(n, arrival_rate, service_rates):
 # service_rate = np.ones(9)
 
 #create 6 node line graph
-adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(7, 0.4, 1)
+adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(8, 0.4, 1)
 
 interference_penalty = 0.25
 reset_penalty = 100
@@ -177,7 +177,7 @@ CREATE GNN ACTOR AND CRITIC ARCHITECTURES
 """
 node_features = env.observation_spec["observation"].shape[-1]
 #policy_module = GCN_Policy_Module(node_features, num_layers = 1)
-policy_module = Policy_Module2(node_features, 64, num_layers = 4, dropout=0.1)
+policy_module = Policy_Module2(node_features, 32, num_layers = 5, dropout=0.1)
 
 
 actor = GNN_ActorTensorDictModule(module = policy_module, x_key = "observation", edge_index_key = "adj_sparse", out_keys = ["probs", "logits"])
