@@ -19,6 +19,6 @@ def tensors_to_batch(
     n_edges = edge_index.shape[-1]
     batch = torch.repeat_interleave(b, n_edges)
     edge_index = edge_index.transpose(0,1).contiguous().view(2,-1)
-    batch_edge_index = edge_index + batch
+    batch_edge_index = edge_index + batch*nodes_per_graph
     graphs.edge_index = batch_edge_index
     return graphs.to(x.device)

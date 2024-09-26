@@ -30,6 +30,7 @@ def create_mlp_actor_critic(
         critic_nn=None,
         actor_depth=2,
         actor_cells=32,
+        dropout = 0.0
 ):
     # If no actor network is provided, create a default MLP
     if actor_nn is None:
@@ -39,6 +40,7 @@ def create_mlp_actor_critic(
                        depth=actor_depth,
                        num_cells=actor_cells,
                        activate_last_layer=True,
+                       dropout = dropout,
                        )
     # Wrap the actor network in a TensorDictModule
     actor_module = TensorDictModule(
@@ -107,7 +109,7 @@ class GNN_ActorTensorDictModule(GNN_TensorDictModule):
 
     def forward(self, input):
         if isinstance(input, TensorDict):
-            if input[self.x_key].dim() < 3:
+            if input[self.x_key].dim() < 3: # batch size is 1
                 probs, logits = self.module(input[self.x_key], input[self.edge_index_key], None)
                 input[self.outs_key[0]] = probs.squeeze(-1)
                 input[self.outs_key[1]] = logits.squeeze(-1)

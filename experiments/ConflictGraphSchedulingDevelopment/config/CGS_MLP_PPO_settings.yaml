@@ -11,7 +11,7 @@ agent:
 # Environment
 training_make_env_kwargs:
   observation_keys: ["q", "s"]
-  max_queue_size: 30
+  max_queue_size: 100
   stack_observation: False
 
 

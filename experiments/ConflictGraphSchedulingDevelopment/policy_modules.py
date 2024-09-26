@@ -30,9 +30,9 @@ class GCN_Policy_Module(nn.Module):
         return x, logits
 class Policy_Module2(nn.Module):
     class DeeperGCN(nn.Module):
-        def __init__(self, input_size,  hidden_channels, num_layers, block = "res+"):
+        def __init__(self, input_size,  hidden_channels, num_layers, block = "res+", dropout = 0.0):
             super().__init__()
-
+            self.dropout = dropout
             self.node_encoder = Linear(input_size, hidden_channels)
 
             self.layers = torch.nn.ModuleList()
@@ -42,7 +42,7 @@ class Policy_Module2(nn.Module):
                 norm = LayerNorm(hidden_channels, elementwise_affine=True)
                 act = ReLU(inplace=True)
 
-                layer = DeepGCNLayer(conv, norm, act, block=block, dropout=0.1,
+                layer = DeepGCNLayer(conv, norm, act, block=block, dropout=dropout,
                                      ckpt_grad=i % 3)
                 self.layers.append(layer)
 
@@ -57,13 +57,13 @@ class Policy_Module2(nn.Module):
                 x = layer(x, edge_index)
 
             x = self.layers[0].act(self.layers[0].norm(x))
-            x = F.dropout(x, p=0.1, training=self.training)
+            x = F.dropout(x, p=self.dropout, training=self.training)
 
             return self.lin(x)
 
-    def __init__(self, node_features, hidden_channels = 64, num_layers = 2, block = "res+"):
+    def __init__(self, node_features, hidden_channels = 64, num_layers = 2, block = "res+", dropout = 0.0):
         super().__init__()
-        self.main_module = self.DeeperGCN(node_features, hidden_channels, num_layers, block = block)
+        self.main_module = self.DeeperGCN(node_features, hidden_channels, num_layers, block = block, dropout = dropout)
         self.sigmoid = Sigmoid()
         self.argmax = NeighborArgmax(in_channels = -1)
 
