@@ -8,6 +8,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import tqdm
 import numpy as np
 import pandas as pd
+from torch_geometric.data import Batch
 
 
 
@@ -66,8 +67,17 @@ def supervised_train(module, replay_buffer, num_training_epochs=5, lr=0.0001,
 
         for mb, td in enumerate(replay_buffer):
             optimizer.zero_grad()
-            td = module(td)
-            all_loss = loss_fn(td['probs'], td["target_action"].float())
+            if isinstance(td, Batch): # want to pass td directly to the GNN actor module
+                probs, logits = module[0](td)
+                # td.batch is a batch_size*num_nodes tensor that specifies which graph each node belongs to
+                # i want to regroup all probs by their respective graph
+                probs = probs.reshape(td.num_graphs, -1)
+                target_action = td.target_action.reshape(td.num_graphs, -1)
+                all_loss = loss_fn(probs, target_action.float())
+
+            else:
+                td = module(td)
+                all_loss = loss_fn(td['probs'], td["target_action"].float())
 
             loss = all_loss.mean()
 
