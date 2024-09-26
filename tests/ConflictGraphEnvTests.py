@@ -114,8 +114,8 @@ def test_get_valid_action(env_setup2):
     valid_single_action = env._get_valid_action(single_action)
     assert torch.all(valid_single_action == true_valid_action_1)
 
-def test_check_env_specs(env_setup2):
-    check_env_specs(env_setup2)
+# def test_check_env_specs(env_setup2):
+#     check_env_specs(env_setup2)
 
 
 
@@ -137,6 +137,7 @@ def test_make_env_cgs_stack(env_setup):
 
     make_env_keywords = {"observation_keys": ["q", "s"], "stack_observation": True}
     env = make_env_cgs(env_params, **make_env_keywords)
+    check_env_specs(env)
     td = env.reset()
     print()
 

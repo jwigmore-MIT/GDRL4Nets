@@ -3,6 +3,19 @@ import numpy as np
 from tensordict.nn import TensorDictModule
 from tensordict import TensorDict
 
+class CGSLGSActor(TensorDictModule):
+    """
+    Local Greedy Search actor for Conflict Graph Scheduling environments
+    """
+
+    def __init__(self, in_keys = ["q", "s", "adj"], out_keys = ["action"],):
+
+        super().__init__(module= local_greedy_search, in_keys = in_keys, out_keys=out_keys)
+
+    def forward(self, td: TensorDict):
+        mwis_action, mwis, total_ws = self.module(td["adj_sparse"], td["q"]*td["s"])
+        td["action"] = torch.Tensor(mwis_action)
+        return td
 
 class CGSMaxWeightActor(TensorDictModule):
     """
@@ -32,6 +45,9 @@ def cgs_maxweight(valid_actions, q, s):
         s = s.unsqueeze(0)
 
     return valid_actions[torch.argmax(torch.sum(q * s * valid_actions, dim = 1), dim=0)]
+
+
+
 class MaxWeightActor(TensorDictModule):
 
     def __init__(self, in_keys = ["Q", "Y"], out_keys = ["action"], index = 'min'):
@@ -100,6 +116,55 @@ def maxweight_high_index(Q,Y):
     schedule[~all_zeros, max_index[~all_zeros] + 1] = 1
     return schedule.int()
 
+def local_greedy_search(adj, wts):
+    '''
+    Return MWIS set and the total weights of MWIS
+    :param adj: adjacency matrix (sparse)
+    :param wts: weights of vertices
+    :return: mwis, total_wt
+    '''
+    if adj.shape[0] != adj.shape[1]:
+        adj = torch.sparse.FloatTensor(adj, torch.ones(adj.shape[1])).to_dense().numpy()
+    wts = np.array(wts).flatten()
+    verts = np.array(range(wts.size))
+    mwis = set()
+    mwis_action = np.zeros(wts.size)
+    ind = -1
+    remain = set(verts.flatten())
+    vidx = list(remain)
+    nb_is = set()
+    while len(remain) > 0:
+        for v in remain:
+            ind +=1
+            # if v in nb_is:
+            #     continue
+            nb_set = np.nonzero(adj[v])[0]# Get neighbors
+            nb_set = set(nb_set).intersection(remain)
+            if len(nb_set) == 0:
+                mwis.add(v)
+                continue
+            nb_list = list(nb_set)
+            nb_list.sort()
+            wts_nb = wts[nb_list]
+            w_bar_v = wts_nb.max()
+            if wts[v] > w_bar_v:
+                mwis.add(v)
+                mwis_action[ind] = 1
+                nb_is = nb_is.union(set(nb_set))
+            elif wts[v] == w_bar_v:
+                i = list(wts_nb).index(wts[v])
+                nbv = nb_list[i]
+                if v < nbv:
+                    mwis.add(v)
+                    mwis_action[ind] = 1
+
+                    nb_is = nb_is.union(set(nb_set))
+            else:
+                pass
+        remain = remain - mwis - nb_is
+    total_ws = np.sum(wts[list(mwis)])
+    return mwis_action, mwis, total_ws
+
 if __name__ == "__main__":
     # test maxweight
     Q = np.array([1,2,3])
@@ -109,3 +174,6 @@ if __name__ == "__main__":
     print(maxweight(Q,Y))
     Y = np.array([0,0,0])
     print(maxweight(Q,Y))
+
+
+

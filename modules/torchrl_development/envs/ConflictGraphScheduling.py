@@ -12,7 +12,7 @@ from torchrl.data import BoundedTensorSpec, CompositeSpec, Bounded, Unbounded, B
 from torchrl.envs import (
     EnvBase,
 )
-
+from torch_geometric.utils import dense_to_sparse
 
 # ignore UserWarnings
 import warnings
@@ -66,7 +66,7 @@ class ConflictGraphScheduling(EnvBase):
                  seed: Optional[int] = None,
                  batch_size: int = 1,
                  max_queue_size: Optional[int] = None,
-
+                 node_priority: str = None,
                  context_id: Optional[int] = -1,
                  interference_penalty: Optional[float] = 0.0,
                  reset_penalty: Optional[float] = 0.0,
@@ -77,12 +77,23 @@ class ConflictGraphScheduling(EnvBase):
         self.interference_penalty = interference_penalty
         self.reset_penalty = reset_penalty
         self.adj = torch.Tensor(adj)
+        self.adj_sparse = dense_to_sparse(self.adj)[0]
         self.num_nodes = self.adj.shape[0]
-        self.num_edges = torch.sum(self.adj) // 2
+        self.num_edges = int((torch.sum(self.adj) // 2).item())
 
         # intialize queue and service states
         self.q = torch.zeros(self.num_nodes)
         self.s = torch.zeros(self.num_nodes)
+
+        # Create node priority
+        if node_priority is None:
+            self.node_priority = torch.zeros(self.num_nodes).float()
+        elif node_priority == "random":
+            self.node_priority = torch.randperm(self.num_nodes).float()
+        elif node_priority == "increasing":
+            self.node_priority = torch.arange(self.num_nodes).float()
+        else:
+            raise ValueError("node_priority must be one of None, 'random', 'increasing'")
 
         # create torch generator object
         self.rng = torch.Generator()
@@ -109,12 +120,19 @@ class ConflictGraphScheduling(EnvBase):
             self._sim_arrivals = lambda: torch.bernoulli(self.arrival_rate, generator = self.rng)
         elif self.arrival_dist == "Fixed":
             self._sim_arrivals = lambda: torch.Tensor(self.arrival_rate)
+        else:
+            raise ValueError("arrival_dist must be one of 'Poisson', 'Bernoulli', 'Fixed'")
+
         if self.service_dist == "Poisson":
             self._sim_services = lambda: torch.poisson(self.service_rate, generator = self.rng)
         elif self.service_dist == "Bernoulli":
             self._sim_services = lambda: torch.bernoulli(self.service_rate, generator = self.rng)
         elif self.service_dist == "Fixed":
             self._sim_services = lambda: torch.Tensor(self.service_rate)
+        elif self.service_dist == "Normal":
+            self._sim_services = lambda: torch.normal(self.service_rate[0], self.service_rate[1], generator=self.rng).clamp(min =0, max = 100).round()
+        else:
+            raise ValueError("service_dist must be one of 'Poisson', 'Bernoulli', 'Fixed', 'Normal'")
 
     def _step(self, td: TensorDict):
 
@@ -145,12 +163,13 @@ class ConflictGraphScheduling(EnvBase):
             "q": self.q,
             "s": self.s,
             "valid_action": action,
-            "adj": self.adj,
+            "adj_sparse": self.adj_sparse,
             "reward": reward,
             "terminated": terminated,
             "arrival_rate": self.arrival_rate,
             "service_rate": self.service_rate,
             "context_id": self.context_id,
+            "node_priority": self.node_priority,
         }, td.shape)
         return out
 
@@ -163,12 +182,13 @@ class ConflictGraphScheduling(EnvBase):
             "q": self.q,
             "s": self.s,
             "valid_action": torch.zeros_like(self.q),
-            "adj": self.adj,
+            "adj_sparse": self.adj_sparse,
             "terminated": torch.Tensor([False]).bool(),
             "reward": torch.Tensor([0.0]),
             "arrival_rate": self.arrival_rate,
             "service_rate": self.service_rate,
             "context_id": self.context_id,
+            "node_priority": self.node_priority
         },
 
             self.batch_size)
@@ -189,11 +209,12 @@ class ConflictGraphScheduling(EnvBase):
             "q": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
             "s": Bounded(low = 0, high = 100, shape = (self.num_nodes,), dtype = torch.float32),
             "valid_action": Binary(n = self.num_nodes, shape = (self.num_nodes,), dtype = torch.float32),
-            "adj": BoundedTensorSpec(low = 0, high = 1, shape = (self.num_nodes, self.num_nodes), dtype = torch.float32),
+            "adj_sparse": Unbounded(shape = self.adj_sparse.shape, dtype = torch.int64),
             "reward": Unbounded(shape = (1,), dtype = torch.float32),
             "arrival_rate": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
-            "service_rate": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
+            "service_rate": Unbounded(shape = self.service_rate.shape, dtype = torch.float32),
             "context_id": Unbounded(shape = (1,), dtype = torch.float32),
+            "node_priority": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
         })
 
         self.action_spec = Binary(n = self.num_nodes, shape = (self.num_nodes,), dtype = torch.float32)
@@ -218,6 +239,8 @@ class ConflictGraphScheduling(EnvBase):
         if action.ndim == 1:
             # If the input tensor is 1D, add an extra dimension to make it 2D
             action = action.unsqueeze(0)
+        # make any element zero if q is less than 1
+        action = action * (self.q > 0).unsqueeze(0)
 
         # Transpose the action tensor to match the shape of the adjacency matrix
         action_transpose = torch.transpose(action, 0, 1)
@@ -234,6 +257,7 @@ def compute_valid_actions(env: ConflictGraphScheduling) -> torch.Tensor:
     :return valid_actions: a tensor of shape (O(2^N), N) where each row is a valid action
     """
     N = env.num_nodes
+    env.base_env.q = torch.ones(N)
     valid_actions = []
     for i in range(2**N):
         action = torch.Tensor([int(x) for x in list(bin(i)[2:].zfill(N))])

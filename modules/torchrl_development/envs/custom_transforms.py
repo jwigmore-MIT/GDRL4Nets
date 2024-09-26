@@ -13,8 +13,9 @@ from torchrl.data.tensor_specs import (
     UnboundedContinuousTensorSpec,
     Unbounded,
     Composite,
-
+    NonTensor,
 )
+from tensordict.nn import dispatch
 
 from tensordict import (
     TensorDictBase,
@@ -194,6 +195,8 @@ class InverseTransform(Transform):
         )
 
 
+
+
 class CatStackTensors(Transform):
     """Concatenates several keys in a single tensor.
 
@@ -310,8 +313,9 @@ class CatStackTensors(Transform):
         We want to return a tensor of shape [batch_size, N*M], but we want it such that each of t
         """
         # stacked_values = torch.stack(values, dim=-1)
-        out_tensor = torch.stack(values, dim=-1).reshape(values[0].shape[0]*len(values))
-        tensordict.set(self.out_keys[0], out_tensor)
+        stacked = torch.stack(values, dim=-1)
+        stacked = stacked.view(-1, values[0].shape[-1]*len(values)).squeeze()
+        tensordict.set(self.out_keys[0], stacked)
         if self._del_keys:
             tensordict.exclude(*self.keys_to_exclude, inplace=True)
         return tensordict
@@ -587,12 +591,95 @@ class PyGObservationTransform(ObservationTransform):
         valid_action: torch.Tensor of shape [B, N]
         done: torch.Tensor of shape [B, 1]
         adj: torch.Tensor of shape [N, N]
-        observation: torch.Tensor of shape [B, N*K] where K is the number of keys in the observation
+        adj: torch.Tensor of shape [2, M] where M is the number of links
+        observation: torch.Tensor of shape [B, N, K] where K is the number of keys in the observation
 
-        We only want to convert observation and adj into a PyG Data object, where each node
-
+        We only want to convert observation and adj into a PyG Data object, which has named tensors
+            x: direct conversion of observation
+            edge_index: direct conversion of adj
     """
+    def __init__(
+            self,
+            in_keys: Sequence[NestedKey] | None = "observation",
+            out_key: Sequence[NestedKey] | None = 'pyg_observation',
+    ):
+        # check if in_keys is a list
+        if not isinstance(in_keys, list):
+            in_keys = [in_keys]
+        if not isinstance(out_key, list):
+            out_key = [out_key]
+        super().__init__(in_keys=in_keys, out_keys=out_key)
 
+    def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
+
+        # get the observation and adj
+        observation = tensordict.get(self.in_keys[0])
+        adj_sparse = tensordict.get("adj_sparse")
+        data = Data(x=observation, edge_index=adj_sparse)
+        tensordict.set(self.out_keys[0], data)
+        return tensordict
+
+    def _reset(
+        self, tensordict: TensorDictBase, tensordict_reset: TensorDictBase
+    ) -> TensorDictBase:
+        with _set_missing_tolerance(self, True):
+            tensordict_reset = self._call(tensordict_reset)
+        return tensordict_reset
+
+    def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
+        out_key = self.out_keys[0]
+        spec0 = observation_spec[self.in_keys[0]]
+        observation_spec[out_key] =  NonTensor(
+            shape = (),
+            device = spec0.device,
+        )
+        return observation_spec
+
+    @dispatch(source="in_keys", dest="out_keys")
+    def forward(self, tensordict: TensorDictBase) -> TensorDictBase:
+        """Reads the input tensordict, and for the selected keys, applies the transform."""
+        return self._call(tensordict)
+
+class ObservationNoiseTransform(ObservationTransform):
+    """
+    Transforms any observation tensor by adding a very small amount of noise to it
+    """
+    def __init__(
+            self,
+            in_keys: Sequence[NestedKey] | None = None,
+            out_keys: Sequence[NestedKey] | None = None,
+            noise: float = 1e-2,
+    ):
+        if in_keys is None:
+            in_keys = ["observation"]
+        if out_keys is None:
+            out_keys = copy(in_keys)
+        super().__init__(in_keys=in_keys, out_keys=out_keys)
+        self.noise = noise
+
+    def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
+        for key in self.in_keys:
+            tensordict[key] = tensordict[key] + self.noise*torch.randn_like(tensordict[key])
+        return tensordict
+
+    def _reset(
+        self, tensordict: TensorDictBase, tensordict_reset: TensorDictBase
+    ) -> TensorDictBase:
+        with _set_missing_tolerance(self, True):
+            tensordict_reset = self._call(tensordict_reset)
+        return tensordict_reset
+
+    def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
+        for key in self.in_keys:
+            observation_spec[key] = Unbounded(
+                dtype=torch.float,
+                device=observation_spec.device,
+                shape=observation_spec[key].shape,
+            )
+        return observation_spec
+
+    def _apply_transform(self, obs: torch.Tensor) -> None:
+        return obs + self.noise*torch.randn_like(obs)
 
 class RunningAverageTransform(Transform):
     """

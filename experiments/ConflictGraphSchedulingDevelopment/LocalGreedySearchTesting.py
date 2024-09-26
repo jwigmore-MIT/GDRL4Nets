@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from tensordict import TensorDict
 from modules.torchrl_development.envs.ConflictGraphScheduling import ConflictGraphScheduling, compute_valid_actions
-from modules.torchrl_development.baseline_policies.maxweight import CGSMaxWeightActor
+from modules.torchrl_development.baseline_policies.maxweight import CGSMaxWeightActor, CGSLGSActor
 from torchrl.envs.utils import check_env_specs
 from modules.torchrl_development.envs.env_creation import make_env_cgs
 from modules.torchrl_development.utils.metrics import compute_lta
@@ -58,7 +58,7 @@ check_env_specs(env)
 """"
 CREATE THE CGSMAXWEIGHT ACTOR
 """
-actor = CGSMaxWeightActor(valid_actions = compute_valid_actions(env))
+actor = CGSLGSActor()
 
 
 """

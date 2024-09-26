@@ -7,7 +7,7 @@ from typing import List
 
 from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform, ObservationNorm
 
-from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, RunningAverageTransform, CatStackTensors, StackTensors
+from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, CatStackTensors, StackTensors, PyGObservationTransform, ObservationNoiseTransform
 from modules.torchrl_development.envs.SingleHop import SingleHop
 from modules.torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from modules.torchrl_development.envs.MultipathRouting import MultipathRouting
@@ -53,23 +53,34 @@ def make_env_cgs(env_params,
                  seed: int = 0,
                  max_queue_size = 1000,
                  observation_keys: List[str] =["q", "s"],
+                 observation_noise_keys: List[str] = None,
                  symlog_obs = True,
                  symlog_reward = False, # DONT USE
                  inverse_reward = True,
                  stack_observation = False,
+                 pyg_observation = False,
                  ):
     env_params = deepcopy(env_params)
     env_params["seed"] = seed
     env_params["max_queue_size"] = max_queue_size
     env = ConflictGraphScheduling(**env_params)
+    if observation_noise_keys is not None:
+        env = TransformedEnv(env, ObservationNoiseTransform(in_keys=observation_noise_keys))
     if stack_observation:
         env = TransformedEnv(env, StackTensors(in_keys=observation_keys, out_key="observation", del_keys=False))
     else:
         env = TransformedEnv(
             env, CatStackTensors(in_keys=observation_keys, out_key="observation", del_keys=False),
             )
+
     if symlog_obs:
         env = TransformedEnv(env, SymLogTransform(in_keys=["observation"], out_keys=["observation"]))
+    if pyg_observation:
+        if stack_observation:
+            env = TransformedEnv(env, PyGObservationTransform(in_keys=["observation"], out_key=["pyg_observation"]))
+        else:
+            raise ValueError("PyG observation transform only works with stack_observation = True")
+
     if symlog_reward:
         env = TransformedEnv(env, SymLogTransform(in_keys=["reward"], out_keys=["reward"]))
         print("USING SYMLOG TRANSFORM FOR REWARD -- NOT RECOMMENDED -- USE INVERSE REWARD INSTEAD")
