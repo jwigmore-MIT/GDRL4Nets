@@ -2,16 +2,17 @@ device: null
 
 # Agent
 agent:
-  actor_type: MLP
-  critic_type: MLP
-  hidden_sizes: [64, 64]
+  actor_type: GNN
+  critic_type: GNN
+  num_layers: 3
+  hidden_size: 32
   observe_lambda: True
   observe_mu: True
 
 # Environment
 training_make_env_kwargs:
   observation_keys: ["q", "s"]
-  max_queue_size: 100
+  max_queue_size: 50
   stack_observation: True
 
 
@@ -28,7 +29,7 @@ collector:
 # logger
 logger:
   backend: wandb
-  project: CGS_Development
+  project: CGS_Development2
 
 # Optim
 optim:
@@ -43,7 +44,7 @@ optim:
 # loss
 loss:
   gamma: 0.99
-  mini_batch_size: 2500
+  mini_batch_size: 500
   num_updates: 10
   gae_lambda: 0.95
   clip_epsilon: 0.1

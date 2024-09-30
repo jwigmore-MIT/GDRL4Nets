@@ -3,6 +3,8 @@
 import os
 from torchrl.envs.utils import check_env_specs
 from torchrl.data import TensorDictReplayBuffer, SamplerWithoutReplacement, LazyMemmapStorage
+from torchrl.objectives.value import GAE
+
 from modules.torchrl_development.utils.configuration import load_config
 from modules.torchrl_development.agents.cgs_agents import create_mlp_actor_critic, GNN_ActorTensorDictModule
 from modules.torchrl_development.envs.ConflictGraphScheduling import ConflictGraphScheduling, compute_valid_actions
@@ -17,6 +19,9 @@ from policy_modules import *
 from imitation_learning_utils import *
 from torch_geometric.data import DataLoader
 from torch_geometric.data import Data
+import networkx as nx
+
+from graph_env_creators import make_line_graph, make_ring_graph, create_grid_graph
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,22 +29,31 @@ LOGGING_PATH = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_PATH)), "logs
 
 device = "cpu"
 
+
+"""
+ENVIRONMENT GENERATING FUNCTIONS
+"""
+
+
 """
 TRAINING PARAMETERS
 """
+gnn_layers = 3
+
+
 lr = 0.01
 minibatches =100
-num_training_epochs = 50
+num_training_epochs = 30
 lr_decay = True
 
-new_maxweight_data = True
+new_maxweight_data = False
 training_data_amount = [10_000, 3]
 max_weight_data_type = "rollout" # "rollout" or "enumerate"
-batch_dataloader = True
+batch_dataloader = False
 train_gnn = True
 test_gnn = True
-train_mlp = True
-test_mlp = True
+train_mlp = False
+test_mlp = False
 
 test_length = 5000
 test_rollouts = 3
@@ -47,80 +61,21 @@ test_rollouts = 3
 ENVIRONMENT PARAMETERS
 """
 
-## Two Set of Two Nodes
-# adj = np.array([[0,1,0,0], [1,0,1,0], [0,1,0,1],[0,0,1,0]])
-# arrival_dist = "Bernoulli"
-# arrival_rate = np.array([0.3, 0.3, 0.3, 0.3])
-# service_dist = "Fixed"
-# service_rate = np.array([1, 1, 1, 1])
 
 
-## Two Nodes
-# adj = np.array([[0,1], [1,0]])
-# arrival_dist = "Bernoulli"
-# arrival_rate = np.array([0.4, 0.4])
-# service_dist = "Fixed"
-# service_rate = np.array([1, 1])
 
-# 4 Node Line Graph
-adj = np.array([[0,1,0,0], [1,0,1,0], [0,1,0,1],[0,0,1,0]])
-arrival_dist = "Bernoulli"
-arrival_rate = np.array([0.4, 0.4, 0.4, 0.4])
-service_dist = "Fixed"
-service_rate = np.array([1, 1, 1, 1])
 
-# 5 Nodes Line Graph
-adj = np.array([[0,1,0,0,0], [1,0,1,0,0], [0,1,0,1,0],[0,0,1,0,1], [0,0,0,1,0]])
-arrival_dist = "Bernoulli"
-arrival_rate = np.array([0.4, 0.4, 0.4, 0.4, 0.4])
-service_dist = "Fixed"
-service_rate = np.array([1, 1, 1, 1, 1])
 
-def make_line_graph(n, arrival_rate, service_rates):
-    """
-    Creates a line graph with n nodes
-    :param n:
-    :param arrival_rate:
-    :param service_rates:
-    :return:
-    """
-    adj = np.zeros((n,n))
-    for i in range(n-1):
-        adj[i, i+1] = 1
-        adj[i+1, i] = 1
 
-    arrival_dist = "Bernoulli"
-    arrival_rate = np.ones(n) * arrival_rate
-    service_dist = "Fixed"
-    service_rates = np.ones(n) * service_rates
-    return adj, arrival_dist, arrival_rate, service_dist, service_rates
-## 8 Node Line Graph
-# adj = np.array([[0,1,0,0,0,0,0,0], [1,0,1,0,0,0,0,0], [0,1,0,1,0,0,0,0],[0,0,1,0,1,0,0,0],
-#                 [0,0,0,1,0,1,0,0], [0,0,0,0,1,0,1,0], [0,0,0,0,0,1,0,1], [0,0,0,0,0,0,1,0]])
-# arrival_dist = "Bernoulli"
-# arrival_rate = np.array([0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4])
-# service_dist = "Fixed"
-# service_rate = np.array([1, 1, 1, 1, 1, 1, 1, 1])
+adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(4, 0.4, 1)
+# adj, arrival_dist, arrival_rate, service_dist, service_rate = make_ring_graph(10, 0.4, 1)
+# adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(2, 2, 0.4, 1)
+G = nx.from_numpy_array(adj)
 
-# ## 8 Node Ring Graph
-# adj = np.array([[0,1,0,0,0,0,0,1], [1,0,1,0,0,0,0,0], [0,1,0,1,0,0,0,0],[0,0,1,0,1,0,0,0],
-#                 [0,0,0,1,0,1,0,0], [0,0,0,0,1,0,1,0], [0,0,0,0,0,1,0,1], [1,0,0,0,0,0,1,0]])
-# arrival_dist = "Bernoulli"
-# arrival_rate = np.ones(8) * 0.4
-# service_dist = "Fixed"
-# service_rate = np.ones(8)
-
-# 9 Node Grid Graph
-# adj = np.array([[0,1,0,1,0,0,0,0,0], [1,0,1,0,1,0,0,0,0], [0,1,0,0,0,1,0,0,0],[1,0,0,0,1,0,1,0,0],
-#                 [0,1,0,1,0,1,0,1,0], [0,0,1,0,1,0,0,0,1], [0,0,0,1,0,0,0,1,0], [0,0,0,0,1,0,1,0,1], [0,0,0,0,0,1,0,1,0]])
-# arrival_dist = "Bernoulli"
-# arrival_rate = np.ones(9) * 0.4
-# service_dist = "Fixed"
-# service_rate = np.ones(9)
-
-#create 6 node line graph
-adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(8, 0.4, 1)
-
+# Draw the graph
+nx.draw(G, with_labels=True)
+plt.title(f"Testing Network graph")
+plt.show()
 interference_penalty = 0.25
 reset_penalty = 100
 
@@ -176,23 +131,14 @@ if new_maxweight_data:
 CREATE GNN ACTOR AND CRITIC ARCHITECTURES
 """
 node_features = env.observation_spec["observation"].shape[-1]
-#policy_module = GCN_Policy_Module(node_features, num_layers = 1)
-policy_module = Policy_Module2(node_features, 32, num_layers = 5, dropout=0.1)
+policy_module = Policy_Module2(node_features, 32, num_layers = gnn_layers, dropout=0.1)
 
 
 actor = GNN_ActorTensorDictModule(module = policy_module, x_key = "observation", edge_index_key = "adj_sparse", out_keys = ["probs", "logits"])
 
-# value_module = Sequential('x, edge_index, batch', [
-#             (GCNConv(node_features, 64 ), 'x, edge_index -> x'),
-#             ReLU(inplace=True),
-#             (GCNConv(64, 64), 'x, edge_index -> x'),
-#             ReLU(inplace=True),
-#             Linear(64, 1),
-#             Sigmoid(),
-#            (global_add_pool, 'x, batch -> x')
-#         ])
+value_module = Value_Module(node_features, 32, num_layers = gnn_layers, dropout = 0.1)
 
-# critic = GNN_TensorDictModule(module = value_module, x_key="observation", edge_index_key="adj_sparse", out_key="state_value")
+critic = GNN_TensorDictModule(module = value_module, x_key="observation", edge_index_key="adj_sparse", out_key="state_value")
 
 actor = ProbabilisticActor(
     actor,
@@ -203,7 +149,7 @@ actor = ProbabilisticActor(
     default_interaction_type = ExplorationType.RANDOM
     )
 
-agent = actor
+agent = ActorCriticWrapper(actor, critic)
 
 # do a short rollout with the agent
 # td = env.rollout(max_steps = 100, policy = agent)
@@ -236,9 +182,14 @@ LOAD AND PROCESS TRAINING DATA
 """
 training_rollout = pickle.load(open('maxweight_actor_rollout.pkl', 'rb'))
 training_rollout["target_action"] = training_rollout["action"].long()
+
+
+
 # Apply transformations from the environment to the rollout
 training_rollout = env.transform(training_rollout)
 
+
+# training_rollout2 = maxweight_actor.get_all_mwis_actions(training_rollout)
 mw_q_lta = compute_lta(training_rollout["q"].sum(axis=1))
 if batch_dataloader:
     # create a list of data from the rollout
@@ -261,12 +212,11 @@ else:
 PERFORM IMITATION LEARNING
 """
 if train_gnn:
-    all_losses, all_lrs, all_weights = supervised_train(agent, replay_buffer,
+    all_policy_losses, all_critic_losses, all_lrs, all_weights = supervised_train_w_critic(agent, replay_buffer,
                                                         num_training_epochs = num_training_epochs,
                                                         lr = lr,
                                                         lr_decay = lr_decay,
                                                         reduce_on_plateau = False,
-                                                        to_plot = ["all_losses", "all_lrs"],
                                                         suptitle = "Imitation Learning with GNN Actor")
 
     # Test GNN agent
@@ -320,6 +270,7 @@ if train_mlp:
     # Apply transformations from the environment to the rollout
     training_rollout = mlp_env.transform(training_rollout)
 
+
     replay_buffer  = TensorDictReplayBuffer(storage = LazyMemmapStorage(max_size = training_rollout.shape[0]),
                                             batch_size = training_rollout.shape[0]//minibatches,
                                             sampler = SamplerWithoutReplacement(shuffle=True, drop_last=True))
@@ -356,7 +307,7 @@ if test_mlp:
     ax.legend()
     ax.set_title("MLP Agent Rollout")
     plt.show()
-if True:
+if test_mlp and test_gnn:
     # Plot both MaxWeight ltas
     fig, ax = plt.subplots()
     ax.plot(mw_q_ltas.mean(axis = 0), label = "MaxWeight GNN Environment")

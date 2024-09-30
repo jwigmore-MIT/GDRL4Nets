@@ -116,17 +116,28 @@ class GNN_ActorTensorDictModule(GNN_TensorDictModule):
             else:
                 batch_graph = tensors_to_batch(input[self.x_key], input[self.edge_index_key])
                 probs, logits = self.module(batch_graph.x, batch_graph.edge_index, batch_graph.batch)
-                input[self.outs_key[0]] = probs.view(batch_graph.batch_size,-1)
-                input[self.outs_key[1]] = logits.view(batch_graph.batch_size,-1)
+                input[self.out_keys[0]] = probs.view(batch_graph.batch_size, -1)
+                input[self.out_keys[1]] = logits.view(batch_graph.batch_size, -1)
             return input
         elif isinstance(input, Batch):
             return self.module(input.x, input.edge_index, input.batch)
 
 
+class GNN_CriticTensorDictModule(GNN_TensorDictModule):
 
+    def __init__(self, module, x_key="observation", edge_index_key="adj_sparse", out_keys=["state_value"]):
+        super(GNN_CriticTensorDictModule, self).__init__(module=module, x_key=x_key, edge_index_key=edge_index_key,
+                                                        out_key=out_keys)
+        self.x_key = x_key
+        self.edge_index_key = edge_index_key
+        self.outs_key = out_keys
 
-
-
+    def forward(self, input):
+        if isinstance(input, TensorDict):
+            if input[self.x_key].dim() < 3: # batch size is 1
+                probs, logits = self.module(input[self.x_key], input[self.edge_index_key], None)
+                input[self.outs_key[0]] = probs.squeeze(-1)
+                input[self.outs_key[1]] = logits.squeeze(-1)
 
 class IndependentBernoulli(D.Bernoulli):
     """

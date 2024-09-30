@@ -31,7 +31,10 @@ class CGSMaxWeightActor(TensorDictModule):
     def forward(self, td: TensorDict):
         td["action"] = self.module(self.valid_actions, td["q"], td["s"])
         return td
-def cgs_maxweight(valid_actions, q, s):
+
+    def get_all_mwis_actions(self, td):
+        td["all_actions"] = self.module(self.valid_actions, td["q"], td["s"], all = True)
+def cgs_maxweight(valid_actions, q, s, all = False):
     """
     Compute the maxweight scheduling policy
     argmax(q*y*a) where a is a valid action
@@ -43,10 +46,13 @@ def cgs_maxweight(valid_actions, q, s):
     if q.ndim == 1:
         q = q.unsqueeze(0)
         s = s.unsqueeze(0)
-
-    return valid_actions[torch.argmax(torch.sum(q * s * valid_actions, dim = 1), dim=0)]
-
-
+    if not all:
+        return valid_actions[torch.argmax(torch.sum(q * s * valid_actions, dim = 1), dim=0)]
+    else:
+        return valid_actions[all_argmax(torch.sum(q * s * valid_actions, dim = 1), dim=0)]
+def all_argmax(input_tensor, dim=None):
+    max_val = input_tensor.max(dim=dim, keepdim=True)[0]
+    return (input_tensor == max_val).nonzero(as_tuple=True)[dim]
 
 class MaxWeightActor(TensorDictModule):
 

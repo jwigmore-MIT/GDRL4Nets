@@ -32,8 +32,11 @@ def plot_data(plots, suptitle=""):
             ax.plot(data)
         ax.set_ylabel(ylabel)
         ax.set_title(title)
+        # if title == "Training Loss":
+        #     ax.set_ylim(0, 1)
 
     ax.set_xlabel("Minibatch")
+
 
     fig.suptitle(suptitle)
     fig.tight_layout()
@@ -157,6 +160,139 @@ def supervised_train(module, replay_buffer, num_training_epochs=5, lr=0.0001,
             plots.append((all_weights, "Weights", "MaxWeightNetwork Weights"))
         plot_data(plots, suptitle=suptitle)
     return all_losses, all_lrs, all_weights
+        # stop training if loss converges
+
+
+from torchrl.objectives.value.functional import generalized_advantage_estimate as gae
+from torchrl.objectives.value import GAE
+def supervised_train_w_critic(module, replay_buffer, num_training_epochs=5, lr=0.0001,
+                  weight_decay = 0.0, lr_decay = False, reduce_on_plateau = False,
+                to_plot = ["all_policy_losses", "all_critic_losses", "lr"], suptitle = "",all_policy_losses = None, all_critic_losses = None, all_lrs = None, all_weights = None):
+
+    policy_loss_fn = nn.BCELoss(reduction = "none")
+    critic_loss_fn = nn.MSELoss(reduction = "none")
+    optimizer = Adam(module.parameters(), lr=lr, weight_decay=weight_decay)
+    gae_estimator = GAE(gamma = 0.99, lmbda = 0.95, value_network = module.get_value_operator(), vectorized=False)
+
+    if reduce_on_plateau:
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-4, verbose=True)
+
+    pbar = tqdm.tqdm(range(num_training_epochs), desc=f"Training {module.__class__.__name__}")
+    if all_policy_losses is None:
+        all_policy_losses = []
+    if all_critic_losses is None:
+        all_critic_losses = []
+    if all_lrs is None:
+        all_lrs = []
+    if all_weights is None:
+        all_weights = []
+    last_n_losses = []
+    for epoch in pbar:
+        # add learning rate decay
+        if not reduce_on_plateau and lr_decay:
+            alpha = 1 - (epoch / num_training_epochs)
+            for group in optimizer.param_groups:
+                group["lr"] = lr * alpha
+
+        for mb, td in enumerate(replay_buffer):
+            optimizer.zero_grad()
+            # if isinstance(td, Batch): # want to pass td directly to the GNN actor module
+            #     probs, logits = module[0](td)
+            #     # td.batch is a batch_size*num_nodes tensor that specifies which graph each node belongs to
+            #     # i want to regroup all probs by their respective graph
+            #     probs = probs.reshape(td.num_graphs, -1)
+            #     target_action = td.target_action.reshape(td.num_graphs, -1)
+            #     all_loss = loss_fn(probs, target_action.float())
+            #
+            # else:
+            td = module(td)
+            td["next"] = module(td["next"])
+
+            adv, td["target_value"] = gae(0.99, 0.95, td["state_value"], td["next", "state_value"], td["reward"], td["done"], td["terminated"])
+            all_policy_loss = policy_loss_fn(td['probs'], td["target_action"].float())
+            all_critic_loss = critic_loss_fn(td['state_value'], td["target_value"].float())
+
+            loss = all_policy_loss.mean() + all_critic_loss.mean()
+
+
+
+            loss.backward(retain_graph = False)
+
+            optimizer.step()
+            # if epoch > 9:
+            #     # Get the max in all_loss
+            #     if loss > all_losses[-1]*1.1:
+            #         values, indices = torch.topk(all_loss.sum(dim=1), 5)
+            #         # create a table from values, td["q"][indices], td["target_action"][indices], td["probs"][indices]
+            #         df = pd.DataFrame({"Values": values.detach()})
+            #         df["q"] = [q.detach().numpy() for q in td["q"][indices]]
+            #         df["target_action"] = [a.detach().numpy() for a in td["target_action"][indices]]
+            #         df["probs"] = [p.detach().numpy().round(decimals = 4) for p in td["probs"][indices]]
+            #         df
+
+
+            all_policy_losses.append(all_policy_loss.detach().mean().item())
+            all_critic_losses.append(all_critic_loss.detach().mean().item())
+            all_lrs.append(optimizer.param_groups[0]["lr"])
+            policy_operator = module.get_policy_operator() if hasattr(module, "get_policy_operator") else None
+            if policy_operator:
+                max_weight_network = policy_operator.module[0].module
+                if str(max_weight_network) == "MaxWeightNetwork()":
+                    actor_weights = max_weight_network.get_weights()
+                    all_weights.append(actor_weights)
+            if reduce_on_plateau:
+                scheduler.step(loss)
+            if mb % 10 == 0:
+                last_n_losses.append(loss.item())
+                pbar.set_postfix({f"Epoch": epoch, 'mb': mb,  f"Policy Loss": all_policy_loss.detach().mean().item(), "Critic Loss": all_critic_loss.detach().mean().item()})
+                if len(last_n_losses) > 10:
+                    last_n_losses.pop(0)
+                    if np.std(last_n_losses) < 1e-6:
+                        break
+    if len(to_plot) > 0:
+        # check if all_weights is empty
+        # def plot_data(plots, suptitle=""):
+        #     num_plots = len(plots)
+        #     fig, axes = plt.subplots(num_plots, 1, sharex=True, figsize=(10, 10))
+        #     if num_plots == 1:
+        #         axes = [axes]
+        #
+        #
+        #     if all_weights is not None:
+        #         plots.append((all_weights, "Weights", "MaxWeightNetwork Weights"))
+        #
+        #     for i, ((data, ylabel, title), ax) in enumerate(zip(plots, axes)):
+        #         if title == "MaxWeightNetwork Weights":
+        #             data = torch.stack(data).squeeze().detach().numpy()
+        #             print("Weights shape: ", data.shape)
+        #             for j in range(data.shape[1]):
+        #                 if j == 0:
+        #                     continue
+        #                 ax.plot(data[:, j], label=f"W{j}")
+        #             ax.legend()
+        #         else:
+        #             ax.plot(data)
+        #         ax.set_ylabel(ylabel)
+        #         ax.set_title(title)
+        #
+        #     if num_plots == 2:
+        #         ax[1].set_xlabel("Minibatch")
+        #
+        #     fig.suptitle(suptitle)
+        #     fig.tight_layout()
+        #     fig.show()
+
+        plots = []
+        if "all_policy_losses" in to_plot:
+            plots.append((all_policy_losses, "Loss", "Policy Training Loss"))
+        if "all_critic_losses" in to_plot:
+            plots.append((all_critic_losses, "Loss", "Critic Training Loss"))
+        if "all_lrs" in to_plot:
+            plots.append((all_lrs, "Learning Rate", "Learning Rate Schedule"))
+        if "all_weights" in to_plot:
+            plots.append((all_weights, "Weights", "MaxWeightNetwork Weights"))
+        plot_data(plots, suptitle=suptitle)
+    return all_policy_losses, all_critic_losses, all_lrs, all_weights
         # stop training if loss converges
 
 def eval_agent(agent, env_generator, max_steps, rollouts = 1, cat = True):
