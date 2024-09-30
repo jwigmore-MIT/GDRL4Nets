@@ -37,8 +37,11 @@ import time
 import tqdm
 import sys
 from experiment_utils import evaluate_agent
-
-
+import torch._dynamo
+# torch._dynamo.config.suppress_errors = True
+#
+# TORCH_LOGS="+dynamo"
+# TORCHDYNAMO_VERBOSE=1
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 LOGGING_PATH = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_PATH)), "logs")
@@ -98,7 +101,7 @@ CREATE GNN ACTOR CRITIC
 """
 node_features = env.observation_spec["observation"].shape[-1]
 policy_module = Policy_Module2(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout=0.1)
-
+# policy_module = torch.compile(policy_module)
 
 actor = GNN_ActorTensorDictModule(module = policy_module, x_key = "observation", edge_index_key = "adj_sparse", out_keys = ["probs", "logits"])
 
