@@ -13,9 +13,6 @@ from typing import Tuple
 from torchrl.data.tensor_specs import CompositeSpec
 from modules.torchrl_development.utils.gnn_utils import tensors_to_batch
 
-import monotonicnetworks as lmn
-
-from modules.torchrl_development.nn_modules.SwitchTypeNetwork import SwitchTypeNetwork as STN
 
 from modules.torchrl_development.agents.utils import MaskedOneHotCategorical
 
