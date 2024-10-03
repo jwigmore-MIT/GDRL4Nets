@@ -59,6 +59,7 @@ def make_env_cgs(env_params,
                  inverse_reward = True,
                  stack_observation = False,
                  pyg_observation = False,
+                 *args, **kwargs
                  ):
     env_params = deepcopy(env_params)
     env_params["seed"] = seed

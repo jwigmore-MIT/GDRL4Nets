@@ -71,7 +71,9 @@ if __name__ == "__main__":
     plt.title(f"Testing Network graph")
     plt.show()
     interference_penalty = 0.0
-    reset_penalty = 10_000
+    # reset_penalty = 10_000
+    cfg = load_config(os.path.join(SCRIPT_PATH, 'config', 'CGS_GNN_PPO_settings.yaml'))
+
 
     env_params = {
         "adj": adj,
@@ -81,12 +83,11 @@ if __name__ == "__main__":
         "service_rate": service_rate,
         "env_type": "CGS",
         "interference_penalty": interference_penalty,
-        "reset_penalty": reset_penalty,
+        "reset_penalty": cfg.training_make_env_kwargs.reset_penalty,
         "node_priority": "increasing",
 
     }
 
-    cfg = load_config(os.path.join(SCRIPT_PATH, 'config', 'CGS_GNN_PPO_settings.yaml'))
     # cfg.training_make_env_kwargs.observation_keys = ["q"]
     # cfg.training_make_env_kwargs.observation_keys.append("node_priority") # required to differentiate between nodes with the same output embedding
 

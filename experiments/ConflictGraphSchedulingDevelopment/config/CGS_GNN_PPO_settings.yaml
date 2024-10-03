@@ -14,6 +14,7 @@ training_make_env_kwargs:
   observation_keys: ["q", "s", "node_priority"]
   max_queue_size: 200
   stack_observation: True
+  reset_penalty: 10_000
 
 
 
@@ -53,7 +54,7 @@ loss:
   critic_coef: 0.5
   entropy_coef: 0.0
   loss_critic_type: l2
-  norm_advantage: True
+  norm_advantage: False
 
 eval:
   num_eval_envs: 3
