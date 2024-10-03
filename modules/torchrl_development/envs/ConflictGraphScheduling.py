@@ -12,7 +12,7 @@ from torchrl.data import BoundedTensorSpec, CompositeSpec, Bounded, Unbounded, B
 from torchrl.envs import (
     EnvBase,
 )
-from torch_geometric.utils import dense_to_sparse
+from torch_geometric.utils import dense_to_sparse, to_dense_adj
 
 # ignore UserWarnings
 import warnings
@@ -52,6 +52,29 @@ The input is:
 """
 
 
+def format_adj(adj: ListLike) -> torch.Tensor:
+    """
+    Convert the adjacency matrix to a torch tensor
+    :param adj: (N, N) adjacency matrix
+    :return: (N, N) torch tensor
+    """
+    if not isinstance(adj, torch.Tensor):
+        adj = torch.Tensor(adj).long()
+    # Check if its a square matrix
+    if adj.shape[0] != adj.shape[1]:
+        # check if the first dimension is 2
+        if adj.shape[0] == 2 and adj.shape[1] > 2:
+            # adj is in sparse format
+            adj_sparse = adj
+            adj = dense_to_sparse(adj)[0]
+        elif adj.shape[0] > 2 and adj.shape[1] == 2:
+            adj_sparse = adj.T
+            adj = to_dense_adj(adj_sparse).squeeze()
+        else:
+            raise ValueError("Adjacency matrix must be square or in sparse format")
+    else:
+        adj_sparse = dense_to_sparse(adj)[0]
+    return adj, adj_sparse
 
 
 
@@ -76,8 +99,7 @@ class ConflictGraphScheduling(EnvBase):
         self.context_id = torch.Tensor([context_id])
         self.interference_penalty = interference_penalty
         self.reset_penalty = reset_penalty
-        self.adj = torch.Tensor(adj)
-        self.adj_sparse = dense_to_sparse(self.adj)[0]
+        self.adj, self.adj_sparse = format_adj(adj)
         self.num_nodes = self.adj.shape[0]
         self.num_edges = int((torch.sum(self.adj) // 2).item())
 
@@ -113,6 +135,10 @@ class ConflictGraphScheduling(EnvBase):
         # create specs
         self._make_specs()
 
+        # track time average backlog
+        self.sum_backlog = 0
+        self.survival_time = 0
+
     def _init_random_processes(self):
         if self.arrival_dist == "Poisson":
             self._sim_arrivals = lambda: torch.poisson(self.arrival_rate, generator = self.rng)
@@ -146,6 +172,10 @@ class ConflictGraphScheduling(EnvBase):
         # apply valid action
         self.q = torch.clamp(self.q - self.s * action + arrivals, min = 0)
 
+        # update time average backlog metrics
+        self.sum_backlog += torch.sum(self.q)
+        self.survival_time += 1
+
         # update service states
         self.s = self._sim_services()
 
@@ -170,6 +200,8 @@ class ConflictGraphScheduling(EnvBase):
             "service_rate": self.service_rate,
             "context_id": self.context_id,
             "node_priority": self.node_priority,
+            "time_averaged_backlog": torch.Tensor([self.sum_backlog/self.survival_time]),
+            "survival_time": torch.Tensor([self.survival_time])
         }, td.shape)
         return out
 
@@ -177,6 +209,8 @@ class ConflictGraphScheduling(EnvBase):
 
         self.q = torch.zeros(self.num_nodes)
         self.s = self._sim_services()
+        self.sum_backlog = 0
+        self.survival_time = 0
 
         out = TensorDict({
             "q": self.q,
@@ -188,7 +222,9 @@ class ConflictGraphScheduling(EnvBase):
             "arrival_rate": self.arrival_rate,
             "service_rate": self.service_rate,
             "context_id": self.context_id,
-            "node_priority": self.node_priority
+            "node_priority": self.node_priority,
+            "time_averaged_backlog": torch.Tensor([0.0]),
+            "survival_time": torch.Tensor([0.0])
         },
 
             self.batch_size)
@@ -211,6 +247,8 @@ class ConflictGraphScheduling(EnvBase):
             "valid_action": Binary(n = self.num_nodes, shape = (self.num_nodes,), dtype = torch.float32),
             "adj_sparse": Unbounded(shape = self.adj_sparse.shape, dtype = torch.int64),
             "reward": Unbounded(shape = (1,), dtype = torch.float32),
+            "survival_time": Unbounded(shape = (1,), dtype = torch.float32),
+            "time_averaged_backlog": Unbounded(shape = (1,), dtype = torch.float32),
             "arrival_rate": Unbounded(shape = (self.num_nodes,), dtype = torch.float32),
             "service_rate": Unbounded(shape = self.service_rate.shape, dtype = torch.float32),
             "context_id": Unbounded(shape = (1,), dtype = torch.float32),
@@ -240,7 +278,7 @@ class ConflictGraphScheduling(EnvBase):
             # If the input tensor is 1D, add an extra dimension to make it 2D
             action = action.unsqueeze(0)
         # make any element zero if q is less than 1
-        action = action * (self.q > 0).unsqueeze(0)
+        # action = action * (self.q > 0).unsqueeze(0)
 
         # Transpose the action tensor to match the shape of the adjacency matrix
         action_transpose = torch.transpose(action, 0, 1)
@@ -249,6 +287,14 @@ class ConflictGraphScheduling(EnvBase):
         # The result is a tensor where each element indicates whether the corresponding action is valid or not
         return torch.multiply(torch.multiply(self.adj.unsqueeze(dim=-1), action_transpose).sum(axis=-2) < 1,
                               action_transpose).T.squeeze()
+
+
+    def _compute_valid_actions(self):
+        """
+        Compute all valid actions for self by calling compute_valid_actions(self)
+        """
+        return compute_valid_actions(self)
+
 
 def compute_valid_actions(env: ConflictGraphScheduling) -> torch.Tensor:
     """

@@ -80,3 +80,55 @@ class NeighborArgmax(MessagePassing):
     def __repr__(self) -> str:
         return (f'{self.__class__.__name__}({self.in_channels}, '
                 f'{self.out_channels}, aggr={self.aggr})')
+
+
+class NeighborSoftmax(NeighborArgmax):
+    r"""
+    Computes a component-wise argmax over the nodes immediate neighborhood
+
+    Args:
+        in_channels (int or tuple): Size of each input sample, or :obj:`-1` to
+            derive the size from the first input(s) to the forward method.
+            A tuple corresponds to the sizes of source and target
+            dimensionalities.
+
+
+    Shapes:
+        - **inputs:**
+          node features :math:`(|\mathcal{V}|, F_{in})` or
+          :math:`((|\mathcal{V_s}|, F_{s}), (|\mathcal{V_t}|, F_{t}))`
+          if bipartite,
+          edge indices :math:`(2, |\mathcal{E}|)`
+        - **outputs:** node features :math:`(|\mathcal{V}|, F_{s})` or
+          :math:`(|\mathcal{V_t}|, F_{s})` if bipartite
+    """
+
+    def __init__(
+            self,
+            in_channels: Union[int, Tuple[int, int]],
+            **kwargs,
+    ):
+
+
+        super().__init__(in_channels, **kwargs)  # For the aggr parameter, we are using the max aggregation scheme
+
+
+
+    def forward(
+            self,
+            x: Union[Tensor, OptPairTensor],
+            edge_index: Adj,
+            size: Size = None,
+    ) -> Tensor:
+
+        if isinstance(x, Tensor):
+            x = (5*x, 5*x)
+
+        # propagate_type: (x: OptPairTensor)
+        out = self.propagate(edge_index, x=x, size=size)
+
+        x_r = x[1]
+        out = x_r.exp()/(x_r.exp() + out.exp())
+
+        return out
+

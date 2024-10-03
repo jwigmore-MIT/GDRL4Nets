@@ -1,0 +1,419 @@
+import os
+
+
+# Standard Libraries
+import os
+import sys
+import time
+from copy import deepcopy
+
+# Third-party Libraries
+import networkx as nx
+import numpy as np
+import torch
+import tqdm
+import wandb
+
+# torchrl Libraries
+from torchrl.collectors import SyncDataCollector, MultiSyncDataCollector
+from torchrl.data import TensorDictReplayBuffer, SamplerWithoutReplacement, LazyMemmapStorage
+from torchrl.envs.utils import check_env_specs
+from torchrl.modules import ProbabilisticActor, ActorCriticWrapper
+from torchrl.objectives import ClipPPOLoss
+from torchrl.objectives.value.functional import generalized_advantage_estimate
+from torchrl.record.loggers import get_logger, generate_exp_name
+
+# modules Libraries
+from modules.torchrl_development.agents.cgs_agents import GNN_ActorTensorDictModule, IndependentBernoulli, GNN_TensorDictModule, tensors_to_batch
+from modules.torchrl_development.envs.env_creation import EnvGenerator
+from modules.torchrl_development.utils.configuration import load_config
+
+# Local Libraries
+from graph_env_creators import make_line_graph, make_ring_graph, create_grid_graph
+from imitation_learning_utils import *
+from policy_modules import *
+from experiment_utils import evaluate_agent
+# torch.autograd.set_detect_anomaly(True)
+
+# Seed all randomness sources
+seed = 0
+torch.manual_seed(seed)
+np.random.seed(seed)
+
+
+
+
+#
+# TORCH_LOGS="+dynamo"
+# TORCHDYNAMO_VERBOSE=1
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+
+LOGGING_PATH = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_PATH)), "logs")
+
+device = "cpu"
+if __name__ == "__main__":
+
+    """
+    CREATE ENVIRONMENT
+    """
+    # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(4, 0.2, 1)
+    # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_ring_graph(10, 0.4, 1)
+    adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(3, 3, 0.4, 1)
+    G = nx.from_numpy_array(adj)
+
+    # Draw the graph
+    nx.draw(G, with_labels=True)
+    plt.title(f"Testing Network graph")
+    plt.show()
+    interference_penalty = 0.0
+    reset_penalty = 100
+
+    env_params = {
+        "adj": adj,
+        "arrival_dist": arrival_dist,
+        "arrival_rate": arrival_rate,
+        "service_dist": service_dist,
+        "service_rate": service_rate,
+        "env_type": "CGS",
+        "interference_penalty": interference_penalty,
+        "reset_penalty": reset_penalty,
+        "node_priority": "increasing",
+
+    }
+
+    cfg = load_config(os.path.join(SCRIPT_PATH, 'config', 'CGS_GNN_PPO_settings.yaml'))
+    # cfg.training_make_env_kwargs.observation_keys = ["q"]
+    # cfg.training_make_env_kwargs.observation_keys.append("node_priority") # required to differentiate between nodes with the same output embedding
+
+    env_generator = EnvGenerator(input_params=env_params,
+                                 make_env_keywords = cfg.training_make_env_kwargs.as_dict(),
+                                 env_generator_seed = 0,
+                                 cgs = True)
+
+    eval_env_generator = EnvGenerator(input_params=env_params,
+                                 make_env_keywords = cfg.training_make_env_kwargs.as_dict(),
+                                 env_generator_seed = 0,
+                                 cgs = True)
+
+
+    env = env_generator.sample()
+
+    check_env_specs(env)
+
+    """
+    CREATE GNN ACTOR CRITIC
+    """
+    node_features = env.observation_spec["observation"].shape[-1]
+    policy_module = Policy_Module3(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout=0.0)
+    # policy_module = torch.compile(policy_module)
+
+    actor = GNN_ActorTensorDictModule(module = policy_module, x_key = "observation", edge_index_key = "adj_sparse", out_keys = ["probs", "logits"])
+
+    value_module = Value_Module(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout = 0.0)
+
+    critic = GNN_TensorDictModule(module = value_module, x_key="observation", edge_index_key="adj_sparse", out_key="state_value")
+
+    actor = ProbabilisticActor(
+        actor,
+        in_keys=["probs"],
+        distribution_class=IndependentBernoulli,
+        distribution_kwargs={"validate_args": False},
+        spec = env.action_spec,
+        return_log_prob=True,
+        default_interaction_type = ExplorationType.RANDOM
+        )
+
+    agent = ActorCriticWrapper(actor, critic)
+
+    """
+    INITIALIZE REQUIRED STORAGE
+    """
+    num_envs = cfg.collector.num_envs
+    make_env_funcs = [lambda : env_generator.sample() for _ in range(cfg.collector.num_envs)]
+
+    # Collector
+    collector = MultiSyncDataCollector(
+        create_env_fn=make_env_funcs,
+        policy=actor,
+        frames_per_batch=cfg.collector.frames_per_batch*num_envs,
+        total_frames=cfg.collector.total_frames,
+        device = "cpu",
+        max_frames_per_traj=cfg.collector.max_frames_per_traj,
+        split_trajs=True,
+        reset_when_done=True,
+    )
+
+    ## create data buffer
+    sampler = SamplerWithoutReplacement(shuffle = False)
+    data_buffer = TensorDictReplayBuffer(
+        storage=LazyMemmapStorage(cfg.collector.frames_per_batch),
+        sampler=sampler,
+        batch_size=cfg.loss.mini_batch_size,
+    )
+
+    lifetime_buffer = TensorDictReplayBuffer(
+        storage=LazyMemmapStorage(cfg.collector.total_frames),
+    )
+
+    """
+    INITIALIZE OBJECTIVES AND OPTIMIZER
+    """
+    ## Create PPO loss module
+    loss_module = ClipPPOLoss(
+        actor_network=actor,
+        critic_network=critic,
+        clip_epsilon=cfg.loss.clip_epsilon,
+        entropy_coef=cfg.loss.entropy_coef,
+        normalize_advantage=cfg.loss.norm_advantage,
+        loss_critic_type=cfg.loss.loss_critic_type,
+    )
+
+    ## Create the optimizer
+    optimizer = torch.optim.Adam(
+        loss_module.parameters(),
+        lr= cfg.optim.lr,
+        weight_decay=0,
+    )
+
+    experiment_name = generate_exp_name(f"CGS_GNN_PPO", "Solo")
+    logger = get_logger(
+            "wandb",
+            logger_name=LOGGING_PATH,
+            experiment_name= experiment_name,
+            wandb_kwargs={
+                "config": cfg.as_dict(),
+                "project": cfg.logger.project,
+            },
+        )
+
+
+    """
+    Training block 
+    """
+    ## Initialize variables for training loop
+    collected_frames = 0 # count of environment interactions
+    sampling_start = time.time()
+    num_updates = cfg.loss.num_updates # count of update epochs to the network
+    num_mini_batches = cfg.collector.frames_per_batch // cfg.loss.mini_batch_size # number of mini batches per update
+
+    total_network_updates = (
+        (cfg.collector.total_frames // cfg.collector.frames_per_batch) * cfg.loss.num_updates * num_mini_batches
+    ) # total number of network updates to be performed
+    pbar = tqdm.tqdm(total=cfg.collector.total_frames, file = sys.stdout)
+    num_network_updates = 0
+
+    # initialize the artifact saving params
+    best_eval_backlog = np.inf
+    artifact_name = logger.exp_name
+
+    # create a tracker to track the running average of a metric
+    running_sum = torch.zeros(env_generator.num_envs, device=device)
+    running_average = torch.zeros(env_generator.num_envs, device=device)
+    running_step_counter = torch.zeros(env_generator.num_envs, device=device)
+
+    time_averaged_backlogs = torch.Tensor([0])
+    survival_times = torch.Tensor([0])
+    ## Main Training Loop
+    for i, data in enumerate(collector): # iterator that will collect frames_per_batch from the environments
+        log_info = {} # dictionary to store all of the logging information for this iteration
+
+        # Evaluate the agent (if conditions are met)
+        with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
+
+            final = collected_frames >= collector.total_frames # check if this is the final evaluation epoch
+            prev_test_frame = ((i - 1) * cfg.collector.frames_per_batch) // cfg.collector.test_interval
+            cur_test_frame = (i * cfg.collector.frames_per_batch) // cfg.collector.test_interval
+            if (i >= 1 and (prev_test_frame < cur_test_frame)) or final:
+                actor.eval()
+                eval_start = time.time()
+                training_env_ids = list(env_generator.context_dicts.keys())
+                eval_log_info, eval_tds = evaluate_agent(actor, eval_env_generator, training_env_ids, pbar, cfg,
+                                                             device)
+
+                log_info.update(eval_log_info)
+
+                # Save the agent if the eval backlog is the best
+                if eval_log_info["eval/lta_backlog_training_envs"] < best_eval_backlog:
+                    best_eval_backlog = eval_log_info["eval/lta_backlog_training_envs"]
+                    torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+                    agent_artifact = wandb.Artifact(f"trained_actor_module_{artifact_name}", type="model")
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                    wandb.log_artifact(agent_artifact, aliases=["best", "latest"])
+                else:
+                    torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+                    agent_artifact = wandb.Artifact(f"trained_actor_module.pt_{artifact_name}", type="model")
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                    wandb.log_artifact(agent_artifact, aliases=["latest"])
+                # log all of the state action figures to wandb
+
+                actor.train()
+
+        # Process collected data for logging before updates
+        sampling_time = time.time() - sampling_start
+        data = data[data["collector", "mask"]]
+
+        pbar.update(data.numel())
+        current_frames = data.numel()
+        collected_frames += current_frames
+
+        # ensure that the logits and actions are the correct shape
+        # if data["logits"].dim() > 2:
+        #     data["logits"] = data["logits"].squeeze()
+        # if data["action"].dim() > 2:
+        #     data["action"] = data["action"].squeeze()
+
+        # loop through data from each training environment to track the per/env metrics
+        for context_id in data["context_id"].unique():
+            env_data = data[(data["context_id"] == context_id).squeeze()]
+            env_data = env_data[env_data["collector","mask"]]
+            env_data_count = env_data.shape[0]
+            context_id = env_data.get("context_id", None)
+            if context_id is not None:
+                context_id = int(context_id[0].item())
+            # baseline_lta = env_data.get("baseline_lta", None)
+            # if baseline_lta is not None:
+            #     env_lta = baseline_lta[-1]
+            mean_episode_reward = env_data["next", "reward"].sum(dim = 1).mean()
+            mean_episode_backlog = env_data["q"].sum(dim=1).mean()
+            running_sum[context_id] += env_data["q"].sum()
+            running_step_counter[context_id] += env_data["collector", "mask"].sum()
+            running_average[context_id] = running_sum[context_id] / running_step_counter[context_id]
+            interference_factor = (env_data["action"] - env_data["next", "valid_action"]).mean().float()
+            interference_percentage = ((env_data["action"]- env_data["next", "valid_action"]).sum(dim = 1) > 0).float().mean()
+            # Get the timesteps where the environment terminated
+            if torch.any(env_data["next", "terminated"]):
+                time_averaged_backlogs = env_data[(env_data["next", "terminated"]).squeeze()]["time_averaged_backlog"]
+                survival_times = env_data[(env_data["next", "terminated"]).squeeze()]["survival_time"]
+            else:
+            #     time_averaged_backlogs = env_data[-1]["time_averaged_backlog"]
+                survival_times = env_data[-1]["survival_time"]
+
+
+            # mean_backlog = env_data["next", "ta_mean"][-1]
+            # std_backlog = env_data["next", "ta_stdev"][-1]
+            # # mean_backlog = env_data["next", "backlog"].float().mean()
+            # normalized_backlog = mean_backlog / env_lta
+            # valid_action_fraction = (env_data["mask"] * env_data["action"]).sum().float() / env_data["mask"].shape[0]
+            log_header = f"train/context_id_{context_id}"
+
+            log_info.update({f'{log_header}/mean_episode_reward': mean_episode_reward.item(),
+                             f'{log_header}/running_average': running_average[context_id].item(),
+                             f'{log_header}/mean_episode_backlog': mean_episode_backlog.item(),
+                             # f'{log_header}/std_backlog': std_backlog.item(),
+                             # f'{log_header}/mean_normalized_backlog': normalized_backlog.item(),
+                             f'{log_header}/global_interference_fraction': interference_percentage.item(),
+                             f'{log_header}/per_node_interference_fraction': interference_factor.item(),
+                             f'{log_header}/time_averaged_backlogs': time_averaged_backlogs.mean().item(),
+                             f'{log_header}/survival_times': survival_times.mean().item(),
+                                })
+
+
+        # Get average mean_normalized_backlog across each context
+        # avg_mean_normalized_backlog = np.mean([log_info[f'train/context_id_{i}/mean_normalized_backlog'] for i in env_generator.context_dicts.keys()])
+        # log_info.update({"train/avg_mean_normalized_backlog": avg_mean_normalized_backlog})
+
+        # only keep the data that is valid
+        data = data[data["collector", "mask"]]
+        graph = tensors_to_batch(data["observation"], data["adj_sparse"])
+        next_graph = tensors_to_batch(data["next", "observation"], data["next", "adj_sparse"])
+        lifetime_buffer.extend(data)
+        # optimization steps
+        training_start = time.time()
+        losses = TensorDict({}, batch_size=[cfg.loss.num_updates, num_mini_batches])
+        value_estimates = torch.zeros(num_updates, device=device)
+        q_value_estimates = torch.zeros(num_updates, device=device)
+        for j in range(num_updates):
+            # Compute GAE
+            with torch.no_grad():
+                data["state_value"] = critic(graph)
+                data["next", "state_value"] = critic(next_graph)
+                data["advantage"], data["value_target"] = generalized_advantage_estimate(
+                    gamma = cfg.loss.gamma,
+                    lmbda = cfg.loss.gae_lambda,
+                    state_value = data["state_value"],
+                    next_state_value = data["next", "state_value"],
+                    reward = data["reward"],
+                    done = data["done"],
+                    terminated = data["terminated"])
+                # data = adv_module(data.to(device, non_blocking=True))
+                value_estimates[j] = data["state_value"].mean()
+                q_value_estimates[j] = data["value_target"].mean()
+            data_reshape = data.reshape(-1)
+            # Update the data buffer
+            data_buffer.extend(data_reshape)
+            for k, batch in enumerate(data_buffer):
+
+                # Linearly decrease the learning rate
+                alpha = 1.0
+                if cfg.optim.anneal_lr:
+                    alpha = 1 - (num_network_updates / total_network_updates)
+                    for group in optimizer.param_groups:
+                        group["lr"] = cfg.optim.lr * alpha
+                # Exponentially decrease the learning rate
+
+
+                num_network_updates += 1
+
+                batch["sample_log_prob"] = batch["sample_log_prob"].squeeze()
+                batch = batch.to(device, non_blocking=True)
+
+                # Forward pass PPO loss
+                loss = loss_module(batch)
+                losses[j, k] = loss.select(
+                    "loss_critic", "loss_entropy", "loss_objective", "entropy", "ESS"
+                )
+                loss_sum = (
+                        loss["loss_critic"] + loss["loss_objective"] + loss["loss_entropy"]
+                )
+                # Backward pass
+                loss_sum.backward()
+                # loss["loss_objective"].backward()
+                # loss["loss_critic"].backward()
+                # loss["loss_entropy"].backward()
+
+                torch.nn.utils.clip_grad_norm_(
+                    list(loss_module.parameters()), max_norm=cfg.optim.max_grad_norm
+                )
+
+                # Update the networks
+                optimizer.step()
+                optimizer.zero_grad()
+        pbar.set_description("Training")
+
+        training_time = time.time() - training_start
+
+        # Get and log q-values, loss, epsilon, sampling time and training time
+        for key, value in loss.items():
+            if key not in ["loss_critic", "loss_entropy", "loss_objective"]:
+                log_info.update({f"train/{key}": value.mean().item()})
+            else:
+                log_info.update({f"train/{key}": value.sum().item()})
+        log_info.update(
+            {
+                "train/lr": alpha * cfg.optim.lr,
+                "train/sampling_time": sampling_time,
+                "train/training_time": training_time,
+                "train/q_values": q_value_estimates.mean().item(),
+                "train/value_estimate": value_estimates.mean().item(),
+            }
+        )
+
+
+
+        try: # try block in case wandb logging fails
+            log_info["trainer/step"] = collected_frames
+            wandb.log(log_info, step=collected_frames)
+        except Exception as e:
+            print(e)
+        prev_log_info = deepcopy(log_info)
+        collector.update_policy_weights_()
+        sampling_start = time.time()
+
+    # Save the final agent model and configuration files
+    torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+    agent_artifact = wandb.Artifact(f"trained_actor_module.pt_{artifact_name}", type="model")
+    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
+    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+    wandb.log_artifact(agent_artifact, aliases=["latest"])

@@ -109,7 +109,11 @@ class GNN_ActorTensorDictModule(GNN_TensorDictModule):
 
     def forward(self, input):
         if isinstance(input, TensorDict):
-            if input[self.x_key].dim() < 3: # batch size is 1
+            if input[self.x_key].dim() < 3: # < 3 # batch size is 1
+                # batch_graph = tensors_to_batch(input[self.x_key].unsqueeze(0), input[self.edge_index_key].unsqueeze(0))
+                # probs, logits = self.module(batch_graph.x, batch_graph.edge_index, batch_graph.batch)
+                # input[self.out_keys[0]] = probs.squeeze(-1)
+                # input[self.out_keys[1]] = logits.squeeze(-1)
                 probs, logits = self.module(input[self.x_key], input[self.edge_index_key], None)
                 input[self.outs_key[0]] = probs.squeeze(-1)
                 input[self.outs_key[1]] = logits.squeeze(-1)
@@ -168,7 +172,8 @@ class IndependentBernoulli(D.Bernoulli):
         $x_1, ..., x_n \sim Bernoulli(p_1, ..., p_n) is \sum_{i=1}^{n}log_prob(Bernoulli(p_i))$
         :return:
         """
-        return super().log_prob(value).sum(-1)
+        log_probs = super().log_prob(value)
+        return log_probs.sum(-1)
 
 
 

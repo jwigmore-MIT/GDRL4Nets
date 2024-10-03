@@ -4,25 +4,26 @@ device: null
 agent:
   actor_type: GNN
   critic_type: GNN
-  num_layers: 3
-  hidden_size: 32
+  num_layers: 4
+  hidden_size: 64
   observe_lambda: True
   observe_mu: True
 
 # Environment
 training_make_env_kwargs:
-  observation_keys: ["q", "s"]
-  max_queue_size: 50
+  observation_keys: ["q", "s", "node_priority"]
+  max_queue_size: 200
   stack_observation: True
 
 
 
 # collector
 collector:
-  total_frames: 5_000_000
-  frames_per_batch: 5000
+  total_frames: 10_000_000
+  frames_per_batch: 256
   max_frames_per_traj: 20_000
   test_interval: 10_000_000
+  num_envs: 5
 
 
 
@@ -33,24 +34,24 @@ logger:
 
 # Optim
 optim:
-  lr: 1.0e-2
+  lr: 5.0e-3
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
-  anneal_lr: True
+  anneal_lr: False
   clip_epsilon: False
   alpha: 0.99
 
 # loss
 loss:
   gamma: 0.99
-  mini_batch_size: 500
-  num_updates: 10
+  mini_batch_size: 64
+  num_updates: 5
   gae_lambda: 0.95
   clip_epsilon: 0.1
   anneal_clip_epsilon: False
   critic_coef: 0.5
-  entropy_coef: 0.00
+  entropy_coef: 0.0
   loss_critic_type: l2
   norm_advantage: True
 

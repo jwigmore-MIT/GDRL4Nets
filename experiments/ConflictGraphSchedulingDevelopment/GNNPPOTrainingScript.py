@@ -37,8 +37,16 @@ import time
 import tqdm
 import sys
 from experiment_utils import evaluate_agent
-import torch._dynamo
-# torch._dynamo.config.suppress_errors = True
+# torch.autograd.set_detect_anomaly(True)
+
+# Seed all randomness sources
+seed = 0
+torch.manual_seed(seed)
+np.random.seed(seed)
+
+
+
+
 #
 # TORCH_LOGS="+dynamo"
 # TORCHDYNAMO_VERBOSE=1
@@ -52,16 +60,16 @@ device = "cpu"
 """
 CREATE ENVIRONMENT
 """
-adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(4, 0.4, 1)
+# adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(4, 0.2, 1)
 # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_ring_graph(10, 0.4, 1)
-# adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(2, 2, 0.4, 1)
+adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(3, 3, 0.4, 1)
 G = nx.from_numpy_array(adj)
 
 # Draw the graph
 nx.draw(G, with_labels=True)
 plt.title(f"Testing Network graph")
 plt.show()
-interference_penalty = 0.25
+interference_penalty = 0.0
 reset_penalty = 100
 
 env_params = {
@@ -78,8 +86,8 @@ env_params = {
 }
 
 cfg = load_config(os.path.join(SCRIPT_PATH, 'config', 'CGS_GNN_PPO_settings.yaml'))
-cfg.training_make_env_kwargs.observation_keys = ["q"]
-cfg.training_make_env_kwargs.observation_keys.append("node_priority") # required to differentiate between nodes with the same output embedding
+# cfg.training_make_env_kwargs.observation_keys = ["q"]
+# cfg.training_make_env_kwargs.observation_keys.append("node_priority") # required to differentiate between nodes with the same output embedding
 
 env_generator = EnvGenerator(input_params=env_params,
                              make_env_keywords = cfg.training_make_env_kwargs.as_dict(),
@@ -100,12 +108,12 @@ check_env_specs(env)
 CREATE GNN ACTOR CRITIC
 """
 node_features = env.observation_spec["observation"].shape[-1]
-policy_module = Policy_Module2(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout=0.1)
+policy_module = Policy_Module3(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout=0.0)
 # policy_module = torch.compile(policy_module)
 
 actor = GNN_ActorTensorDictModule(module = policy_module, x_key = "observation", edge_index_key = "adj_sparse", out_keys = ["probs", "logits"])
 
-value_module = Value_Module(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout = 0.1)
+value_module = Value_Module(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout = 0.0)
 
 critic = GNN_TensorDictModule(module = value_module, x_key="observation", edge_index_key="adj_sparse", out_key="state_value")
 
@@ -113,6 +121,7 @@ actor = ProbabilisticActor(
     actor,
     in_keys=["probs"],
     distribution_class=IndependentBernoulli,
+    distribution_kwargs={"validate_args": False},
     spec = env.action_spec,
     return_log_prob=True,
     default_interaction_type = ExplorationType.RANDOM
@@ -136,7 +145,7 @@ collector = SyncDataCollector(
 )
 
 ## create data buffer
-sampler = SamplerWithoutReplacement()
+sampler = SamplerWithoutReplacement(shuffle = False)
 data_buffer = TensorDictReplayBuffer(
     storage=LazyMemmapStorage(cfg.collector.frames_per_batch),
     sampler=sampler,
@@ -203,7 +212,8 @@ running_sum = torch.zeros(env_generator.num_envs, device=device)
 running_average = torch.zeros(env_generator.num_envs, device=device)
 running_step_counter = torch.zeros(env_generator.num_envs, device=device)
 
-
+time_averaged_backlogs = torch.Tensor([0])
+survival_times = torch.Tensor([0])
 ## Main Training Loop
 for i, data in enumerate(collector): # iterator that will collect frames_per_batch from the environments
     log_info = {} # dictionary to store all of the logging information for this iteration
@@ -267,12 +277,21 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         # if baseline_lta is not None:
         #     env_lta = baseline_lta[-1]
         mean_episode_reward = env_data["next", "reward"].sum(dim = 1).mean()
-        mean_episode_backlog = env_data["q"].mean()
+        mean_episode_backlog = env_data["q"].sum(dim=1).mean()
         running_sum[context_id] += env_data["q"].sum()
         running_step_counter[context_id] += env_data["collector", "mask"].sum()
         running_average[context_id] = running_sum[context_id] / running_step_counter[context_id]
         interference_factor = (env_data["action"] - env_data["next", "valid_action"]).mean().float()
         interference_percentage = ((env_data["action"]- env_data["next", "valid_action"]).sum(dim = 1) > 0).float().mean()
+        # Get the timesteps where the environment terminated
+        if torch.any(env_data["next", "terminated"]):
+            time_averaged_backlogs = env_data[(env_data["next", "terminated"]).squeeze()]["time_averaged_backlog"]
+            survival_times = env_data[(env_data["next", "terminated"]).squeeze()]["survival_time"]
+        else:
+        #     time_averaged_backlogs = env_data[-1]["time_averaged_backlog"]
+            survival_times = env_data[-1]["survival_time"]
+
+
         # mean_backlog = env_data["next", "ta_mean"][-1]
         # std_backlog = env_data["next", "ta_stdev"][-1]
         # # mean_backlog = env_data["next", "backlog"].float().mean()
@@ -287,6 +306,8 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
                          # f'{log_header}/mean_normalized_backlog': normalized_backlog.item(),
                          f'{log_header}/global_interference_fraction': interference_percentage.item(),
                          f'{log_header}/per_node_interference_fraction': interference_factor.item(),
+                         f'{log_header}/time_averaged_backlogs': time_averaged_backlogs.mean().item(),
+                         f'{log_header}/survival_times': survival_times.mean().item(),
                             })
 
 
@@ -325,12 +346,14 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         data_buffer.extend(data_reshape)
         for k, batch in enumerate(data_buffer):
 
-            # Linearly decrease the learning rate and clip epsilon
+            # Linearly decrease the learning rate
             alpha = 1.0
             if cfg.optim.anneal_lr:
                 alpha = 1 - (num_network_updates / total_network_updates)
                 for group in optimizer.param_groups:
                     group["lr"] = cfg.optim.lr * alpha
+            # Exponentially decrease the learning rate
+
 
             num_network_updates += 1
 

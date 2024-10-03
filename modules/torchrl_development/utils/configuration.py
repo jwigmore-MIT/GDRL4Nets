@@ -2,6 +2,8 @@
 import yaml
 import os
 import numpy as np
+import torch
+
 CURR_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 TORCHRL_DEVELOPMENT_PATH = os.path.dirname(CURR_FILE_PATH)
 CONFIG_FILE_PATH = os.path.join(TORCHRL_DEVELOPMENT_PATH, "config", "experiments")
@@ -60,6 +62,11 @@ def make_serializable(input_dict):
             v = make_serializable(v)
         if isinstance(v, np.ndarray):
             v = v.tolist()
+        if isinstance(v, torch.Tensor):
+            v = v.tolist()
+        if isinstance(v, list):
+            if len(v) == 1:
+                v = v[0]
 
         # convert all np.ints and np floats to python ints and floats
         types = [np.int64, np.int32, np.float64, np.float32]

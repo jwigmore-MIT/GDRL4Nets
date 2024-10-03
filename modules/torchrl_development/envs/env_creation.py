@@ -376,7 +376,10 @@ class EnvGenerator:
                 env_params_ind = list(self.context_dicts.keys())[rel_ind]
             if true_ind is not None:
                 env_params_ind = true_ind
-            env_params = self.context_dicts[env_params_ind]["env_params"]
+            try:
+                env_params = self.context_dicts[env_params_ind]["env_params"]
+            except KeyError:
+                env_params = self.context_dicts[env_params_ind]
             env_params["context_id"] = env_params_ind
             env_params["baseline_lta"] = self.context_dicts[env_params_ind].get("lta", None)
         # if ind is not in the keys
