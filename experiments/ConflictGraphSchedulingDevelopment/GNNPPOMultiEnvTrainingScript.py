@@ -47,6 +47,9 @@ np.random.seed(seed)
 # TORCH_LOGS="+dynamo"
 # TORCHDYNAMO_VERBOSE=1
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+PROJECT_PATH = os.path.dirname(os.path.dirname(SCRIPT_PATH))
+print(f"Project Path: {PROJECT_PATH}")
+sys.path.insert(0, PROJECT_PATH)
 
 LOGGING_PATH = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_PATH)), "logs")
 
