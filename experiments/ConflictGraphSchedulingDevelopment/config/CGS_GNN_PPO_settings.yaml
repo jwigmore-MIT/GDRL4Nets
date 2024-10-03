@@ -14,7 +14,7 @@ training_make_env_kwargs:
   observation_keys: ["q", "s", "node_priority"]
   max_queue_size: 200
   stack_observation: True
-  reset_penalty: 0
+  reset_penalty: 1000
 
 
 
