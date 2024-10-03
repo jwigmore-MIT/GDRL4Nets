@@ -63,7 +63,7 @@ if __name__ == "__main__":
     """
     # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(4, 0.2, 1)
     # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_ring_graph(10, 0.4, 1)
-    adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(3, 3, 0.4, 1)
+    adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(2, 2, 0.4, 1)
     G = nx.from_numpy_array(adj)
 
     # Draw the graph
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     )
 
     ## create data buffer
-    sampler = SamplerWithoutReplacement(shuffle = False)
+    sampler = SamplerWithoutReplacement(shuffle = True)
     data_buffer = TensorDictReplayBuffer(
         storage=LazyMemmapStorage(cfg.collector.frames_per_batch),
         sampler=sampler,
