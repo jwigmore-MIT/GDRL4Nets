@@ -5,7 +5,7 @@ agent:
   actor_type: GNN
   critic_type: GNN
   num_layers: 2
-  hidden_size: 64
+  hidden_size: 16
   observe_lambda: True
   observe_mu: True
 
@@ -15,6 +15,8 @@ training_make_env_kwargs:
   max_queue_size: 200
   stack_observation: True
   reset_penalty: 1000
+  inverse_reward: False
+  reward_scale: 1/200
 
 
 

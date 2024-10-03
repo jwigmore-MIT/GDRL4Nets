@@ -20,11 +20,12 @@ class GCN_Policy_Module(nn.Module):
 
         self.sigmoid = Sigmoid()
         self.argmax = NeighborArgmax(in_channels = -1)
+        self.softmax = NeighborSoftmax(in_channels = -1)
 
     def forward(self, x, edge_index, batch = None):
         logits = self.main_module(x, edge_index)
         if self.training:
-            x = self.sigmoid(logits)
+            x = self.softmax(logits, edge_index)
         else:
             x = self.argmax(logits, edge_index)
         return x, logits
@@ -39,7 +40,7 @@ class DeeperGCN(nn.Module):
         self.layers = torch.nn.ModuleList()
         for i in range(1, num_layers + 1):
             conv = GENConv(hidden_channels, hidden_channels, aggr='softmax',
-                           t=1.0, learn_t=False, num_layers=2, norm=None)
+                           t=1.0, learn_t=True, num_layers=2, norm=None)
             # norm = LayerNorm(hidden_channels, elementwise_affine=True)
             norm = None
             act = ReLU(inplace=True)
@@ -62,7 +63,7 @@ class DeeperGCN(nn.Module):
         if torch.isnan(x).any():
             print("x contains nan")
         # x = self.layers[0].act(self.layers[0].norm(x))
-        # x = self.layers[0].act(x)
+        x = self.layers[0].act(x)
         if torch.isnan(x).any():
             print("x contains nan")
         x = F.dropout(x, p=self.dropout, training=self.training)
@@ -97,8 +98,8 @@ class Policy_Module3(nn.Module):
         self.argmax = NeighborArgmax(in_channels = -1)
         self.softmax = NeighborSoftmax(in_channels = -1)
 
-    def forward(self, x, edge_index, batch = None):
-        logits = self.main_module(x, edge_index)
+    def forward(self, x_in, edge_index, batch = None):
+        logits = self.main_module(x_in, edge_index)
         if self.training:
             x = self.softmax(logits, edge_index)
         else:

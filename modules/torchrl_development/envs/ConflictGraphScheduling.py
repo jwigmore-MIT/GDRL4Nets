@@ -257,7 +257,7 @@ class ConflictGraphScheduling(EnvBase):
 
         self.action_spec = Binary(n = self.num_nodes, shape = (self.num_nodes,), dtype = torch.float32)
 
-        self.reward_spec = CompositeSpec({"reward": Bounded(low = -100_000, high = 0, shape = (1,), dtype = torch.float32)})
+        self.reward_spec = CompositeSpec({"reward": Unbounded(shape = (1,), dtype = torch.float32)})
 
 
 

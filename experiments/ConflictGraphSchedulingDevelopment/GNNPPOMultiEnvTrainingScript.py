@@ -112,7 +112,7 @@ if __name__ == "__main__":
     node_features = env.observation_spec["observation"].shape[-1]
     policy_module = Policy_Module3(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout=0.0)
     # policy_module = torch.compile(policy_module)
-
+    # policy_module = GCN_Policy_Module(node_features, num_layers = cfg.agent.num_layers)
     actor = GNN_ActorTensorDictModule(module = policy_module, x_key = "observation", edge_index_key = "adj_sparse", out_keys = ["probs", "logits"])
 
     value_module = Value_Module(node_features, cfg.agent.hidden_size, num_layers = cfg.agent.num_layers, dropout = 0.0)

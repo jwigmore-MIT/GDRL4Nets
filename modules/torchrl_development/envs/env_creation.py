@@ -57,6 +57,7 @@ def make_env_cgs(env_params,
                  symlog_obs = True,
                  symlog_reward = False, # DONT USE
                  inverse_reward = True,
+                 reward_scale = 1.0,
                  stack_observation = False,
                  pyg_observation = False,
                  *args, **kwargs
@@ -85,8 +86,13 @@ def make_env_cgs(env_params,
     if symlog_reward:
         env = TransformedEnv(env, SymLogTransform(in_keys=["reward"], out_keys=["reward"]))
         print("USING SYMLOG TRANSFORM FOR REWARD -- NOT RECOMMENDED -- USE INVERSE REWARD INSTEAD")
-    if inverse_reward:
+    elif inverse_reward:
         env = TransformedEnv(env, InverseReward())
+    elif reward_scale != 1.0:
+        if isinstance(reward_scale, str):
+            reward_scale = eval(reward_scale)
+        env = TransformedEnv(env, RewardScaling(loc=0, scale=float(reward_scale)))
+
     return env
 
 

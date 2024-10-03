@@ -106,12 +106,13 @@ class NeighborSoftmax(NeighborArgmax):
     def __init__(
             self,
             in_channels: Union[int, Tuple[int, int]],
+            temp: float = 1.0,
             **kwargs,
     ):
 
 
         super().__init__(in_channels, **kwargs)  # For the aggr parameter, we are using the max aggregation scheme
-
+        self.temp = temp
 
 
     def forward(
@@ -122,12 +123,12 @@ class NeighborSoftmax(NeighborArgmax):
     ) -> Tensor:
 
         if isinstance(x, Tensor):
-            x = (5*x, 5*x)
+            x = (x, x)
 
         # propagate_type: (x: OptPairTensor)
-        out = self.propagate(edge_index, x=x, size=size)
+        out = self.temp*self.propagate(edge_index, x=x, size=size)
 
-        x_r = x[1]
+        x_r = self.temp*x[1]
         out = x_r.exp()/(x_r.exp() + out.exp())
 
         return out
