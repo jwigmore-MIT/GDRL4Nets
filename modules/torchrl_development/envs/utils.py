@@ -1,6 +1,8 @@
 import numpy as np
-from scipy.stats import poisson
-
+try:
+    from scipy.stats import poisson
+except:
+    poisson = None
 
 def create_discrete_rv(rng, nums, probs):
     if probs == 1 and isinstance(nums, int):
