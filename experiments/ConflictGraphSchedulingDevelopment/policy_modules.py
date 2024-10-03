@@ -63,7 +63,7 @@ class DeeperGCN(nn.Module):
         if torch.isnan(x).any():
             print("x contains nan")
         # x = self.layers[0].act(self.layers[0].norm(x))
-        x = self.layers[0].act(x)
+        # x = self.layers[0].act(x)
         if torch.isnan(x).any():
             print("x contains nan")
         x = F.dropout(x, p=self.dropout, training=self.training)
