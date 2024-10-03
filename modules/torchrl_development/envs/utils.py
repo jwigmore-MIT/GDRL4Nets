@@ -1,7 +1,7 @@
 import numpy as np
 try:
     from scipy.stats import poisson
-except:
+except: # not needed for most recent implementations of distributional sampling
     poisson = None
 
 def create_discrete_rv(rng, nums, probs):
