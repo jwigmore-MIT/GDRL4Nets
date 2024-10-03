@@ -30,11 +30,11 @@ collector:
 # logger
 logger:
   backend: wandb
-  project: CGS_Development2
+  project: CGS_Development3
 
 # Optim
 optim:
-  lr: 5.0e-3
+  lr: 5.0e-4
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0

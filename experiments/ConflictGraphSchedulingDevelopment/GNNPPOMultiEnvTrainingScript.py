@@ -71,7 +71,7 @@ if __name__ == "__main__":
     plt.title(f"Testing Network graph")
     plt.show()
     interference_penalty = 0.0
-    reset_penalty = 100
+    reset_penalty = 200
 
     env_params = {
         "adj": adj,
