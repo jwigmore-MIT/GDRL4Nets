@@ -54,21 +54,17 @@ class DeeperGCN(nn.Module):
     def forward(self, x_in, edge_index):
         x = self.node_encoder(x_in)
         if torch.isnan(x).any():
-            print("x contains nan")
+            raise ValueError("x contains nan after node encoding")
         x = self.layers[0].conv(x, edge_index)
         if torch.isnan(x).any():
-            print("x contains nan")
+            raise ValueError("x contains nan after first convolution")
         for layer in self.layers[1:]:
             x = layer(x, edge_index)
-        if torch.isnan(x).any():
-            print("x contains nan")
-        # x = self.layers[0].act(self.layers[0].norm(x))
-        # x = self.layers[0].act(x)
-        if torch.isnan(x).any():
-            print("x contains nan")
+            if torch.isnan(x).any():
+                raise ValueError("x contains nan after subsequent convolutions")
         x = F.dropout(x, p=self.dropout, training=self.training)
         if torch.isnan(x).any():
-            print("x contains nan")
+            raise ValueError("x contains nan after dropout")
         return self.lin(x)
 
 class Policy_Module2(nn.Module):

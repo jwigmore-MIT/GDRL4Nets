@@ -170,7 +170,7 @@ class IndependentBernoulli(D.Bernoulli):
         :return:
         """
         log_probs = super().log_prob(value)
-        return log_probs.sum(-1)
+        return log_probs
 
 
 

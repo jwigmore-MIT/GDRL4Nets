@@ -61,9 +61,9 @@ if __name__ == "__main__":
     """
     CREATE ENVIRONMENT
     """
-    # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(4, 0.2, 1)
+    adj, arrival_dist, arrival_rate, service_dist, service_rate = make_line_graph(6, 0.2, 1)
     # adj, arrival_dist, arrival_rate, service_dist, service_rate = make_ring_graph(10, 0.4, 1)
-    adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(2, 2, 0.4, 1)
+    # adj, arrival_dist, arrival_rate, service_dist, service_rate = create_grid_graph(2, 2, 0.4, 1)
     G = nx.from_numpy_array(adj)
 
     # Draw the graph
@@ -344,6 +344,7 @@ if __name__ == "__main__":
                     done = data["done"],
                     terminated = data["terminated"])
                 # data = adv_module(data.to(device, non_blocking=True))
+                data["advantage"] = data["advantage"].expand(data["probs"].shape).unsqueeze(-1) # TRYING TO MATCH DIMENSIONS FOR PPO LOSS
                 value_estimates[j] = data["state_value"].mean()
                 q_value_estimates[j] = data["value_target"].mean()
             data_reshape = data.reshape(-1)

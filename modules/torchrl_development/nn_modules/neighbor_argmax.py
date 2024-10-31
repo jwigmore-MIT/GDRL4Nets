@@ -106,7 +106,7 @@ class NeighborSoftmax(NeighborArgmax):
     def __init__(
             self,
             in_channels: Union[int, Tuple[int, int]],
-            temp: float = 1.0,
+            temp: float = 10.0,
             **kwargs,
     ):
 
