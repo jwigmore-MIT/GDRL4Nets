@@ -60,7 +60,7 @@ PARAMETERS
 """
 cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings.yaml'))
 
-cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
+# cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
 
 """
 Get Environment
