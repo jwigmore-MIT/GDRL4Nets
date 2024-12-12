@@ -8,7 +8,7 @@ import torch
 from tensordict import TensorDict
 ListLike = Union[List, np.ndarray, torch.Tensor]
 
-from torchrl.data import BoundedTensorSpec, CompositeSpec, Bounded, Unbounded, Binary
+from torchrl.data import CompositeSpec, Bounded, Unbounded, Binary
 from torchrl.envs import (
     EnvBase,
 )

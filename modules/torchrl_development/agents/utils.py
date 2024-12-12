@@ -90,7 +90,10 @@ class MaskedOneHotCategorical(MaskedCategorical):
         self.grad_method = grad_method
         self.has_rsample = True
         self.temperature = temperature
-        logits = logits / temperature
+        if logits is not None:
+            logits = logits / temperature
+
+
         super().__init__(
             logits=logits,
             probs=probs,

@@ -1,0 +1,29 @@
+{
+    "nodes": [0,1,2],
+    "link_distribution": "fixed",
+    "arrival_distribution": "poisson",
+    "link_info": [
+        {
+            "start": 0,
+            "end": 1,
+            "rate": 1
+        },
+        {
+            "start": 0,
+            "end": 2,
+            "rate": 1
+        }
+    ],
+    "class_info": [
+        {
+            "source": 0,
+            "destination": 1,
+            "rate": 0.4
+        },
+        {
+            "source": 0,
+            "destination": 2,
+            "rate": 0.4
+        }
+    ]
+}

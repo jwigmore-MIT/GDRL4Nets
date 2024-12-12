@@ -19,7 +19,6 @@ from tensordict.nn import dispatch
 
 from tensordict import (
     TensorDictBase,
-
 )
 
 from modules.torchrl_development.envs.utils import TimeAverageStatsCalculator
@@ -718,5 +717,351 @@ class RunningAverageTransform(Transform):
             dtype=torch.float,
             device=observation_spec.device,
             shape=observation_spec.shape,
+        )
+        return observation_spec
+
+
+class MCMHPygLinkGraphTransform(ObservationTransform):
+
+    def __init__(self,
+                 in_keys=["Q"],
+                 out_keys=["X"],
+                 env=None,
+                 ):
+
+        if not env:
+            raise ValueError("Net object must be provided")
+
+        super().__init__(in_keys=in_keys, out_keys=out_keys)
+
+        self.N = env.M
+        self.K = env.K
+
+        # Edge features
+        self.n_features = int(len(in_keys) * 2)  # For start node and end node, collect their features
+
+        # Step 4: Create new edge_index for modified graph
+        self.og_edge_index = env.edge_index
+        # This is for the transformation
+        self.og_edge_list = env.edge_index.T
+
+        edge_list = []
+        for m1, edge in enumerate(self.og_edge_list):
+            for m2, other_edge in enumerate(self.og_edge_list):
+                if edge[1] == other_edge[0]:
+                    edge_list.append([m1, m2])
+        self.edge_list = torch.tensor(edge_list)
+        self.edge_index = torch.tensor(edge_list).T
+        self.M = self.edge_list.shape[0]
+        # Now repeat for the Multiclass setting
+        for k in range(self.K-1):
+            self.edge_index = torch.cat([self.edge_index, self.edge_index[:, -self.M:] + self.N], dim=-1)
+
+        class_edge_index = list()
+        for m in range(self.N):
+            # get all indices
+            indices = [i for i in range(m, self.N * self.K, self.N)]
+            # create edge index for fully connected graph of indices
+            class_edge_index.extend([[i, j] for i in indices for j in indices if i != j])
+        self.class_edge_index = torch.tensor(class_edge_index, dtype=torch.long).T
+
+        # TODO: Get static link features if needed
+
+    def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
+        """
+        Transform the observation tensor to a PyG compatible format
+        """
+        # Step 4: Convert tensordict["Q"] to a tensor of shape (N*K,)
+
+        tensordict["X"] = tensordict["Q"][self.og_edge_index].T.reshape(-1, 2)
+        tensordict["edge_index"] = self.edge_index
+        tensordict["class_edge_index"] = self.class_edge_index
+
+
+        return tensordict
+
+    def _reset(
+            self, tensordict: TensorDictBase, tensordict_reset: TensorDictBase
+    ) -> TensorDictBase:
+        tensordict_reset = self._call(tensordict_reset)
+        return tensordict_reset
+
+    def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
+        if not isinstance(observation_spec, Composite):
+            # by def, there must be only one key
+            return observation_spec
+        observation_spec["X"] = Unbounded(
+            shape=(self.N * self.K, 2),
+            dtype=observation_spec["Q"].dtype,
+            device=observation_spec["Q"].device
+        )
+        observation_spec["edge_index"] = Unbounded(
+            shape=self.edge_index.shape,
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device,
+        )
+        observation_spec["class_edge_index"] = Unbounded(
+            shape=self.class_edge_index.shape,
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device, )
+
+        return observation_spec
+
+
+
+class MCMHPygQTransform(ObservationTransform):
+    """
+    Node attribute
+        X[i,k]: Q[i,k],
+    where:
+
+
+    This class should trasform the environment to create an input embedding matrix that stacks all node
+    attributes for each class in the graph:
+        X = [X[0,1], X[0,2], ..., X[0,K], X[1,1], X[1,2], ..., X[1,K], ..., X[N,1], X[N,2], ..., X[N,K]]
+    """
+
+    def __init__(self,
+                 in_keys=["Q"],
+                 out_keys=["X"],
+                 env=None,
+                 ):
+
+        if not env:
+            raise ValueError("Net object must be provided")
+
+        super().__init__(in_keys=in_keys, out_keys=out_keys)
+
+        self.N = env.N
+        self.K = env.K
+        self.M = env.M
+
+        # Edge features
+        self.n_features = len(in_keys*2) # For start node and end node, collect their features
+
+        # Step 4: Create new edge_index for modified graph
+        self.edge_index = env.edge_index
+        # This is for the transformation
+        self.edge_list = env.edge_index.T
+        # repeat edge index a total of K times
+        for k in range(1, self.K):
+            self.edge_index = torch.cat([self.edge_index, self.edge_index[:, -self.M:] + self.M], dim=-1)
+
+        self.physical_edge_index = torch.zeros([2, self.M * self.K])
+        # want to have entries be [0,m], [0,2m]...[0,(K-1)m], [1,m+1], [1, m+2]...[1,2m]...[1,(K-1)m]...[N-1, (K-1)m]
+
+        pei = list()
+        for m in range(self.M):
+            # get all indices
+            indices = [i for i in range(m, self.M * self.K, self.M)]
+            # create edge index for fully connected graph of indices
+            pei.extend([[i, j] for i in indices for j in indices if i != j])
+        self.physical_edge_index = torch.tensor(pei, dtype=torch.long).T
+
+        # Create the class adjacency matrix which is a fully connected graph with K nodes without self loops repeated N times
+        # create fully connected graph edge index
+        self.class_edge_index = torch.tensor([[i, j] for i in range(self.K) for j in range(self.K) if i != j],
+                                             dtype=torch.long).T
+        for n in range(1, self.N):
+            self.class_edge_index = torch.cat(
+                [self.class_edge_index, self.class_edge_index[:, -self.K * (self.K - 1):] + self.K], dim=-1)
+
+        # Now for edge features, we have a static link rate and an instantaneous link capacity
+        # static edge features should be (self.M * self.K,1) where env.link_rates is repeated K times
+        self.static_link_features = torch.stack([env.link_rates for _ in range(self.K)], dim=-1).view(-1, 1)
+
+    def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
+        """
+        Transform the observation tensor to a PyG compatible format
+        """
+        # Step 4: Convert tensordict["Q"] to a tensor of shape (N*K,)
+
+        tensordict["X"] = tensordict["Q"].view(self.N * self.K, 1)
+        tensordict["edge_index"] = self.edge_index
+        tensordict["class_edge_index"] = self.class_edge_index
+        tensordict["physical_edge_index"] = self.physical_edge_index
+        tensordict["edge_attr"] = torch.cat([
+            tensordict["cap"].view(self.M, 1).repeat(self.K, 1),
+            self.static_link_features],
+            dim=-1)
+
+        return tensordict
+
+    def _reset(
+            self, tensordict: TensorDictBase, tensordict_reset: TensorDictBase
+    ) -> TensorDictBase:
+        tensordict_reset = self._call(tensordict_reset)
+        return tensordict_reset
+
+    def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
+        if not isinstance(observation_spec, Composite):
+            # by def, there must be only one key
+            return observation_spec
+        observation_spec["X"] = Unbounded(
+            shape=(self.N * self.K, 1),
+            dtype=observation_spec["Q"].dtype,
+            device=observation_spec["Q"].device
+        )
+        observation_spec["edge_index"] = Unbounded(
+            shape=(2, self.M * self.K),
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device,
+        )
+        observation_spec["class_edge_index"] = Unbounded(
+            shape=(2, self.K * self.N * (self.K - 1)),
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device, )
+        observation_spec["physical_edge_index"] = Unbounded(
+            shape=self.physical_edge_index.shape,
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device,
+        )
+        observation_spec["edge_attr"] = Unbounded(
+            shape=(self.M * self.K, 2),
+            dtype=observation_spec["cap"].dtype,
+            device=observation_spec["cap"].device,
+        )
+        return observation_spec
+
+
+class MCMHPygTransform(ObservationTransform):
+    """
+    Node attribute
+        X[i,k]: Q[i,k], ArrivalRate[i,k], Distance[i,k]
+    where:
+        1. Q[i,k] is the number of packets in queue at node i for class k
+        2. ArrivalRate[i,k] is the arrival rate of packets at node i for class k (static)
+        3. Distance[i,k] is the distance between node i and the destination node for class k (static)
+
+    This class should trasform the environment to create an input embedding matrix that stacks all node
+    attributes for each class in the graph:
+        X = [X[0,1], X[0,2], ..., X[0,K], X[1,1], X[1,2], ..., X[1,K], ..., X[N,1], X[N,2], ..., X[N,K]]
+    """
+
+    def __init__(self,
+                 in_keys=["Q"],
+                 out_keys=["X"],
+                 include = ["Q", "distance", "arrival_rate"],
+                 env = None,
+                 ):
+
+        if not env:
+            raise ValueError("Net object must be provided")
+
+        super().__init__(in_keys=in_keys, out_keys=out_keys)
+
+        self.N = env.N
+        self.K = env.K
+        self.M = env.M
+        self.features = len(include)
+        self.include = include
+
+        # Step 1: Create ArrivalRate Vector (N*K,)
+        """
+        net.arrival_map is a dictionary with keys as the node index and values as the arrival rate for each class
+        net.arrival rates is a tensor of shape (K,) with the arrival rate for each class
+        We want to create a Tensor of shape (N*K,) 
+        """
+        self.pyg_arrival_rate = torch.zeros(env.N * env.K)
+        for k, arrival_node in env.arrival_map.items():
+            self.pyg_arrival_rate[k * env.N + arrival_node] = env.arrival_rates[k]
+
+        # Step 2: Create Distance Vector (N*K,)
+        """
+        net.shortest_path_dist is a dict of dicts, with keys as node index in the top level,
+        and nodes in the second level. The value is the shortest path distance between the two nodes.
+        net.destination_map is a dictionary with keys as the class index and values as the destination node index
+        We want to create a Tensor of shape (N*K,) 
+        """
+        self.pyg_distance = torch.zeros(env.N * env.K)
+        for k, destination_node in env.destination_map.items():
+            for i in range(env.N):
+                self.pyg_distance[k * env.N + i] = env.shortest_path_dist[i][destination_node]
+
+        # Step 3: Concatenate ArrivalRate and Distance to create static_vars
+        self.static_node_features = torch.stack([self.pyg_distance, self.pyg_arrival_rate], dim=-1)
+
+        self.X_temp = torch.cat([torch.zeros(env.N * env.K, 1), self.static_node_features], dim=-1)
+
+        # Step 4: Create new edge_index for modified graph
+        self.edge_index = env.edge_index
+        # repeat physical edge index a total of K times
+        for k in range(1, self.K):
+            self.edge_index = torch.cat([self.edge_index, self.edge_index[:, -self.M:] + self.M], dim=-1)
+
+        self.physical_edge_index = torch.zeros([2,self.M* self.K])
+        # want to have entries be [0,m], [0,2m]...[0,(K-1)m], [1,m+1], [1, m+2]...[1,2m]...[1,(K-1)m]...[N-1, (K-1)m]
+
+        pei = list()
+        for m in range(self.M):
+            # get all indices
+            indices = [i for i in range(m, self.M*self.K, self.M)]
+            # create edge index for fully connected graph of indices
+            pei.extend([[i, j] for i in indices for j in indices if i != j])
+        self.physical_edge_index = torch.tensor(pei, dtype=torch.long).T
+
+
+        # Create the class adjacency matrix which is a fully connected graph with K nodes without self loops repeated N times
+        # create fully connected graph edge index
+        self.class_edge_index = torch.tensor([[i, j] for i in range(self.K) for j in range(self.K) if i != j],
+                                             dtype=torch.long).T
+        for n in range(1, self.N):
+            self.class_edge_index = torch.cat(
+                [self.class_edge_index, self.class_edge_index[:, -self.K * (self.K - 1):] + self.K], dim=-1)
+
+        # Now for edge features, we have a static link rate and an instantaneous link capacity
+        # static edge features should be (self.M * self.K,1) where env.link_rates is repeated K times
+        self.static_link_features = torch.stack([env.link_rates for _ in range(self.K)], dim=-1).view(-1, 1)
+
+    def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
+        """
+        Transform the observation tensor to a PyG compatible format
+        """
+        # Step 4: Convert tensordict["Q"] to a tensor of shape (N*K,)
+
+        tensordict["X"] = torch.cat([tensordict["Q"].view(self.N * self.K, 1), self.static_node_features], dim=-1)
+        tensordict["edge_index"] = self.edge_index
+        tensordict["class_edge_index"] = self.class_edge_index
+        tensordict["physical_edge_index"] = self.physical_edge_index
+        tensordict["edge_attr"] = torch.cat([
+            tensordict["cap"].view(self.M, 1).repeat(self.K,1),
+            self.static_link_features],
+            dim=-1)
+
+        return tensordict
+
+    def _reset(
+            self, tensordict: TensorDictBase, tensordict_reset: TensorDictBase
+    ) -> TensorDictBase:
+        tensordict_reset = self._call(tensordict_reset)
+        return tensordict_reset
+
+    def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
+        if not isinstance(observation_spec, Composite):
+            # by def, there must be only one key
+            return observation_spec
+        observation_spec["X"] = Unbounded(
+            shape=(self.N * self.K, 3),
+            dtype=observation_spec["Q"].dtype,
+            device=observation_spec["Q"].device
+        )
+        observation_spec["edge_index"] = Unbounded(
+            shape=(2, self.M * self.K),
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device,
+        )
+        observation_spec["class_edge_index"] = Unbounded(
+            shape=(2, self.K * self.N * (self.K - 1)),
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device, )
+        observation_spec["physical_edge_index"] = Unbounded(
+            shape=self.physical_edge_index.shape,
+            dtype=observation_spec["edge_index"].dtype,
+            device=observation_spec["edge_index"].device,
+        )
+        observation_spec["edge_attr"] = Unbounded(
+            shape=(self.M * self.K, 2),
+            dtype=observation_spec["cap"].dtype,
+            device=observation_spec["cap"].device,
         )
         return observation_spec

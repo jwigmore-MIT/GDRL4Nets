@@ -1,26 +1,40 @@
 
 # import
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Union, List, Dict
 from collections import OrderedDict
+import networkx as nx
 
 import numpy as np
 import torch
-from tensordict import TensorDict
+from tensordict import TensorDict, merge_tensordicts
 
-from torchrl.data import BoundedTensorSpec, CompositeSpec, OneHotDiscreteTensorSpec, UnboundedContinuousTensorSpec, DiscreteTensorSpec
+from torchrl.data import Composite, Bounded, Unbounded, Binary
+
 from torchrl.envs import (
     EnvBase,
 )
-from torchrl_development.envs.utils import TimeAverageStatsCalculator, create_discrete_rv, create_poisson_rv, FakeRV
 
 # ignore UserWarnings
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
+class FakeRV:
+
+    def __init__(self, val = 1):
+        self.val = 1
+
+    def sample(self):
+        return self.val
+
+    def mean(self):
+        return self.val
 
 
-class MultihopMulticlass(EnvBase):
+
+
+
+class MultiClassMultiHop(EnvBase): # TODO: Make it compatible with torchrl EnvBase
     """
     Internal state is Q and Y (queues and link states)
     Q is size NxK where N is the number of nodes in the network and K is the number of classes
@@ -48,544 +62,354 @@ class MultihopMulticlass(EnvBase):
 
     X(t) is sampled from a set of arrival distributions, which is a list of N+1 distributions (generators)
     Y(t) is sampled from a set of link state distributions, which is a list of N+1 distributions (generators)
+
+    Notes:
+        1. Assuming batch_size = 1 (i.e.number of environments each instance represents is 1)
+        2.
+
+
     """
 
 
-    batch_locked = False
-    def __init__(self, net_para, seed = None, device = "cpu"):
-        super().__init__()
-        # Seeding
-        if seed is None:
-            seed = torch.empty((), dtype=torch.int64).random_().item()
-        self._set_seed(seed)
 
-        self.env_id = net_para.get("env_id", "MultihopMulticlass")
+    batch_locked = False
+    def __init__(self,
+                 nodes: Union[List[int], int],
+                 link_info: Dict,
+                 class_info: Dict,
+                 link_distribution: str = "fixed",
+                 arrival_distribution: str = "poisson",
+                 context_id: Optional[int] = 0,
+                 max_backlog: Optional[int] = None,
+                 device: Optional[str] = None,
+                 **kwargs):
+        super().__init__()
+
+        # Set device -  where incoming and outgoing tensors lie
+        self.device = device
+
+        # Set Batch Size
+        self.batch_size = torch.Size()
+
+        # Interval ID
+        self.context_id = torch.tensor(context_id, dtype = torch.float32)
+
+        # Maximum backlog
+        self.max_backlog = max_backlog
+
+        # Internal random number generator
+        self.rng = torch.Generator()
+
 
         # Nodes/Buffers/Queues
-        self.nodes = net_para['nodes']
-        self.N= len(self.nodes)
+        self.nodes = sorted(nodes) if isinstance(nodes, list) else list(range(nodes))
+        self.num_nodes = self.N = len(self.nodes)
 
-        # Destination - always the last node
-        self.destination = 0
-        # Initialize the buffers for each node
-        self.Q = np.zeros((len(self.nodes),))
-        # Set episode truncation condition
-        self.terminal_backlog = net_para.get("terminal_backlog", None) # if the sum of the queues is greater than this, the episode is terminated with a large negative reward
+        # Initialize Links
+        self.link_info = link_info
+        self.num_links = self.M = len(link_info)
+        self.link_distribution_type = link_distribution.lower()
+        self.link_map = {}  #
+        self.service_rates = torch.zeros(self.M)
+        self.outgoing_links = OrderedDict() # for each node, a list of outgoing links
+        self.incoming_links = OrderedDict()
 
-        # Check if net_para has 'arrival_distribution' and 'service_distribution' keys
-        if 'arrival_distribution' in net_para.keys():
-            self.arrival_distribution = net_para['arrival_distribution']
-        else:
-            self.arrival_distribution = 'discrete'
-        if 'service_distribution' in net_para.keys():
-            self.service_distribution = net_para['service_distribution']
-        else:
-            self.service_distribution = 'discrete'
+        self._init_links(link_info)
+        self.edge_index = torch.transpose(torch.tensor(list(self.link_map.values()), dtype = torch.long), 0, 1)
+        self.link_rates = torch.tensor([link_dict["rate"] for link_dict in link_info], dtype = torch.float32)
+        self.cap = self._sim_capacities() # Capacities at time $t=0$
+        self.start_nodes = torch.tensor([self.link_map[m][0] for m in range(self.M)]) # Start node for each link
+        self.end_nodes = torch.tensor([self.link_map[m][1] for m in range(self.M)])   # End node for each link
+
+        # Initialize Classes
+        self.class_info = class_info
+        self.num_classes = self.K = len(class_info)
+        self.Q = torch.zeros([self.N, self.K])
+        self.arrival_map = {}  # Maps (start, end) to class id
+        self.arrival_rates = torch.zeros(self.num_classes, dtype=torch.float32)
+        self.destination_map = {}
+        self.arrival_distribution_type = arrival_distribution.lower()
+
+        self._init_classes(class_info)
+        # self._process_arrivals() # Creates initial arrivals at $t=0$
+
+        self.graphx = nx.DiGraph(list(self.link_map.values()))
+
+        self.max_shortest_path = 100
+        self.shortest_path_dist = {} # shortest path from node i to destination node of class k
+        self.sp_dist = torch.zeros([self.N, self.K]) #Tensor form of shortest_path_dist
 
 
-        # Extract X_gen and X_map
-        self._extract_X_gen(net_para['X_params'])
-        # Extract Y_gen and Y_map
-        self._extract_Y_gen(net_para['Y_params'])
-        # Compute load
-        self._compute_load()
-        self.debug = net_para.get("debug", False)
+        self._init_shortest_path_dist()
 
-        # Whether or not the state includes arrival rates
-        self.obs_lambda = net_para.get("obs_lambda", False)
-
-        # Add baseline lta performance for maxweight
-        self.baseline_lta = net_para.get("baseline_lta", None)
-
-        #
-        self.terminate_on_lta_threshold = net_para.get("terminate_on_lta_threshold", False)
-        self.terminal_lta_factor = net_para.get("terminal_lta_factor", 5)
-
-        # Tracking running state
-        self.time_avg_stats = TimeAverageStatsCalculator(net_para.get("stat_window_size", 10000))
-        self.terminate_on_convergence = net_para.get("terminate_on_convergence", False)
-        self.convergence_threshold = net_para.get("convergence_threshold", 0.05)
-        self.track_stdev = True
+        self.base_mask = torch.zeros([self.M, self.K], dtype = torch.bool)
+        self._init_base_mask()
 
         # Create specs for torchrl
         self._make_spec()
-        self._make_done_spec()
-
-
-
-    def _extract_X_gen(self, X_params):
-        # creates generators for the arrival distributions
-        # in this case, the number of entries is equal to the number of nodes + 1
-        X_map = OrderedDict({"0": {"source": 0, "destination": 0}}) # 0 corresponds to the destination node/basestation
-        X_gen = [FakeRV(0)] # Create placeholder for the destination node
-        self.arrival_rates = []
-        for key, value in X_params.items():
-            if self.arrival_distribution == 'discrete':
-                X_gen.append(create_discrete_rv(self.np_rng, nums = value["arrival"], probs = value['probability']))
-            elif self.arrival_distribution == 'poisson':
-                X_gen.append(create_poisson_rv(self.np_rng, rate = value['arrival_rate']))
-            X_map[key] = {"source": value['source'], "destination": value['destination']}
-            self.arrival_rates.append(X_gen[-1].mean())
-        self.X_map = X_map
-        self.X_gen = X_gen
-
-    def _gen_arrivals(self):
-        """
-        Simulates the arrivals for each sources
-        :return: total number of arrivals
-        """
-        # Sample X_gen for each source
-        X = np.array([gen.sample() for gen in self.X_gen])
-        # Increment the corresponding buffer
-        self.Q = np.add(self.Q, X)
-        return X.sum()
-
-
-    def _extract_Y_gen(self, Y_params):
-        # creates generators for the link state distributions
-        Y_map = OrderedDict({"0": {"source": 0, "destination": 0}})
-        Y_gen = [FakeRV(0)]
-        link_rates = []
-        for key, value in Y_params.items():
-            if self.service_distribution == 'discrete':
-                Y_gen.append(create_discrete_rv(self.np_rng, nums = value['capacity'], probs = value['probability']))
-            elif self.service_distribution == 'poisson':
-                Y_gen.append(create_poisson_rv(self.np_rng, rate = value['service_rate']))
-            Y_map[key] = {"source": value['source'], "destination": value['destination']}
-            link_rates.append(Y_gen[-1].mean())
-        self.service_rates = link_rates
-        self.link_rates = link_rates
-        self.Y_map = Y_map
-        self.Y_gen = Y_gen
-        self._gen_link_states()
-
-
-    def _compute_load(self):
-        "Computes the load of the network defined as the average ratio of arrivals to the capacities"
-        self.network_load = np.sum([x/y for x,y in zip(self.arrival_rates, self.link_rates)])
-
-
-
-    def _gen_link_states(self):
-        """
-        Simulates the link states for each link
-        :return: True if there is a connected link, False otherwise
-        """
-        # Sample X_gen for each source
-        link_states = np.array([gen.sample() for gen in self.Y_gen[1:]])
-        # idle state is only one if all link states are zero
-        idle_state = np.ones([1])*np.all(link_states == 0)
-        self.Y = np.concatenate([idle_state, link_states], axis = 0)
-
-    def get_mask(self):
-        # Mask 1
-        mask1 = self.Q[1:]*self.Y[1:] != 0 # evaluates to true if the queue is empty or the link is disconnected
-        # Mask 2
-        mask2 = (mask1 == False).all().reshape(1) # evaluates to true if all queues are empty or all links are disconnected
-
-        return np.concatenate([mask2, mask1], axis = 0)
-
-    def get_Y_out(self):
-        return self.Y[1:]
-
-    def get_Q_out(self):
-        return self.Q[1:]
-
-    def get_backlog(self):
-        return np.sum(self.Q)
-
-    def _get_reward(self):
-        return -self.get_backlog()
-
-    def get_np_obs(self):
-        return np.concatenate([self.get_Q(), self.get_Y()])
-
 
     def _make_spec(self):
+        """
+        Ned to initialize the
+        :return:
+        """
+
+        self.observation_spec = Composite({
+            "Q": Unbounded(shape = self.Q.shape, dtype = torch.float32),
+            "cap": Bounded(low = 0, high = 100, shape = self.cap.shape, dtype = torch.float32),
+            "edge_index": Unbounded(shape = self.edge_index.shape, dtype = torch.long),
+            "arrival_rates": Unbounded(shape = self.arrival_rates.shape, dtype = torch.float32),
+            "link_rates": Unbounded(shape = self.link_rates.shape, dtype = torch.float32),
+            "context_id": Unbounded(shape = self.context_id.shape, dtype = torch.float32),
+            "mask": Binary(shape = (self.base_mask.shape[0], self.base_mask.shape[1]+1), dtype = torch.bool),
+            "departures": Unbounded(shape = self.Q.shape, dtype = torch.float32),
+            "arrivals": Unbounded(shape = torch.Size([self.K]), dtype = torch.float32),
+            "sp_dist": Unbounded(shape = self.sp_dist.shape, dtype = torch.float32),
 
 
-        self.observation_spec= CompositeSpec(
-            Q = BoundedTensorSpec(
-                low = 0,
-                high = 100_000,
-                shape = (len(self.nodes)-1,),
-                dtype = torch.int
-            ),
-            Y = BoundedTensorSpec(
-                low=0,
-                high=100_000,
-                shape = (len(self.nodes)-1,),
-                dtype = torch.int
-            ),
-            backlog = BoundedTensorSpec(
-                low = 0,
-                high = 100_000,
-                shape = 1,
-                dtype = torch.int
-            ),
-            mask = DiscreteTensorSpec(
-                n = len(self.nodes),
-                shape = (len(self.nodes),),
-                dtype = torch.bool
-            ),
-            # truncated = DiscreteTensorSpec(
-            #     n= 2,
-            #     dtype = torch.bool
-            # ),
-            shape = (),
-
-        )
-        # if self.obs_lambda, add the arrival rates to the observation spec
-        if self.obs_lambda:
-            self.observation_spec.set("lambda", BoundedTensorSpec(
-                low =0,
-                high = 10,
-                shape=(len(self.nodes) - 1,),
-                dtype=torch.float
-            ))
-        if self.track_stdev:
-            self.observation_spec.set("ta_stdev", UnboundedContinuousTensorSpec(
-                shape = (1,),
-                dtype = torch.float
-            ))
-
-        self.action_spec = OneHotDiscreteTensorSpec(
-            n = len(self.nodes), # 0 is idling, n corresponds to node n
-            shape = (len(self.nodes),),
-        )
-        self.reward_spec = UnboundedContinuousTensorSpec(
-            shape = (1,),
-            dtype = torch.float
-        )
-
-    def _make_done_spec(self):  # noqa: F811
-        self.done_spec = CompositeSpec(
-            {
-                "done": DiscreteTensorSpec(
-                    2, dtype=torch.bool, device=self.device, shape = (1,)
-                ),
-                "terminated": DiscreteTensorSpec(
-                    2, dtype=torch.bool, device=self.device, shape = (1,)
-                ),
-                "truncated": DiscreteTensorSpec(
-                    2, dtype=torch.bool, device=self.device, shape = (1,)
-                ),
-            },
-            shape=self.batch_size,
-        )
+        }, batch_size=self.batch_size)
+        self.action_spec = Unbounded(shape = torch.Size([self.M, self.K]), dtype = torch.long)
+        self.reward_spec = Unbounded(shape = torch.Size([1]), dtype = torch.float32)
 
 
+    def _set_seed(self, seed):
+        pass # all seeding should be done externally
+    def _get_link_cap(self, start, end):
+        return self.cap[self.link_map[(start, end)]]
+
+    def _init_links(self, link_info):
+        for id,link_dict in enumerate(link_info):
+            self.link_map[id] = (link_dict["start"], link_dict["end"])
+            self.service_rates[id] = link_dict["rate"]
+            self.outgoing_links[link_dict["start"]] = self.outgoing_links.get(link_dict["start"], []) + [id]
+            self.incoming_links[link_dict["end"]] = self.incoming_links.get(link_dict["end"], []) + [id]
+        self._sim_capacities =  self._init_random_process(self.service_rates, self.link_distribution_type)
+
+    def _process_arrivals(self):
+        arrivals = self._sim_arrivals()
+        for id, class_dict in enumerate(self.class_info):
+            start = self.arrival_map[id]
+            self.Q[start,id] += arrivals[id]
+        return arrivals
+
+    def _process_departures(self):
+        departures = torch.zeros_like(self.Q)
+        for id, dest in self.destination_map.items():
+            departures[dest, id] = self.Q[dest,id].item()
+            self.Q[dest,id] = 0
+        return departures
+
+    def _init_classes(self, class_info):
+
+        for id, class_dict in enumerate(class_info):
+            self.arrival_map[id] = class_dict["source"]
+            self.destination_map[id] = class_dict["destination"]
+            self.arrival_rates[id] = class_dict["rate"]
+        self._sim_arrivals = self._init_random_process(self.arrival_rates, self.arrival_distribution_type)
 
 
-    def _step(self, tensordict: TensorDict):
-
-        action = tensordict["action"].numpy()
-        # see if action is invalid by checking if the sum == 1
-        if np.sum(action) != 1:
-            raise ValueError("Action must be a one-hot vector")
-
-
-        # Step 1: Get the corresponding reward
-        reward = self._get_reward()
-
-        # Step 1: Apply the action
-        if action[0] is True:
-            # idle
-            pass
+    def _init_random_process(self, rates, dist):
+        """
+        kwargs should contain the distribution (distribution = "poisson) and any parameters
+        :param kwargs:
+        :return:
+        """
+        if not isinstance(rates,torch.Tensor):
+            rates = torch.Tensor(rates)
+        if dist == "poisson":
+            return lambda: torch.poisson(rates, generator=self.rng)
+        elif dist == "fixed":
+            return lambda: rates
         else:
-            self.Q = np.max([self.Q - np.multiply(self.Y,action), np.zeros(len(self.nodes))], axis = 0)
+            raise ValueError("Distribution not supported")
+    def _reset(self, tensordict = None, **kwargs):
 
-        if (self.Q < 0).any():
-            raise ValueError("Queue length cannot be negative")
+        self.Q = torch.zeros_like(self.Q)
+        return self._get_observation(reset = True)
 
+    def _step(self, td:TensorDict):
 
-        # Step 3: Generate New Arrivals
-        n_arrivals = self._gen_arrivals()
-
-        # Step 4: Generate new capacities
-        self._gen_link_states()
-
-        # Step 5: Get backlog for beginning of s_{t+1} and update running stats
-
-        next_backlog = self.get_backlog()
-        self.time_avg_stats.update(next_backlog)
-
-        # Step 6: Check if the episode should be truncated
-        if self.terminal_backlog is not None:
-            truncate = next_backlog > self.terminal_backlog
-            reward = -100 if truncate else reward
+        # Step 1: Get valid action in case td["action"] violates constraints
+        if td.get("valid_action", False):
+            action = td["action"]
         else:
-            truncate = False
-        if self.baseline_lta is not None and self.terminate_on_lta_threshold:
-            if self.time_avg_stats.mean >  self.terminal_lta_factor * self.baseline_lta:
-                truncate = True
+            action = self._get_valid_action(td["action"])
+        if action.shape[1] == self.K +1:
+            action = action[:,1:]
 
-        # Step 7: Check if the episode should be truncated
+        # Step 2: Apply action to queues
+        """
+        Assuming the action is a valid (M,K) tensor where (m,k) denotes the number of packets to transmits over start 
+        node of link m to end node of link m of class k
+        """
+        for m in range(self.M):
+            self.Q[self.start_nodes[m]] -= action[m]
+            self.Q[self.end_nodes[m]] += action[m]
+
+        return self._get_observation()
+
+    def convert_action(self, action):
+        """
+        Converts a (M,K) action tensor to a representation showing
+        start_node: [end_node, action]
+        :param action:
+        :return:
+        """
+        if action.shape[1] == self.K + 1:
+            action = action[:,1:]
+        return {self.link_map[m]: action[m].tolist() for m in range(self.M)}
+
+
+
+
+
+    def _get_observation(self, reset = False):
+        # Step 3: Deliver all packets that have reached their destination
+        departures = self._process_departures()
+
+        # Step 4: Compute reward, with shape (1,)
+        reward = -torch.sum(self.Q).reshape([1])
+
+        # Step 5: Check if the episode should be truncated
         terminated = False
-        if self.terminate_on_convergence and self.time_avg_stats.is_full: # first check if we have enough data
-            if self.time_avg_stats.sampleStdev < self.convergence_threshold:
-                terminated = True
+        if self.max_backlog is not None and -reward > self.max_backlog:
+            # reward = -torch.Tensor(100)
+            terminated = True
+
+        # Step 6: Generate new arrivals
+        arrivals = self._process_arrivals()
+
+        # Step 7: Generate new link capacities
+        self._sim_capacities()
+
+        td = TensorDict({
+            "Q": self.Q.clone(),
+            "cap": self.cap,
+            "departures": departures,
+            "arrivals": arrivals,
+            "mask": self._get_mask(),
+            "sp_dist": self.sp_dist,
+            "edge_index": self.edge_index,
+            "link_rates": self.link_rates,
+            "arrival_rates": self.arrival_rates,
+            "context_id": self.context_id,
+            "terminated": torch.tensor([terminated], dtype=bool),
+
+        }, batch_size=self.batch_size)
+
+        if not reset:
+            td.set("reward", reward)
+        return td
+
+
+    def _get_valid_action(self, action: torch.Tensor):
+        """
+        WARNING: THIS METHOD TAKES A LONG TIME TO RUN SO CARE SHOULD BE TAKEN TO AVOID HAVING TO CALL IT
+
+        action is an (M,K) tensor where (m,k) denotes the number of packets to transmits over start node of link m to end node of link m of class k
+        return a valid action where (m, k) is not greater than the number of packets in the start node of link m
+        and where the sum over K of (m,k) is not greater than the capacity of link m
+
+        How do we not send ghost packets? I.e. if the sum of packets that action wants to transmit from Q[i,k] is greater than Q[i,k]
+        then we should only send Q[i,k] packets. But we should also not send more packets than the capacity of the link
+
+        We have two constraints.
+        1. The sum of packets transmitted over a link cannot exceed the capacity of the link
+        2. The sum of packets transmitted from a particular queue cannot exceed the number of packets in the queue
+
+        To implement this:
+        1. Get the minimum of the action and the number of packets in the start node -> valid_action
+        2. For each Q[n,k] the sum over j in self.outgoing_links[n]of valid_action[j,k] cannot exceed Q[n,k] -> valid_action
+        3. For each link m, the sum over k of valid_action[m,k] cannot exceed the capacity of the link -> valid_action
+
+        :param action:
+        :return:
+        """
+        if action.dim() == 1:
+            # convert to (M,K+1) where
+            # new_action[m,k] = cap[m] if action[m] = k
+            new_action = torch.zeros([self.M, self.K+1])
+            new_action[torch.arange(self.M), action] = self.cap
+            action = new_action
+        if action.shape[1] == self.K + 1:
+            action = action[:,1:]
+        action = self.base_mask* action
+        valid_action = torch.zeros_like(action)
+        # copy of capacity
+        residual_capacity = self.cap.clone()
+        # copy of Q
+        residual_packets = self.Q.clone()
+        # Loop through and randomize priority
+        for m in torch.randperm(self.M):
+            if residual_capacity[m] == 0: # speedup
+                continue
+            for k in torch.randperm(self.K): # speedup
+                if residual_packets[self.start_nodes[m],k] == 0:
+                    continue
+                # valid_action[m,k] must be the minimum of:
+                # 1. action[m,k] - the number of class k packets at link m to transmit
+                # 2. residual_packets[self.start_nodes[m],k] - the number of class k packets at the start node of link m
+                # 3. residual_capacity[m] - the remaining capacity of link m
+                valid_action[m,k] = torch.min(action[m,k], torch.min(residual_packets[self.start_nodes[m],k], residual_capacity[m]))
+                residual_packets[self.start_nodes[m],k] = torch.clamp(residual_packets[self.start_nodes[m],k]-valid_action[m,k], min = 0)
+                residual_capacity[m] = torch.clamp(residual_capacity[m] - valid_action[m,k], min = 0)
+        return valid_action
+
+
+    def _get_random_valid_action(self):
+        # samples a random action where each action[m,k] < cap[m]
+        action = torch.ones([self.M, self.K])*self.cap.max()
+        return self._get_valid_action(action)
+
+    """
+    Need to create a set of methods for:
+    1. Checking if there is a path from node i to the destination node of class k
+    2. If not, updating the mask such that all actions that try to send class k packets from node i 
+        to a node that is not connected to the destination node of class k are set to zero
+    """
+
+    def _init_shortest_path_dist(self):
+        """
+        Get the shortest_path from each node to the destination node of each class
+        if there is not a shortest path  node i to destination k
+        then set the shortest_path_length to a very large number
+
+        :return:
+        """
+
+        for source, dest_dict in nx.all_pairs_shortest_path_length(self.graphx):
+            self.shortest_path_dist[source] = {}
+            for n in range(self.N):
+                if n in dest_dict:
+                    self.shortest_path_dist[source][n] = dest_dict[n]
+                else:
+                    self.shortest_path_dist[source][n] = self.max_shortest_path
+        # Convert to tensor
+        for n in range(self.N):
+            for k in range(self.K):
+                self.sp_dist[n,k] = self.shortest_path_dist[n][self.destination_map[k]]
+
+
+    def _init_base_mask(self):
+        """
+        Creates an (M,K) base_mask where base_mask[m,k] is true if the end node
+        of link m can reach the destination of class k
+        We can check this by seeing if self.shortest_path_dist[self.end_nodes[m]][self.destination_map[k]] < self.max_shortest_path]
+        :return:
+        """
+        for m in range(self.M):
+            for k in range(self.K):
+                self.base_mask[m,k] = self.shortest_path_dist[self.end_nodes[m].item()][self.destination_map[k]] < self.max_shortest_path
+
+    def _get_mask(self):
+        """
+        In sets mask (m,k) to False if the start node of link m has no packets of class k
+        :return:
+        """
+        mask = self.Q[self.start_nodes] > 0
+        ones = torch.ones([mask.shape[0],1], dtype = torch.bool)
+        return torch.concat([ones,torch.logical_and(mask, self.base_mask)],dim=1)
 
 
 
 
-
-        out = TensorDict(
-                {"Q": torch.tensor(self.get_Q_out(), dtype = torch.int),
-                "Y": torch.tensor(self.get_Y_out(), dtype = torch.int),
-                "truncated": torch.tensor(truncate, dtype = torch.bool),
-                "terminated": torch.tensor(terminated, dtype = torch.bool),
-                "reward": torch.tensor(reward, dtype = torch.float),
-                "backlog": torch.tensor(next_backlog, dtype = torch.int).reshape(1),
-                "mask": torch.tensor(self.get_mask(), dtype = torch.bool),
-                }, batch_size=[])
-        if self.obs_lambda:
-            out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
-        if self.track_stdev:
-            out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
-        return out
-
-    def _reset(self, tensordict: TensorDict):
-
-        #np.random.seed(seed)
-        # make value =0 for all keys in self.q_state
-        self.Q = np.zeros((len(self.nodes),))
-        self._gen_link_states()
-        out = TensorDict({"Q": torch.tensor(self.get_Q_out(), dtype = torch.int),
-                "Y": torch.tensor(self.get_Y_out(), dtype = torch.int),
-                "done": torch.tensor(False, dtype = torch.bool),
-                "terminated": torch.tensor(False, dtype = torch.bool),
-                "truncated": torch.tensor(False, dtype = torch.bool),
-                "backlog": torch.tensor(self.get_backlog(), dtype=torch.int).reshape(1),
-                "mask": torch.tensor(self.get_mask(), dtype=torch.bool),
-                          },
-                         batch_size=[])
-        if self.obs_lambda:
-            out.set("lambda", torch.tensor(self.arrival_rates, dtype=torch.float))
-        if self.track_stdev:
-            out.set("ta_stdev", torch.Tensor([self.time_avg_stats.sampleStdev]))
-        return out
-
-    def _set_seed(self, seed: Optional[int]):
-        self.rng = torch.manual_seed(seed)
-        self.np_rng = np.random.default_rng(seed)
-        self.seed = seed
-    def _debug_printing(self, init_buffer, current_capacities, delivered,
-                           ignore_action, action, post_action_buffer,
-                           post_arrival_buffer, n_arrivals, reward, new_capacities):
-        print("="*20)
-        print(f"Initial Buffer: {init_buffer}")
-        print(f"Current Capacities: {current_capacities}")
-        print(f"Ignore Action: {ignore_action}")
-        print(f"Action: {action}")
-        print(f"Delivered: {delivered}")
-        print(f"Post Action Buffer: {post_action_buffer}")
-        print(f"Reward: {reward}")
-        print("Arrivals: ", n_arrivals)
-        print(f"Post Arrival Buffer: {post_arrival_buffer}")
-        print(f"New Capacities: {new_capacities}")
-        print("="*20)
-        print("\n")
-
-
-    def get_stable_action(self, type = "LQ"):
-        q_obs = self.get_buffers()
-        if type == "LQ":
-            action = np.random.choice(np.where(q_obs == q_obs.max())[0]) + 1  # LQ
-        elif type == "SQ":
-            q_obs[q_obs == 0] = 1000000
-            action = np.random.choice(np.where(q_obs == q_obs.min())[0]) + 1
-        elif type == "RQ":
-            action = np.random.choice(np.where(q_obs > 0)[0]) + 1
-        elif type == "LCQ":
-            cap = self.get_cap()
-            connected_obs = cap * q_obs
-            action = np.random.choice(np.where(connected_obs == connected_obs.max())[0]) + 1
-        elif type == "MWQ": #Max Weighted Queue
-            p_cap = self.service_rate
-            valid_obs = q_obs > 0
-            # choose the most reliable queue that is not empty
-            valid_p_cap = p_cap * valid_obs**2
-            if np.all(valid_obs == False):
-                action = 0
-            else:
-                action = np.random.choice(np.where(valid_p_cap == valid_p_cap.max())[0]) + 1
-        elif type == "MWCQ": #Max Weighted Connected Queue
-            cap = self.get_cap()
-            weighted_obs = cap * q_obs**2
-            if np.all(weighted_obs == 0):
-                action = 0
-            else:
-                action = np.random.choice(np.where(weighted_obs == weighted_obs.max())[0]) + 1
-
-        elif type == "RCQ": # Random Connected Queue
-            cap = self.get_cap()
-            connected_obs = cap * q_obs
-            if np.all(connected_obs == 0):
-                action = 0
-            else:
-                action = np.random.choice(np.where(connected_obs > 0)[0]) + 1
-        elif type == "LRCQ": # Least Reliable Connected Queue
-            p_cap = self.unreliabilities
-            cap = self.get_cap()
-            connected_obs = cap * q_obs
-            weighted_obs = p_cap * connected_obs
-            if np.all(weighted_obs == 0):
-                action = 0
-            else:
-                action = np.random.choice(np.where(weighted_obs == weighted_obs.max())[0]) + 1
-        elif type == "Optimal":
-            if not self.obs_links:
-                p_cap = 1 - self.unreliabilities
-                non_empty = q_obs > 0
-                action  = np.argmax(p_cap*non_empty)+1
-            else:
-                # should select the connected link with the lowest success probability
-                p_cap = 1 - self.unreliabilities
-                non_empty = q_obs > 0
-                action = np.argmax(p_cap * non_empty) + 1
-
-
-        if not isinstance(action, int):
-            action = action.astype(int)
-        return action
-
-    def get_serviceable_buffers(self):
-        if self.obs_links:
-            temp = self.get_buffers() * self.get_cap()
-            return temp
-    # def get_mask(self, state = None):
-    #     """
-    #     Cases:
-    #     Based on buffers being empty
-    #         1) All buffers are empty -> mask all but action 0
-    #         2) There is at least one non-empty buffer -> mask action 0 and all empty buffers
-    #     Based on links being connected AND observed
-    #     1.) Mask the actions corresponding to non-connected links
-    #         - If already masked, leave masked, if not masked but not connected mask
-    #             mask[1:] = np.logical_or(mask[1:], 1-self.get_cap())
-    #     Returns: Boolean mask vector corresponding to actions 0 to n_queues
-    #     -------
-    #
-    #     """
-    #     # returns a vector of length n_queues + 1
-    #     mask = np.bool_(np.zeros(self.n_queues+1)) # size of the action space
-    #     # masking based on buffers being empty
-    #     if self.get_backlog() == 0:
-    #         mask[1:] = True
-    #     else: # Case 2
-    #         mask[0] = True # mask action 0
-    #         mask[1:] = self.get_buffers() < 1 # mask all empty buffers
-    #     # masking based on connected links
-    #     if self.obs_links:
-    #         mask[1:] = np.logical_not(self.get_serviceable_buffers())
-    #         if np.all(mask[1:]==True):
-    #             mask[0] = False
-    #     if np.all(mask):
-    #         raise ValueError("Mask should not be all True")
-    #     elif np.all(mask == False):
-    #         raise ValueError("Mask should not be all False")
-    #     return mask
-
-
-    def _sim_arrivals(self):
-        n_arrivals = 0
-        for cls_num, cls_rv in enumerate(self.classes.items()):
-            source = cls_num+1
-            if cls_rv.sample() == 1:
-                self.buffers[source] += 1
-                n_arrivals += 1
-        return n_arrivals
-
-    # def _extract_capacities(self, cap_dict):
-    #     caps = {}
-    #     # if '(0,0)' in cap_dict.keys():
-    #     #     # All links have the same capacity and probability
-    #     #     capacity = cap_dict['(0,0)']['capacity']
-    #     #     probability = cap_dict['(0,0)']['probability']
-    #     #     for link in self.links:
-    #     #         caps[link] = create_rv(self.rng, num=capacity, prob = probability)
-    #
-    #     for link, l_info in cap_dict.items():
-    #         if isinstance(link, str):
-    #             link = eval(link)
-    #         if link == (0,0):
-    #             continue
-    #         capacity = eval(l_info['capacity']) if isinstance(l_info['capacity'], str) else l_info['capacity']
-    #         probability = eval(l_info['probability']) if isinstance(l_info['probability'], str) else l_info['probability']
-    #
-    #         rv = create_rv(nums = capacity, probs = probability)
-    #         caps[link] = rv
-    #
-    #         # generate unreliabilities
-    #     service_rate = []
-    #     for link in self.links:
-    #         if link[1] == self.destination:
-    #             service_rate.append(caps[link].mean())
-    #     self.service_rate = np.array(service_rate)
-    #
-    #
-    #     if (0,0) in caps.keys():
-    #         del caps[(0,0)]
-    #
-    #     # Convert caps to a list
-    #     caps = np.array(list(caps.values()))
-    #
-    #     return caps
-    #
-    # def _extract_classes(self, class_dict):
-    #     classes = []
-    #     destinations = []
-    #     for cls_num, cls_info in class_dict.items():
-    #         rv = create_rv(nums =[0, cls_info['arrival']], probs = [1- cls_info["probability"], cls_info['probability']])
-    #         classes.append(rv)
-    #     if len(classes) != len(list(self.links)):
-    #         raise ValueError("Number of classes must equal number of links")
-    #
-    #     return classes, destinations
-
-    # def _sim_arrivals(self):
-    #     arrivals = np.zeros(len(self.classes))
-    #     for cls_num, cls_rv in enumerate(self.classes):
-    #         source = cls_num+1
-    #         if cls_rv.sample() == 1:
-    #             self.buffers[source] += 1
-    #             arrivals[source-1] += 1
-    #     return arrivals
-    #
-    # def set_state(self, state):
-    #     if self.obs_links:
-    #         for i in range(self.n_queues):
-    #             self.buffers[i+1] = state[i]
-    #         for j in range(self.n_queues):
-    #             self.Cap[j] = state[j+self.n_queues]
-    #
-    #     return self.get_obs()
-    #
-    # def estimate_transitions(self, state, action, max_samples = 1000, min_samples = 100, theta = 0.001):
-    #
-    #     C_sas = {} # counter for transitions (s,a,s')
-    #     P_sas = {} # probabilities for transitions (s,a,s')
-    #     diff = {}
-    #     for n in range(1, max_samples+1):
-    #         self.set_state(state)
-    #         next_state, _, _, _, _ = self.step(action)
-    #         if tuple(next_state) in C_sas.keys():
-    #             C_sas[tuple(next_state)] += 1# increment the counter for the visits to next state
-    #             p_sas = C_sas[tuple(next_state)]/n # calculate the probability of the transition
-    #             diff[tuple(next_state)] = np.abs(P_sas[tuple(next_state)] - p_sas)
-    #             P_sas[tuple(next_state)] = p_sas
-    #         else:
-    #             C_sas[tuple(next_state)] = 1
-    #             P_sas[tuple(next_state)] = 1
-    #
-    #         # check for convergence:
-    #         if n > min_samples and np.all(list(diff.values())) < theta:
-    #             break
-    #     P_sas = {key: value/n for key, value in C_sas.items()}
-    #     if np.abs(np.sum(list(P_sas.values())) - 1) > 0.001:
-    #         raise ValueError("Transition Probabilities do not sum to one")
-    #
-    #     # convert to probabilities
-    #
-    #     return P_sas, n

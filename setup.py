@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 setup(
-    name='GDRL4Nets',
+    name='modules',
     version='0.1.0',
     description='A brief description of my project',
-    packages=find_packages(),
+    packages=find_namespace_packages(include=['pydevd_plugins.*']),
 )

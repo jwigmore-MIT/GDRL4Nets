@@ -7,12 +7,12 @@ from typing import List
 
 from torchrl.envs.transforms import CatTensors, TransformedEnv, Compose, RewardSum, RewardScaling, StepCounter, ActionMask, UnsqueezeTransform, SignTransform, ObservationNorm
 
-from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, CatStackTensors, StackTensors, PyGObservationTransform, ObservationNoiseTransform
+from modules.torchrl_development.envs.custom_transforms import SymLogTransform, InverseReward, ReverseSignTransform, InverseTransform, CatStackTensors, StackTensors, PyGObservationTransform, ObservationNoiseTransform, MCMHPygLinkGraphTransform
 from modules.torchrl_development.envs.SingleHop import SingleHop
 from modules.torchrl_development.envs.SingleHopGraph1 import SingleHopGraph
 from modules.torchrl_development.envs.MultipathRouting import MultipathRouting
 from modules.torchrl_development.envs.ConflictGraphScheduling import ConflictGraphScheduling
-
+from modules.torchrl_development.envs.MultiClassMultihop import MultiClassMultiHop
 
 
 
@@ -48,6 +48,27 @@ def parse_env_json(full_path = None, rel_path = None, config_args = None) -> dic
 
 
 
+def make_env_mcmh(
+        env_params,
+        seed: int = 0,
+        max_backlog = 1000,
+        observation_keys = ["Q"],
+        symlog_obs = True,
+        inverse_reward = True
+        ):
+    env_params = deepcopy(env_params)
+    env_params["seed"] = seed
+    env_params["max_backlog"] = max_backlog
+    env = MultiClassMultiHop(**env_params)
+    env = TransformedEnv(env, MCMHPygLinkGraphTransform(in_keys = ["Q"],
+                                                        out_keys = ["X"],
+                                                        env = env))
+    if symlog_obs:
+        env = TransformedEnv(env, SymLogTransform(in_keys=["X"], out_keys=["X"]))
+
+    if inverse_reward:
+        env = TransformedEnv(env, InverseReward())
+    return env
 
 def make_env_cgs(env_params,
                  seed: int = 0,
@@ -314,9 +335,12 @@ class EnvGenerator:
                  env_generator_seed = 0,
                  cycle_sample = False,
                  cgs = False,
+                 mcmh = False
                  ):
         if cgs:
             self.make_env_fn = make_env_cgs
+        elif mcmh:
+            self.make_env_fn = make_env_mcmh
         else:
             self.make_env_fn = make_env
 
