@@ -30,7 +30,7 @@ logger:
 
 # Optim
 optim:
-  lr: 5.0e-4
+  lr: 3.0e-3
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
