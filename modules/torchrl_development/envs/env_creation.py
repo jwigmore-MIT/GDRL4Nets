@@ -54,6 +54,7 @@ def make_env_mcmh(
         max_backlog = 1000,
         observation_keys = ["Q"],
         symlog_obs = True,
+        scale_obs = 1,
         inverse_reward = True
         ):
     env_params = deepcopy(env_params)
@@ -65,7 +66,8 @@ def make_env_mcmh(
                                                         env = env))
     if symlog_obs:
         env = TransformedEnv(env, SymLogTransform(in_keys=["X"], out_keys=["X"]))
-
+    if scale_obs != 1:
+        env = TransformedEnv(env, ObservationNorm(in_keys=["X"], out_keys=["X"], scale=1/scale_obs, loc = 0))
     if inverse_reward:
         env = TransformedEnv(env, InverseReward())
     return env
