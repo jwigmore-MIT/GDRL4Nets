@@ -47,7 +47,7 @@ loss:
   clip_epsilon: 0.1
   anneal_clip_epsilon: False
   critic_coef: 0.5
-  entropy_coef: 0.1
+  entropy_coef: 0.01
   loss_critic_type: l2
   norm_advantage: False
 
