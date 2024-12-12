@@ -2,7 +2,7 @@ device: null
 
 # Agent
 agent:
-  num_layers: 1
+  num_layers: 2
   hidden_channels: 32
 
 
