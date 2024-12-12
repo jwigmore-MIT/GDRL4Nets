@@ -23,13 +23,15 @@ class GNN_Actor(TensorDictModule):
                  edge_index_key = "edge_index",
                  class_edge_index_key = "class_edge_index",
                  out_keys = ["logits", "probs"],
-                 small_logits = torch.Tensor([-1.0])):
+                 small_logits = torch.Tensor([-1.0]),
+                 valid_action = False):
         super(GNN_Actor, self).__init__(module = module, in_keys=[feature_key, edge_index_key, class_edge_index_key], out_keys=out_keys)
 
         self.feature_key = feature_key
         self.edge_index_key = edge_index_key
         self.class_edge_index_key = class_edge_index_key
         self.small_logits = small_logits
+        self.valid_action = valid_action
 
     def forward(self, input):
         if isinstance(input, TensorDict) and isinstance(input["X"], Batch): # Probabilistic actor automatically converts input to a TensorDict
@@ -46,12 +48,16 @@ class GNN_Actor(TensorDictModule):
                 probs = torch.softmax(logits, dim=-1)
                 input[self.out_keys[0]] = logits.squeeze(-1)
                 input[self.out_keys[1]] = probs.squeeze(-1)
+                if self.valid_action:
+                    input["valid_action"] = torch.Tensor([1]).bool()
             else:
                 batch_graph = tensors_to_batch(input[self.feature_key], input[self.edge_index_key], input[self.class_edge_index_key], K = K)
                 logits = self.module(batch_graph.x, batch_graph.edge_index, batch_graph.class_edge_index)
                 logits = logits.reshape(batch_graph.batch_size, K, -1).transpose(1, 2)
                 input[self.out_keys[0]] = torch.cat((self.small_logits.expand(logits.shape[0], logits.shape[1], 1), logits), dim=-1)
                 input[self.out_keys[1]] = torch.softmax(input[self.out_keys[0]], dim=-1)
+                if self.valid_action:
+                    input["valid_action"] = torch.ones_like(input[self.out_keys[0][..., 0]]).bool()
             return input
         elif isinstance(input, Batch):
             logits = self.module(input.x, input.edge_index)

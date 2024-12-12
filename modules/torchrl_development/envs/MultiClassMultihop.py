@@ -168,7 +168,7 @@ class MultiClassMultiHop(EnvBase): # TODO: Make it compatible with torchrl EnvBa
 
 
         }, batch_size=self.batch_size)
-        self.action_spec = Unbounded(shape = torch.Size([self.M, self.K]), dtype = torch.long)
+        self.action_spec = Bounded(low = 0, high = 1, shape = torch.Size([self.M, self.K+1]), dtype = torch.int)
         self.reward_spec = Unbounded(shape = torch.Size([1]), dtype = torch.float32)
 
 
