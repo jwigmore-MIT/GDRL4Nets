@@ -279,7 +279,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         mean_episode_backlog = env_data["Q"].sum((1,2)).mean()
         running_sum[context_id] += mean_episode_backlog
         running_step_counter[context_id] += env_data["collector", "mask"].sum()
-        running_average[context_id] = running_sum[context_id] / running_step_counter[context_id]
+        running_average[context_id] = running_sum[context_id] / (i+1)
         # interference_factor = (env_data["action"] - env_data["next", "valid_action"]).mean().float()
         # interference_percentage = ((env_data["action"]- env_data["next", "valid_action"]).sum(dim = 1) > 0).float().mean()
         # mean_backlog = env_data["next", "ta_mean"][-1]
