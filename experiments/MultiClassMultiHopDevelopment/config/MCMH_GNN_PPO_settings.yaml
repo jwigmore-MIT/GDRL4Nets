@@ -2,7 +2,7 @@ device: null
 
 # Agent
 agent:
-  num_layers: 2
+  num_layers: 1
   hidden_channels: 32
 
 
@@ -12,6 +12,7 @@ training_make_env_kwargs:
   max_backlog: 250
   symlog_obs: False
   scale_obs: 250
+  transform_include: ["sp_dist"]
 
 
 

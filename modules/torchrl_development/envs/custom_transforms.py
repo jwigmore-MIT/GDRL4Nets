@@ -727,6 +727,7 @@ class MCMHPygLinkGraphTransform(ObservationTransform):
                  in_keys=["Q"],
                  out_keys=["X"],
                  env=None,
+                 include = [],
                  ):
 
         if not env:
@@ -738,7 +739,7 @@ class MCMHPygLinkGraphTransform(ObservationTransform):
         self.K = env.K
 
         # Edge features
-        self.n_features = int(len(in_keys) * 2)  # For start node and end node, collect their features
+        self.n_features = 2  # For start node and end node, collect their features
 
         # Step 4: Create new edge_index for modified graph
         self.og_edge_index = env.edge_index
@@ -766,7 +767,11 @@ class MCMHPygLinkGraphTransform(ObservationTransform):
         self.class_edge_index = torch.tensor(class_edge_index, dtype=torch.long).T
 
         # TODO: Get static link features if needed
-
+        if "sp_dist" in include:
+            self.sp_dist = env.sp_dist[self.og_edge_index[1]].T.reshape(-1,1)
+            self.n_features +=1
+        else:
+            self.sp_dist = None
     def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
         """
         Transform the observation tensor to a PyG compatible format
@@ -774,6 +779,8 @@ class MCMHPygLinkGraphTransform(ObservationTransform):
         # Step 4: Convert tensordict["Q"] to a tensor of shape (N*K,)
 
         tensordict["X"] = tensordict["Q"][self.og_edge_index].T.reshape(-1, 2)
+        if self.sp_dist is not None:
+            tensordict["X"] = torch.cat([tensordict["X"], self.sp_dist], dim=-1)
         tensordict["edge_index"] = self.edge_index
         tensordict["class_edge_index"] = self.class_edge_index
 
@@ -791,7 +798,7 @@ class MCMHPygLinkGraphTransform(ObservationTransform):
             # by def, there must be only one key
             return observation_spec
         observation_spec["X"] = Unbounded(
-            shape=(self.N * self.K, 2),
+            shape=(self.N * self.K, self.n_features),
             dtype=observation_spec["Q"].dtype,
             device=observation_spec["Q"].device
         )

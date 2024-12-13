@@ -52,10 +52,11 @@ def make_env_mcmh(
         env_params,
         seed: int = 0,
         max_backlog = 1000,
-        observation_keys = ["Q"],
         symlog_obs = True,
         scale_obs = 1,
-        inverse_reward = True
+        inverse_reward = True,
+        transform_include = [],
+        *args, **kwargs
         ):
     env_params = deepcopy(env_params)
     env_params["seed"] = seed
@@ -63,7 +64,8 @@ def make_env_mcmh(
     env = MultiClassMultiHop(**env_params)
     env = TransformedEnv(env, MCMHPygLinkGraphTransform(in_keys = ["Q"],
                                                         out_keys = ["X"],
-                                                        env = env))
+                                                        env = env,
+                                                        include = transform_include))
     if symlog_obs:
         env = TransformedEnv(env, SymLogTransform(in_keys=["X"], out_keys=["X"]))
     if scale_obs != 1:
