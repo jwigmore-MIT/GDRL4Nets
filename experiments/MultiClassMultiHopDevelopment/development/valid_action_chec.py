@@ -127,5 +127,10 @@ actor = ProbabilisticActor(actor,
 
 agent = ActorCriticWrapper(actor, critic)
 
+from time import time
+start = time()
 
 td = env.rollout(max_steps=1000, policy=agent)
+
+end = time()
+print(f"Average Time/step: {(end - start)/len(td)}")

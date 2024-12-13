@@ -32,6 +32,9 @@ class GNN_Actor(TensorDictModule):
         self.class_edge_index_key = class_edge_index_key
         self.small_logits = small_logits
         self.valid_action = valid_action
+        if self.valid_action:
+            raise NotImplementedError("Valid action functionality does not work as its possible to transmit "
+                                      "more packets over multiple links than exist in shared start node")
 
     def forward(self, input):
         if isinstance(input, TensorDict) and isinstance(input["X"], Batch): # Probabilistic actor automatically converts input to a TensorDict
@@ -49,6 +52,7 @@ class GNN_Actor(TensorDictModule):
                 input[self.out_keys[0]] = logits.squeeze(-1)
                 input[self.out_keys[1]] = probs.squeeze(-1)
                 if self.valid_action:
+
                     input["valid_action"] = torch.Tensor([1]).bool()
             else:
                 batch_graph = tensors_to_batch(input[self.feature_key], input[self.edge_index_key], input[self.class_edge_index_key], K = K)
@@ -56,8 +60,8 @@ class GNN_Actor(TensorDictModule):
                 logits = logits.reshape(batch_graph.batch_size, K, -1).transpose(1, 2)
                 input[self.out_keys[0]] = torch.cat((self.small_logits.expand(logits.shape[0], logits.shape[1], 1), logits), dim=-1)
                 input[self.out_keys[1]] = torch.softmax(input[self.out_keys[0]], dim=-1)
-                if self.valid_action:
-                    input["valid_action"] = torch.ones_like(input[self.out_keys[0][..., 0]]).bool()
+                # if self.valid_action: # this will only be done during the update and not rollout stage
+                #     input["valid_action"] = torch.ones_like(input[self.out_keys[0]][:, 0]).bool()
             return input
         elif isinstance(input, Batch):
             logits = self.module(input.x, input.edge_index)

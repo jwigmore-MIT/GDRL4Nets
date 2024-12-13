@@ -766,6 +766,8 @@ class MCMHPygLinkGraphTransform(ObservationTransform):
             class_edge_index.extend([[i, j] for i in indices for j in indices if i != j])
         self.class_edge_index = torch.tensor(class_edge_index, dtype=torch.long).T
 
+
+
         # TODO: Get static link features if needed
         if "sp_dist" in include:
             self.sp_dist = env.sp_dist[self.og_edge_index[1]].T.reshape(-1,1)

@@ -228,6 +228,30 @@ class MultiClassMultiHop(EnvBase): # TODO: Make it compatible with torchrl EnvBa
         return self._get_observation(reset = True)
 
     def _step(self, td:TensorDict):
+        # [:,-K:] is used to ensure that the last K columns are used in-case action is K+1
+        # *self.base_mask ensures that we don't try to send packets to nodes that cannot reach the destination
+        action = td["action"][:,-self.K:]*self.base_mask
+
+        start_Q = self.Q.clone()
+        diffQ = torch.zeros_like(self.Q)
+        for m in torch.randperm(self.M):
+            # (checks)
+            # (1) ensures that the sum of packets transmitted over a link cannot exceed the capacity of the link
+            assert action[m].sum(dim = 0) <= self.cap[m]
+            # (2) ensures that we don't try to transmit more packets than are available at the start node
+            to_transmit = torch.min(action[m], start_Q[self.start_nodes[m]])
+            start_Q[self.start_nodes[m]] -= to_transmit # needed for (2)
+            # (3) updates the difference in packets at the start and end nodes
+            diffQ[self.start_nodes[m]] -= to_transmit
+            diffQ[self.end_nodes[m]] += to_transmit
+        self.Q += diffQ
+
+        return self._get_observation()
+
+    """
+    Old _step() that requires converting to a valid action
+    ------------------------------
+    def _step(self, td:TensorDict): 
 
         # Step 1: Get valid action in case td["action"] violates constraints
         if td.get("valid_action", False):
@@ -238,15 +262,16 @@ class MultiClassMultiHop(EnvBase): # TODO: Make it compatible with torchrl EnvBa
             action = action[:,1:]
 
         # Step 2: Apply action to queues
-        """
+        
         Assuming the action is a valid (M,K) tensor where (m,k) denotes the number of packets to transmits over start 
         node of link m to end node of link m of class k
-        """
+        
         for m in range(self.M):
             self.Q[self.start_nodes[m]] -= action[m]
             self.Q[self.end_nodes[m]] += action[m]
 
         return self._get_observation()
+    """
 
     def convert_action(self, action):
         """
@@ -406,9 +431,9 @@ class MultiClassMultiHop(EnvBase): # TODO: Make it compatible with torchrl EnvBa
         In sets mask (m,k) to False if the start node of link m has no packets of class k
         :return:
         """
-        mask = self.Q[self.start_nodes] > 0
-        mask = torch.logical_and(mask, self.base_mask)
-        any_true = torch.any(mask, dim = 1,keepdim = True)
+        mask = self.Q[self.start_nodes] > 0 # Prevents sending packets from nodes with no packets
+        mask = torch.logical_and(mask, self.base_mask) # Prevents sending packets to nodes that cannot reach the destination
+        any_true = torch.any(mask, dim = 1,keepdim = True) # Allows idling only if there are no other valid actions
         return torch.concat([~any_true, mask], dim = 1)
         # ones = torch.ones([mask.shape[0],1], dtype = torch.bool)
         # return torch.concat([ones,torch.logical_and(mask, self.base_mask)],dim=1)

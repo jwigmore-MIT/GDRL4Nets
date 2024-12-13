@@ -23,3 +23,6 @@ def test_simulation_steps(env_info):
         total_departures += out["departures"].sum().item()
         flag = total_arrivals == out["Q"].sum().item() + total_departures
         assert flag
+
+if __name__ == "__main__":
+    pytest.main()

@@ -60,7 +60,7 @@ PARAMETERS
 """
 cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings.yaml'))
 
-# cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
+cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
 
 """
 Get Environment
@@ -99,9 +99,10 @@ gnn_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             )
 
 actor = GNN_Actor(module = gnn_module,
-                         feature_key="X", edge_index_key="edge_index",
-                                     class_edge_index_key="class_edge_index", out_keys=["logits", "probs"],
-                                     )
+                  feature_key="X", edge_index_key="edge_index",
+                  class_edge_index_key="class_edge_index",
+                  out_keys=["logits", "probs"],
+                  valid_action = False)
 
 gnn_critic_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             hidden_channels=cfg.agent.hidden_channels,
