@@ -407,8 +407,11 @@ class MultiClassMultiHop(EnvBase): # TODO: Make it compatible with torchrl EnvBa
         :return:
         """
         mask = self.Q[self.start_nodes] > 0
-        ones = torch.ones([mask.shape[0],1], dtype = torch.bool)
-        return torch.concat([ones,torch.logical_and(mask, self.base_mask)],dim=1)
+        mask = torch.logical_and(mask, self.base_mask)
+        any_true = torch.any(mask, dim = 1,keepdim = True)
+        return torch.concat([~any_true, mask], dim = 1)
+        # ones = torch.ones([mask.shape[0],1], dtype = torch.bool)
+        # return torch.concat([ones,torch.logical_and(mask, self.base_mask)],dim=1)
 
 
 

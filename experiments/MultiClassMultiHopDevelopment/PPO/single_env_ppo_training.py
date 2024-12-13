@@ -65,7 +65,7 @@ cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings
 """
 Get Environment
 """
-env_name= "env2"
+env_name= "grid_3x3"
 
 file_path = f"../envs/{env_name}.json"
 # Example usage
@@ -180,7 +180,7 @@ optimizer = torch.optim.Adam(
 )
 
 
-experiment_name = generate_exp_name(f"MCMH_GNN_PPO", "single_env")
+experiment_name = generate_exp_name(f"MCMH_GNN_PPO", env_name)
 logger = get_logger(
         "wandb",
         logger_name=LOGGING_PATH,

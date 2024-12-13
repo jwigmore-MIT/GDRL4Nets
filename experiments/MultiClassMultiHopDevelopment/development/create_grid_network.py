@@ -44,7 +44,29 @@ def create_grid_network(grid_size, link_rate, arrival_rate, output_file):
 # Example usage
 
 grid_size = 3
-arrival_rate = 0.5
+arrival_rate = 0.3
 link_rate = 1
 file_path = f"../envs/grid_{grid_size}x{grid_size}.json"
 network_config = create_grid_network(grid_size=grid_size, link_rate=link_rate, arrival_rate=arrival_rate, output_file=file_path)
+
+from experiments.MultiClassMultiHopDevelopment.agents.backpressure_agents import BackpressureActor
+from modules.torchrl_development.envs.MultiClassMultihop import MultiClassMultiHop
+from matplotlib import pyplot as plt
+from modules.torchrl_development.utils.metrics import compute_lta
+# import timing for performance evaluation
+import time
+
+env = MultiClassMultiHop(**network_config)
+bp_actor = BackpressureActor(net=env)
+# time the rollouts
+start = time.time()
+td = env.rollout(max_steps = 50000, policy = bp_actor)
+end = time.time()
+print(f"Time taken for rollout: {end - start}")
+fig, ax = plt.subplots()
+ax.plot(compute_lta(-td["next","reward"]))
+ax.set_xlabel("Time")
+ax.set_ylabel("Queue Length")
+ax.legend()
+plt.show()
+
