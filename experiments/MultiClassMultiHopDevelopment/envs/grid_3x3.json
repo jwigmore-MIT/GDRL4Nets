@@ -1,0 +1,160 @@
+{
+  "nodes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "bp_lta":28.96,
+  "link_distribution": "fixed",
+  "arrival_distribution": "poisson",
+  "link_info": [
+    {
+      "start": 0,
+      "end": 1,
+      "rate": 1
+    },
+    {
+      "start": 1,
+      "end": 0,
+      "rate": 1
+    },
+    {
+      "start": 0,
+      "end": 3,
+      "rate": 1
+    },
+    {
+      "start": 3,
+      "end": 0,
+      "rate": 1
+    },
+    {
+      "start": 1,
+      "end": 2,
+      "rate": 1
+    },
+    {
+      "start": 2,
+      "end": 1,
+      "rate": 1
+    },
+    {
+      "start": 1,
+      "end": 4,
+      "rate": 1
+    },
+    {
+      "start": 4,
+      "end": 1,
+      "rate": 1
+    },
+    {
+      "start": 2,
+      "end": 5,
+      "rate": 1
+    },
+    {
+      "start": 5,
+      "end": 2,
+      "rate": 1
+    },
+    {
+      "start": 3,
+      "end": 4,
+      "rate": 1
+    },
+    {
+      "start": 4,
+      "end": 3,
+      "rate": 1
+    },
+    {
+      "start": 3,
+      "end": 6,
+      "rate": 1
+    },
+    {
+      "start": 6,
+      "end": 3,
+      "rate": 1
+    },
+    {
+      "start": 4,
+      "end": 5,
+      "rate": 1
+    },
+    {
+      "start": 5,
+      "end": 4,
+      "rate": 1
+    },
+    {
+      "start": 4,
+      "end": 7,
+      "rate": 1
+    },
+    {
+      "start": 7,
+      "end": 4,
+      "rate": 1
+    },
+    {
+      "start": 5,
+      "end": 8,
+      "rate": 1
+    },
+    {
+      "start": 8,
+      "end": 5,
+      "rate": 1
+    },
+    {
+      "start": 6,
+      "end": 7,
+      "rate": 1
+    },
+    {
+      "start": 7,
+      "end": 6,
+      "rate": 1
+    },
+    {
+      "start": 7,
+      "end": 8,
+      "rate": 1
+    },
+    {
+      "start": 8,
+      "end": 7,
+      "rate": 1
+    }
+  ],
+  "class_info": [
+    {
+      "source": 0,
+      "destination": 8,
+      "rate": 0.3
+    },
+    {
+      "source": 2,
+      "destination": 6,
+      "rate": 0.3
+    },
+    {
+      "source": 6,
+      "destination": 2,
+      "rate": 0.3
+    },
+    {
+      "source": 8,
+      "destination": 0,
+      "rate": 0.3
+    }
+  ]
+}
