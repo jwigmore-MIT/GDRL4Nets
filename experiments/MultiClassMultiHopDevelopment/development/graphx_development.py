@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 
 
-file_path = "../envs/env2.json"
+file_path = "../envs/grid_5x5.json"
 # Example usage
 with open(file_path, 'r') as file:
     env_info = json.load(file)
@@ -26,5 +26,7 @@ pos = nx.spring_layout(G)
 nx.draw(G, pos, with_labels=True, font_weight='bold')
 plt.show()
 td = net.reset()
+
+
 
 

@@ -43,7 +43,7 @@ def create_grid_network(grid_size, link_rate, arrival_rate, output_file):
 
 # Example usage
 
-grid_size = 3
+grid_size = 5
 arrival_rate = 0.3
 link_rate = 1
 file_path = f"../envs/grid_{grid_size}x{grid_size}.json"

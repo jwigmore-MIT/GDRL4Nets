@@ -28,7 +28,7 @@ minibatches =100
 num_training_epochs = 30
 lr_decay = True
 
-env_name= "env2"
+env_name= "grid_4x4"
 new_backpressure_data = False
 training_data_amount = [10_000, 1]
 
@@ -48,8 +48,20 @@ base_env = MultiClassMultiHop(**env_info)
 from modules.torchrl_development.envs.custom_transforms import MCMHPygLinkGraphTransform
 from experiments.MultiClassMultiHopDevelopment.agents.backpressure_agents import BackpressureActor
 env = TransformedEnv(base_env, MCMHPygLinkGraphTransform(in_keys=["Q"], out_keys=["X"], env=base_env, include = ["sp_dist"]))
+
+# Plot line graph of single class
+import networkx as nx
+import matplotlib.pyplot as plt
+link_graph = nx.DiGraph()
+link_graph.add_edges_from(env.transform.edge_list.numpy())
+nx.draw(link_graph, with_labels=True)
+plt.show()
+diameter = nx.diameter(link_graph)
+
 actor = BackpressureActor(env)
 td = env.rollout(max_steps = 10, policy = actor)
+
+
 
 sp_dist = env.sp_dist
 edge_index = env.edge_index # Coordinate (COO) Format [2,M]
