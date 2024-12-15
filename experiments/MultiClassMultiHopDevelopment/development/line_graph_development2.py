@@ -28,7 +28,7 @@ minibatches =100
 num_training_epochs = 30
 lr_decay = True
 
-env_name= "grid_4x4"
+env_name= "grid_3x3"
 new_backpressure_data = False
 training_data_amount = [10_000, 1]
 

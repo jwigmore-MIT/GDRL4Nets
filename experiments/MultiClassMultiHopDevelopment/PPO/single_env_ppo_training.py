@@ -62,12 +62,12 @@ cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings
 
 # cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
 
-cfg.agent.num_layers=1
+cfg.agent.num_layers=7
 
 """
 Get Environment
 """
-env_name= "grid_5x5"
+env_name= "grid_3x3"
 
 file_path = f"../envs/{env_name}.json"
 # Example usage

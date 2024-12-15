@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 
 
-file_path = "../envs/grid_5x5.json"
+file_path = "../envs/grid_3x3.json"
 # Example usage
 with open(file_path, 'r') as file:
     env_info = json.load(file)
