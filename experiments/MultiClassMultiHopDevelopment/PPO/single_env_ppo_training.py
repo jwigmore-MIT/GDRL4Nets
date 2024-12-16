@@ -54,6 +54,9 @@ SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 EXPERIMENT_PATH = os.path.dirname(SCRIPT_PATH)
 
 LOGGING_PATH = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_PATH)), "logs")
+# if logging path does not exist, create it
+if not os.path.exists(LOGGING_PATH):
+    os.makedirs(LOGGING_PATH)
 
 device = "cpu"
 
