@@ -47,6 +47,9 @@ import pickle
 
 
 
+
+
+
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 EXPERIMENT_PATH = os.path.dirname(SCRIPT_PATH)
 
@@ -62,8 +65,7 @@ cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings
 
 # cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
 
-cfg.agent.num_layers=7
-cfg.agent.hidden_channels= 8
+
 
 """
 Get Environment
@@ -232,7 +234,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
             eval_start = time.time()
             training_env_ids = list(env_generator.context_dicts.keys())
             eval_log_info, eval_tds = evaluate_agent(actor, eval_env_generator, training_env_ids, pbar, cfg,
-                                                         device)
+                                                         )
 
             log_info.update(eval_log_info)
 

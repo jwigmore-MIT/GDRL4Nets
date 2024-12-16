@@ -50,10 +50,10 @@ def evaluate_agent(actor,
                     eval_env = eval_env_generator.sample(true_ind=i)
                     eval_td = eval_env.rollout(cfg.eval.traj_steps, actor, auto_cast_to_device=True).to('cpu')
                     eval_tds.append(eval_td)
-                    eval_backlog = eval_td["next", "backlog"].numpy()
+                    eval_backlog = eval_td["Q"].sum((1,2))
                     eval_lta_backlog = compute_lta(eval_backlog)
-                    vaf =  (eval_td["mask"] * eval_td["action"].squeeze()).sum().float() / eval_td["mask"].shape[0]
-                    valid_action_fractions[i].append(vaf)
+                    # vaf =  (eval_td["mask"] * eval_td["action"].squeeze()).sum().float() / eval_td["mask"].shape[0]
+                    # valid_action_fractions[i].append(vaf)
                     lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
                 # get MaxWeight LTA from gen_env_generator.context_dicts[i]["lta]

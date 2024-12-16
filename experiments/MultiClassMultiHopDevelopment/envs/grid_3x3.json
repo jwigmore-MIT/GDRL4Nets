@@ -10,7 +10,7 @@
     7,
     8
   ],
-  "bp_lta":28.96,
+  "lta":28.96,
   "link_distribution": "fixed",
   "arrival_distribution": "poisson",
   "link_info": [
