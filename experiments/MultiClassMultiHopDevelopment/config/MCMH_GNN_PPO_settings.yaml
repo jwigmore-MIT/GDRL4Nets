@@ -11,7 +11,7 @@ training_make_env_kwargs:
   observation_keys: ["X"]
   max_backlog: 250
   symlog_obs: False
-  scale_obs: 250
+  scale_obs: 500
   transform_include: ["sp_dist"]
 
 

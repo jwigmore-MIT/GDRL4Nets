@@ -296,7 +296,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         #     env_lta = baseline_lta[-1]
         mean_episode_reward = env_data["next", "reward"].sum(dim = 1).mean()
         mean_episode_backlog = env_data["Q"].sum((1,2)).mean()
-
+        avg_action_prob = env_data["sample_log_prob"].exp().mean()
         running_sum[context_id] += mean_episode_backlog
         running_step_counter[context_id] += env_data["collector", "mask"].sum()
         running_average[context_id] = running_sum[context_id] / (i+1)
@@ -312,6 +312,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         log_info.update({f'{log_header}/mean_episode_reward': mean_episode_reward.item(),
                          f'{log_header}/running_average': running_average[context_id].item(),
                          f'{log_header}/mean_episode_backlog': mean_episode_backlog.item(),
+                         f'{log_header}/avg_action_prob': avg_action_prob.item(),
                          # f'{log_header}/std_backlog': std_backlog.item(),
                          # f'{log_header}/mean_normalized_backlog': normalized_backlog.item(),
                          # f'{log_header}/global_interference_fraction': interference_percentage.item(),
