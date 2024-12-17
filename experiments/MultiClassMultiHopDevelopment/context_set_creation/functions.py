@@ -9,7 +9,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from copy import deepcopy
 import os
-
+from typing import Union, List
 def get_link_map(link_info):
     link_map = {}
     for id,link_dict in enumerate(link_info):
@@ -93,6 +93,72 @@ def subsample_topology_delete_edges(env_info, n_delete=1):
     }
     return new_network_config
 
+def delete_nodes(env_info, node_ids: Union[int, List[int]]):
+    """
+    Deletes the specified node from the original node info, link info, and class info
+    :param env_info:
+    :param node_id:
+    :return:
+    """
+    if isinstance(node_ids, int):
+        node_ids = [node_ids]
+    delete_nodes = set(node_ids)
+    # create a dictionary that maps the old node indices to the new node indices
+    node_mapping = {}
+    n_new = 0
+    for i, node in enumerate(env_info["nodes"]):
+        if node not in delete_nodes:
+            node_mapping[node] = n_new
+            n_new += 1
+        else:
+            node_mapping[node] = None
+    # Get the inverse mapping
+    inv_node_mapping = {v: k for k, v in node_mapping.items() if v is not None}
+    # create new link_info
+    new_link_info = []
+    for m, link_info in enumerate(env_info["link_info"]):
+        if (node_mapping[link_info["start"]] is not None and
+                node_mapping[link_info["end"]] is not None):
+            new_link_info.append({
+                "start": node_mapping[link_info["start"]],
+                "end": node_mapping[link_info["end"]],
+                "rate": link_info["rate"]
+            })
+
+    new_class_info = []
+    for cls in env_info["class_info"]:
+        if (node_mapping[cls["source"]] is not None and
+                node_mapping[cls["destination"]] is not None):
+            new_class_info.append(
+                {"source": node_mapping[cls["source"]],
+                 "destination": node_mapping[cls["destination"]],
+                 "rate": cls["rate"]}
+            )
+        else:
+            print(f"Class {cls} was removed due to node deletion")
+
+    link_map, edge_list = get_link_map(new_link_info)
+    # create a new graph object with the new link_info
+    G = nx.DiGraph()
+    G.add_edges_from(edge_list)
+    # create new network configuration dictionary
+    new_network_config = {
+        "nodes": torch.arange(len(inv_node_mapping.keys())).tolist(),
+        "link_distribution": env_info["link_distribution"],
+        "arrival_distribution": env_info["arrival_distribution"],
+        "link_info": new_link_info,
+        "class_info": new_class_info,
+        "original_labels": inv_node_mapping
+    }
+
+    # label G with original node ids
+    nx.relabel_nodes(G, new_network_config["original_labels"], copy=False)
+
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, font_weight='bold')
+    plt.show()
+
+    return new_network_config
 
 
 def subsample_topology_delete_nodes(env_info, n_delete=1, keep_class_nodes = True):
