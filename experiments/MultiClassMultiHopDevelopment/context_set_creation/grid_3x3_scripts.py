@@ -6,8 +6,8 @@ import os
 folder_path = "../envs/grid_3x3"
 base_file = os.path.join(folder_path, "grid_3x3.json")
 env_info = json.load(open(base_file, 'r'))
-to_delete = [0]
-env_info["class_info"].append({"source": 1, "destination": 8, "rate": 0.4})
+to_delete = []
+# env_info["class_info"].append({"source": 1, "destination": 8, "rate": 0.4})
 new_network_config = delete_nodes(env_info, to_delete)
 
 # run backpressure test
