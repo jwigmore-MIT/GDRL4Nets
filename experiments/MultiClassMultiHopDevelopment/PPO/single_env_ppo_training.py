@@ -118,7 +118,8 @@ gnn_critic_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1
                             hidden_channels=cfg.agent.hidden_channels,
                             num_layers=cfg.agent.num_layers,
                             normalize=False,
-                            activate_last_layer=False
+                            activate_last_layer=False,
+                            aggregation = "softmax"
                             )
 
 critic = GNN_Critic(module = gnn_critic_module,
