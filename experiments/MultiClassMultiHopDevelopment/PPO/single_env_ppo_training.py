@@ -230,9 +230,9 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
     with torch.no_grad(), set_exploration_type(ExplorationType.MODE):
 
         final = collected_frames >= collector.total_frames # check if this is the final evaluation epoch
-        prev_test_frame = ((i - 1) * cfg.collector.frames_per_batch) // cfg.collector.test_interval
-        cur_test_frame = (i * cfg.collector.frames_per_batch) // cfg.collector.test_interval
-        if (i >= 1 and (prev_test_frame <= cur_test_frame)) or final:
+        prev_test_frame = ((i - 1) * cfg.collector.frames_per_batch) // max(cfg.collector.test_interval,1)
+        cur_test_frame = (i * cfg.collector.frames_per_batch) // max(cfg.collector.test_interval,1)
+        if (i >= 1 and (prev_test_frame <= cur_test_frame)) or final or cfg.collector.test_interval == 0:
             actor.eval()
             eval_start = time.time()
             training_env_ids = list(env_generator.context_dicts.keys())
@@ -286,6 +286,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         #     env_lta = baseline_lta[-1]
         mean_episode_reward = env_data["next", "reward"].sum(dim = 1).mean()
         mean_episode_backlog = env_data["Q"].sum((1,2)).mean()
+
         running_sum[context_id] += mean_episode_backlog
         running_step_counter[context_id] += env_data["collector", "mask"].sum()
         running_average[context_id] = running_sum[context_id] / (i+1)
