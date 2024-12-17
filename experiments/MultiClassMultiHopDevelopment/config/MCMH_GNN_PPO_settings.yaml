@@ -4,6 +4,9 @@ device: null
 agent:
   num_layers: 3
   hidden_channels: 16
+  aggregation: mean
+  project_first: False
+
 
 
 # Environment

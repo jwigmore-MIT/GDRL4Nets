@@ -103,10 +103,10 @@ from experiments.MultiClassMultiHopDevelopment.agents.mcmh_link_sage import MCHC
 gnn_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             hidden_channels=cfg.agent.hidden_channels,
                             num_layers=cfg.agent.num_layers,
-                            normalize=False,
-                            activate_last_layer=False,
-                            aggregation = "softmax",
-                            project_first = False,
+                            normalize=cfg.actor.normalize,
+                            activate_last_layer=cfg.actor.activate_last_layer,
+                            aggregation = cfg.actor.aggregation,
+                            project_first = cfg.actor.project_first,
                             )
 
 actor = GNN_Actor(module = gnn_module,
@@ -118,9 +118,10 @@ actor = GNN_Actor(module = gnn_module,
 gnn_critic_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             hidden_channels=cfg.agent.hidden_channels,
                             num_layers=cfg.agent.num_layers,
-                            normalize=False,
-                            activate_last_layer=False,
-                            aggregation = "softmax"
+                            normalize=cfg.actor.normalize,
+                            activate_last_layer=cfg.actor.activate_last_layer,
+                            aggregation = cfg.actor.aggregation,
+                            project_first = cfg.actor.project_first,
                             )
 
 critic = GNN_Critic(module = gnn_critic_module,
