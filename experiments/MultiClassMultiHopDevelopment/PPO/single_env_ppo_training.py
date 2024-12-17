@@ -73,7 +73,7 @@ cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings
 """
 Get Environment
 """
-env_name= "grid_3x3"
+env_name= "grid_4x4"
 
 file_path = f"../envs/{env_name}.json"
 # Example usage
