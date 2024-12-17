@@ -2,7 +2,7 @@ device: null
 
 # Agent
 agent:
-  num_layers: 4
+  num_layers: 3
   hidden_channels: 32
 
 
@@ -33,7 +33,7 @@ logger:
 
 # Optim
 optim:
-  lr: 1.0e-3
+  lr: 3.0e-3
   eps: 1.0e-6
   weight_decay: 0.00
   max_grad_norm: 1.0
