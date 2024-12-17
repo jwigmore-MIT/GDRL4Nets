@@ -106,7 +106,7 @@ gnn_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             normalize=False,
                             activate_last_layer=False,
                             aggregation = "softmax",
-                            project_first = True,
+                            project_first = False,
                             )
 
 actor = GNN_Actor(module = gnn_module,
