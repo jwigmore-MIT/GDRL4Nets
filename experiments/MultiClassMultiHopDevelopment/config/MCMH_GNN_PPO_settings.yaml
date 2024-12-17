@@ -6,6 +6,8 @@ agent:
   hidden_channels: 16
   aggregation: mean
   project_first: False
+  normalize: False
+  activate_last_layer: False
 
 
 
