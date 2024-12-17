@@ -3,7 +3,7 @@ device: null
 # Agent
 agent:
   num_layers: 3
-  hidden_channels: 32
+  hidden_channels: 16
 
 
 # Environment
