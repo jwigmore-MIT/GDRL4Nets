@@ -4,6 +4,7 @@ import torch
 from torch_geometric.nn.aggr import Aggregation, MultiAggregation
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.dense.linear import Linear
+from torch_geometric.nn.aggr import SoftmaxAggregation
 from torch_geometric.typing import Adj, OptPairTensor, Size, SparseTensor
 from torch_geometric.utils import spmm
 from torch_geometric.nn import DirGNNConv
@@ -113,13 +114,16 @@ class MCHCLinkSageConv(MessagePassing):
     def __init__(self,
                  in_channels = 32,
                  out_channels = 32,
-                 aggr = "mean",
+                 aggregation = "mean",
                  normalize = False,
                  activation = F.leaky_relu,
                  **kwargs
                  ):
+        if aggregation == "softmax":
+            aggregation = SoftmaxAggregation(learn=True)
 
-        super(MCHCLinkSageConv, self).__init__(aggr = aggr, **kwargs)
+
+        super(MCHCLinkSageConv, self).__init__(aggr = aggregation, **kwargs)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -136,7 +140,7 @@ class MCHCLinkSageConv(MessagePassing):
         self.node_message_layer = SAGEConv(
                     in_channels=self.in_channels,
                     out_channels=self.out_channels,
-                    aggr = aggr,
+                    aggr = aggregation,
                     normalize=self.normalize,
                     root_weight=False)
 
@@ -144,7 +148,7 @@ class MCHCLinkSageConv(MessagePassing):
         self.class_message_layer = SAGEConv(
                     in_channels=self.in_channels,
                     out_channels=self.out_channels,
-                    aggr = aggr,
+                    aggr = aggregation,
                     normalize=self.normalize,
                     root_weight=False)
 
@@ -202,12 +206,9 @@ class MCHCGraphSage(torch.nn.Module):
             else:
                 out_channels = hidden_channels
                 activation = F.relu
-            self.node_layers.append(MCHCLinkSageConv(in_channels = input_channels,
-                                                     out_channels = out_channels,
-                                                     aggr = aggregation,
-                                                     normalize = normalize,
-                                                     activation = activation,
-                                                     ))
+            self.node_layers.append(
+                MCHCLinkSageConv(in_channels=input_channels, out_channels=out_channels, aggregation=aggregation,
+                                 normalize=normalize, activation=activation))
 
 
 

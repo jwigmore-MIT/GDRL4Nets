@@ -73,7 +73,7 @@ cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings
 """
 Get Environment
 """
-env_name= "grid_4x4"
+env_name= "grid_3x3"
 
 file_path = f"../envs/{env_name}.json"
 # Example usage
@@ -99,11 +99,13 @@ CREATE GNN ACTOR CRITIC
 """
 from experiments.MultiClassMultiHopDevelopment.agents.mcmh_link_sage import MCHCGraphSage, GNN_Actor, GNN_Critic
 
+
 gnn_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             hidden_channels=cfg.agent.hidden_channels,
                             num_layers=cfg.agent.num_layers,
                             normalize=False,
-                            activate_last_layer=False
+                            activate_last_layer=False,
+                            aggregation = "softmax"
                             )
 
 actor = GNN_Actor(module = gnn_module,
