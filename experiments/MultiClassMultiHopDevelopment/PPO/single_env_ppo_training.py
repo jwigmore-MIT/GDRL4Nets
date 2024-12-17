@@ -105,7 +105,8 @@ gnn_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             num_layers=cfg.agent.num_layers,
                             normalize=False,
                             activate_last_layer=False,
-                            aggregation = "softmax"
+                            aggregation = "softmax",
+                            project_first = True,
                             )
 
 actor = GNN_Actor(module = gnn_module,
@@ -193,15 +194,17 @@ optimizer = torch.optim.Adam(
 
 
 experiment_name = generate_exp_name(f"MCMH_GNN_PPO", env_name)
+if sys.gettrace() is not None: # we are debugging use a fake logger
+    experiment_name = "[DEBUG]" + experiment_name
 logger = get_logger(
-        "wandb",
-        logger_name=LOGGING_PATH,
-        experiment_name= experiment_name,
-        wandb_kwargs={
-            "config": cfg.as_dict(),
-            "project": cfg.logger.project,
-        },
-    )
+            "wandb",
+            logger_name=LOGGING_PATH,
+            experiment_name= experiment_name,
+            wandb_kwargs={
+                "config": cfg.as_dict(),
+                "project": cfg.logger.project,
+            },
+        )
 # Save config file
 
 ## Initialize variables for training loop

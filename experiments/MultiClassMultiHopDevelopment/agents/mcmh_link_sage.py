@@ -117,6 +117,7 @@ class MCHCLinkSageConv(MessagePassing):
                  aggregation = "mean",
                  normalize = False,
                  activation = F.leaky_relu,
+                 project = False,
                  **kwargs
                  ):
         if aggregation == "softmax":
@@ -142,7 +143,8 @@ class MCHCLinkSageConv(MessagePassing):
                     out_channels=self.out_channels,
                     aggr = aggregation,
                     normalize=self.normalize,
-                    root_weight=False)
+                    root_weight=False,
+                    project = project)
 
 
         self.class_message_layer = SAGEConv(
@@ -150,7 +152,8 @@ class MCHCLinkSageConv(MessagePassing):
                     out_channels=self.out_channels,
                     aggr = aggregation,
                     normalize=self.normalize,
-                    root_weight=False)
+                    root_weight=False,
+                    project = project)
 
         self.self_layer = Linear(self.in_channels, self.out_channels, bias = True)
 
@@ -185,7 +188,8 @@ class MCHCGraphSage(torch.nn.Module):
                  num_layers: int,
                  aggregation: str = "mean",
                  normalize: bool = False,
-                 activate_last_layer = True
+                 activate_last_layer = True,
+                 project_first = False,
                  ):
         super(MCHCGraphSage, self).__init__()
         self.node_layers = torch.nn.ModuleList()
@@ -195,6 +199,10 @@ class MCHCGraphSage(torch.nn.Module):
         for i in range(0,num_layers):
             if i == 0:
                 input_channels = self.in_channels
+                if project_first:
+                    project = True
+                else:
+                    project = False
             else:
                 input_channels = hidden_channels
             if i == num_layers-1:
@@ -208,7 +216,7 @@ class MCHCGraphSage(torch.nn.Module):
                 activation = F.relu
             self.node_layers.append(
                 MCHCLinkSageConv(in_channels=input_channels, out_channels=out_channels, aggregation=aggregation,
-                                 normalize=normalize, activation=activation))
+                                 normalize=normalize, activation=activation, project = project))
 
 
 
