@@ -233,7 +233,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         final = collected_frames >= collector.total_frames # check if this is the final evaluation epoch
         prev_test_frame = ((i - 1) * cfg.collector.frames_per_batch) // max(cfg.collector.test_interval,1)
         cur_test_frame = (i * cfg.collector.frames_per_batch) // max(cfg.collector.test_interval,1)
-        if (i >= 1 and (prev_test_frame <= cur_test_frame)) or final or cfg.collector.test_interval == 0:
+        if (i >= 1 and (prev_test_frame < cur_test_frame)) or final or cfg.collector.test_interval == 0:
             actor.eval()
             eval_start = time.time()
             training_env_ids = list(env_generator.context_dicts.keys())
@@ -248,7 +248,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
                 torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
                 agent_artifact = wandb.Artifact(f"trained_actor_module_{artifact_name}", type="model")
                 agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
-                try:
+                try: # TODO  FIGURE OUT WHY THIS DOESN'T WORK ON LINUX SERVER
                     agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
                 except:
                     pass
