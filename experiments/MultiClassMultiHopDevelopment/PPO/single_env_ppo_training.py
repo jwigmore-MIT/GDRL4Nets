@@ -199,6 +199,7 @@ logger = get_logger(
             "project": cfg.logger.project,
         },
     )
+# Save config file
 
 ## Initialize variables for training loop
 collected_frames = 0 # count of environment interactions
@@ -247,13 +248,19 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
                 torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
                 agent_artifact = wandb.Artifact(f"trained_actor_module_{artifact_name}", type="model")
                 agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
-                agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                try:
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                except:
+                    pass
                 wandb.log_artifact(agent_artifact, aliases=["best", "latest"])
             else:
                 torch.save(agent.state_dict(), os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
                 agent_artifact = wandb.Artifact(f"trained_actor_module.pt_{artifact_name}", type="model")
                 agent_artifact.add_file(os.path.join(logger.experiment.dir, f"trained_actor_module.pt"))
-                agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                try:
+                    agent_artifact.add_file(os.path.join(logger.experiment.dir, f"config.yaml"))
+                except:
+                    pass
                 wandb.log_artifact(agent_artifact, aliases=["latest"])
             # log all of the state action figures to wandb
 
