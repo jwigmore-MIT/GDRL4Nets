@@ -232,7 +232,7 @@ for i, data in enumerate(collector): # iterator that will collect frames_per_bat
         final = collected_frames >= collector.total_frames # check if this is the final evaluation epoch
         prev_test_frame = ((i - 1) * cfg.collector.frames_per_batch) // cfg.collector.test_interval
         cur_test_frame = (i * cfg.collector.frames_per_batch) // cfg.collector.test_interval
-        if (i >= 1 and (prev_test_frame < cur_test_frame)) or final:
+        if (i >= 1 and (prev_test_frame <= cur_test_frame)) or final:
             actor.eval()
             eval_start = time.time()
             training_env_ids = list(env_generator.context_dicts.keys())

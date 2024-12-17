@@ -55,7 +55,7 @@ def evaluate_agent(actor,
                     lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
                 # get MaxWeight LTA from gen_env_generator.context_dicts[i]["lta]
-                bp_lta = eval_env_generator.context_dicts[i].get(["lta"], None)
+                bp_lta = eval_env_generator.context_dicts[i].get("lta", None)
                 if bp_lta is not None:
                     normalized_final_mean_lta_backlogs[i] = final_mean_lta_backlogs[i] / bp_lta
                 else:
