@@ -55,7 +55,15 @@ def evaluate_agent(actor,
                     lta_backlogs[i].append(eval_lta_backlog)
                 final_mean_lta_backlogs[i] = np.mean([t[-1] for t in lta_backlogs[i]])
                 # get MaxWeight LTA from gen_env_generator.context_dicts[i]["lta]
-                bp_lta = eval_env_generator.context_dicts[i]["env_params"].get("bp_lta", None)
+                try:
+                    bp_lta = eval_env_generator.context_dicts[i]["env_params"].get("bp_lta", None)
+                except KeyError:
+                    bp_lta = None
+                if bp_lta is None:
+                    try:
+                        bp_lta = eval_env_generator.context_dicts[i]["bp_lta"]
+                    except KeyError:
+                        bp_lta = None
                 if bp_lta is not None:
                     normalized_final_mean_lta_backlogs[i] = final_mean_lta_backlogs[i] / bp_lta
                 else:
@@ -81,7 +89,7 @@ def evaluate_agent(actor,
                 log_info.update({f"eval/lta_backlog_training_envs": training_env_lta_backlogs})
                 # add the normalized lta backlog for the same environment
                 normalized_training_mean_lta_backlogs = np.mean(
-                    [normalized_final_mean_lta_backlogs[i] for i in training_envs_ind])
+                    [normalized_final_mean_lta_backlogs[i] for i in training_envs_ind if normalized_final_mean_lta_backlogs[i] is not None])
                 log_info.update({
                     f"eval_normalized/normalized_lta_backlog_training_envs": normalized_training_mean_lta_backlogs})
 
@@ -91,7 +99,7 @@ def evaluate_agent(actor,
             log_info.update({"eval/lta_backlog_non_training_envs": general_lta_backlogs})
             # add the normalized lta backlog for the general environments
             normalized_general_lta_backlogs = np.mean(
-                [normalized_final_mean_lta_backlogs[i] for i in non_training_inds])
+                [normalized_final_mean_lta_backlogs[i] for i in non_training_inds if normalized_final_mean_lta_backlogs[i] is not None])
             log_info.update(
                 {"eval_normalized/normalized_lta_backlog_non_training_envs": normalized_general_lta_backlogs})
 
@@ -99,7 +107,7 @@ def evaluate_agent(actor,
             all_lta_backlogs = np.mean([final_mean_lta_backlogs[i] for i in test_envs_ind])
             log_info.update({"eval/lta_backlog_all_envs": all_lta_backlogs})
             # add the normalized lta backlog for all environments
-            normalized_all_lta_backlogs = np.mean([normalized_final_mean_lta_backlogs[i] for i in test_envs_ind])
+            normalized_all_lta_backlogs = np.mean([normalized_final_mean_lta_backlogs[i] for i in test_envs_ind if normalized_final_mean_lta_backlogs[i] is not None])
             log_info.update({"eval_normalized/normalized_lta_backlog_all_envs": normalized_all_lta_backlogs})
 
     return log_info, eval_tds

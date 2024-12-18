@@ -22,16 +22,16 @@ PARAMETERS
 cfg = load_config(os.path.join(EXPERIMENT_PATH, 'config', 'MCMH_GNN_PPO_settings.yaml'))
 
 # cfg.collector.total_frames = int(cfg.collector.frames_per_batch* 10)
-
-cfg.agent.num_layers=3
-cfg.agent.hidden_channels= 8
+#
+# cfg.agent.num_layers=3
+# cfg.agent.hidden_channels= 8
 
 """
 Get Environment
 """
-env_name= "grid_3x3"
+env_name= "grid_4x4_3_nodes_removed_context_set"
 
-file_path = f"../envs/{env_name}.json"
+file_path = f"../envs/grid_4x4_mod/{env_name}.json"
 # Example usage
 with open(file_path, 'r') as file:
     env_info = json.load(file)
@@ -47,8 +47,10 @@ check_env_specs(env)
 gnn_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             hidden_channels=cfg.agent.hidden_channels,
                             num_layers=cfg.agent.num_layers,
-                            normalize=False,
-                            activate_last_layer=False
+                            normalize=cfg.agent.normalize,
+                            activate_last_layer=cfg.agent.activate_last_layer,
+                            aggregation = cfg.agent.aggregation,
+                            project_first = cfg.agent.project_first,
                             )
 
 actor = GNN_Actor(module = gnn_module,
@@ -60,8 +62,10 @@ actor = GNN_Actor(module = gnn_module,
 gnn_critic_module = MCHCGraphSage(in_channels=env.observation_spec["X"].shape[-1],
                             hidden_channels=cfg.agent.hidden_channels,
                             num_layers=cfg.agent.num_layers,
-                            normalize=False,
-                            activate_last_layer=False
+                            normalize=cfg.agent.normalize,
+                            activate_last_layer=cfg.agent.activate_last_layer,
+                            aggregation = cfg.agent.aggregation,
+                            project_first = cfg.agent.project_first,
                             )
 
 critic = GNN_Critic(module = gnn_critic_module,
@@ -82,22 +86,30 @@ actor = ProbabilisticActor(actor,
 
 agent = ActorCriticWrapper(actor, critic)
 
+
+
+
 # Load artifact from Wandb
 run = wandb.init()
-artifact = run.use_artifact('jwigmore-research/MCMH_Development/trained_actor_module.pt_MCMH_GNN_PPO_grid_3x3_81147f9c_24_12_16-08_33_32:v5', type='model')
+artifact = run.use_artifact('jwigmore-research/MCMH_Development/trained_actor_module.pt_MCMH_GNN_PPO_grid_4x4_c5cf26e9_24_12_17-18_04_47:v2', type='model')
 artifact_dir = artifact.download()
 
 # load model
 agent.load_state_dict(torch.load(os.path.join(artifact_dir, 'trained_actor_module.pt'),weights_only=True))
+ #load state dict from .pt file
+# file_path = os.path.join(SCRIPT_PATH, '/trained_models/trained_actor_module2.pt')
 
+from experiments.MultiClassMultiHopDevelopment.PPO.experiment_utils import evaluate_agent
+from tqdm import tqdm
+# intialize a progress bar
 
-# Test model
-td = env.rollout(max_steps = 500, policy = agent)
+log_info = {}  # dictionary to store all of the logging information for this iteration
+pbar = tqdm(total=1, desc="Evaluating")
+log_info, eval_tds = evaluate_agent(actor,
+                          env_generator,
+                          [0],
+                          pbar,
+                          cfg,
+                          )
 
-# plot results
-from matplotlib import pyplot as plt
-from modules.torchrl_development.utils.metrics import compute_lta
-with torch.no_grad():
-    fig, ax = plt.subplots()
-    ax.plot(compute_lta(-td["next","reward"]))
-    plt.show()
+# wandb.log(log_info, step=0)

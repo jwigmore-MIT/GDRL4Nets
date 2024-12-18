@@ -367,6 +367,17 @@ class EnvGenerator:
             else:
                 self.sample = self.cycle_sample
                 self.last_sample_ind = -1
+        # if all entries are dicts, then each dict is its
+        elif all([isinstance(value, dict) for value in input_params.values()]):
+            self.context_dicts = input_params
+            if all([isinstance(key, str) for key in self.context_dicts.keys()]):
+                self.context_dicts = {int(key): value for key, value in self.context_dicts.items()}
+            self.num_envs = len(input_params.keys())
+            if not cycle_sample:
+                self.sample = self.sample_from_multi
+            else:
+                self.sample = self.cycle_sample
+                self.last_sample_ind = -1
         else:
             self.context_dicts = {0: {
                                     "env_params":input_params,
