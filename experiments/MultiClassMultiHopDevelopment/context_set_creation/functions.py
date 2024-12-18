@@ -258,7 +258,7 @@ def subsample_topology_delete_nodes(env_info, n_delete=1, keep_class_nodes = Tru
     return new_network_config
 
 
-def create_context_set_from_folder(folder_path, context_set_name):
+def create_context_set_from_folder(folder_path, context_set_name, exlude_files = []):
     """
     Creates a context set from all the files contained within a particular folder
     :param folder_path:
@@ -271,7 +271,7 @@ def create_context_set_from_folder(folder_path, context_set_name):
     context_set = {}
     n = 0
     for file in files:
-        if file.endswith(".json"):
+        if file.endswith(".json") and file not in exlude_files:
             env_info = json.load(open(os.path.join(folder_path, file), 'r'))
             context_set[n] = env_info
             n+=1
@@ -279,6 +279,15 @@ def create_context_set_from_folder(folder_path, context_set_name):
     with open(f"{save_path}.json", 'w') as file:
         json.dump(context_set, file)
     return context_set
+
+def plot_network(env_info, title = "Network"):
+    link_map, edge_list = get_link_map(env_info["link_info"])
+    G = nx.DiGraph()
+    G.add_edges_from(edge_list)
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, font_weight='bold')
+    plt.title(title)
+    plt.show()
 
 
 
