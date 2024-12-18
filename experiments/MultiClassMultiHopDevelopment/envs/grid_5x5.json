@@ -26,6 +26,7 @@
     23,
     24
   ],
+  "bp_lta": 230.1804,
   "link_distribution": "fixed",
   "arrival_distribution": "poisson",
   "link_info": [
