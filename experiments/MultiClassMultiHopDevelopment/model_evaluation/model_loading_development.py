@@ -99,7 +99,7 @@ agent.load_state_dict(torch.load(os.path.join(artifact_dir, 'trained_actor_modul
  #load state dict from .pt file
 # file_path = os.path.join(SCRIPT_PATH, '/trained_models/trained_actor_module2.pt')
 
-from experiments.MultiClassMultiHopDevelopment.PPO.experiment_utils import evaluate_agent
+from evaluation import evaluate_agent
 from tqdm import tqdm
 # intialize a progress bar
 
@@ -110,6 +110,7 @@ log_info, eval_tds = evaluate_agent(actor,
                           [0],
                           pbar,
                           cfg,
+                          run
                           )
 
-# wandb.log(log_info, step=0)
+wandb.log(log_info, step=0)

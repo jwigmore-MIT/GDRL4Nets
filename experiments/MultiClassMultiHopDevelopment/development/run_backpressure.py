@@ -14,7 +14,7 @@ def test_backpressure(env_info = None, net = None, rollout_length = 10000, runs 
     # Create environment
     if env_info is not None:
         net = MultiClassMultiHop(**env_info)
-        net = Transform(net, MCMHPygLinkGraphTransform())
+        # net = Transform(net, MCMHPygLinkGraphTransform())
     elif net is None:
         raise ValueError("Either env_info or net must be provided")
     # Create backpressure actor
@@ -35,7 +35,7 @@ def test_backpressure(env_info = None, net = None, rollout_length = 10000, runs 
     fig.show()
     return mean_lta[-1], tds
 
-file_path = "../envs/grid_4x4.json"
+file_path = "../envs/grid_5x5.json"
 env_info = json.load(open(file_path, 'r'))
 
-mean_lta, tds = test_backpressure(env_info, rollout_length=10000, runs=3)
+mean_lta, tds = test_backpressure(env_info = env_info, rollout_length=10000, runs=3)
