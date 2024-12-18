@@ -14,7 +14,7 @@ agent:
 # Environment
 training_make_env_kwargs:
   observation_keys: ["X"]
-  max_backlog: 500
+  max_backlog: 250
   symlog_obs: True
   scale_obs: 1
   transform_include: ["sp_dist"]
