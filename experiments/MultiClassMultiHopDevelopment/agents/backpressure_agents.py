@@ -40,7 +40,7 @@ class BackpressureGNN_Actor(TensorDictModule):
                 logits = self.module(input[self.feature_key],
                                      input[self.edge_index_key],
                                      )
-                logits = logits.reshape(2, -1).T
+                logits = logits.reshape(K, -1).T
                 logits = torch.cat((self.small_logits.repeat(logits.shape[0], 1), logits), dim=1)
                 probs = torch.softmax(logits, dim=-1)
                 input[self.out_keys[0]] = logits.squeeze(-1)
@@ -48,7 +48,7 @@ class BackpressureGNN_Actor(TensorDictModule):
             else:
                 batch_graph = tensors_to_batch(input[self.feature_key], input[self.edge_index_key], input[self.class_edge_index_key], K = K)
                 logits = self.module(batch_graph.x, batch_graph.edge_index)
-                logits = logits.reshape(batch_graph.batch_size, 2, -1).transpose(1, 2)
+                logits = logits.reshape(batch_graph.batch_size, K, -1).transpose(1, 2)
                 input[self.out_keys[0]] = torch.cat((self.small_logits.expand(logits.shape[0], logits.shape[1], 1), logits), dim=-1)
                 input[self.out_keys[1]] = torch.softmax(input[self.out_keys[0]], dim=-1)
             return input
@@ -80,6 +80,7 @@ class BackpressureActor(TensorDictModule):
 
 
     def set_topology(self, net):
+
         self.link_info = net.link_info
         self.M = net.M
         self.K = net.K
