@@ -9,6 +9,10 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # device should be GPU if available
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # device = "cpu"
+# Count the number of cpus available
+print(f"Number of CPUs: {torch.get_num_threads()}")
+
+
 print(f"Device: {device}")
 file_path = "../envs/grid_5x5.json"
 env_info = json.load(open(file_path, 'r'))
