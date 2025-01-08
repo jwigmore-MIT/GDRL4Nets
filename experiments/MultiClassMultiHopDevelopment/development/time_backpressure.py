@@ -22,7 +22,8 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
     # Count the number of cpus available
-    print(f"Number of CPUs: {torch.get_num_threads()}")
+    num_cpus = torch.get_num_threads()
+    print(f"Number of CPUs: {num_cpus}")
     # Count the number of GPUs available
     print(f"Number of GPUs: {torch.cuda.device_count()}")
 
@@ -63,7 +64,7 @@ def main():
     """
     # Using ParallelEnv and MultiClassMultiHopBP environment
     make_net = lambda: MultiClassMultiHopBP(**env_info)
-    net = ParallelEnv(3, make_net)
+    net = ParallelEnv(num_cpus, make_net)
     start_time = time.time()
     td = net.rollout(max_steps = 500)
     end_time = time.time()
