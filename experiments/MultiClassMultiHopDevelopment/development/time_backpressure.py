@@ -11,6 +11,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # device = "cpu"
 # Count the number of cpus available
 print(f"Number of CPUs: {torch.get_num_threads()}")
+# Count the number of GPUs available
+print(f"Number of GPUs: {torch.cuda.device_count()}")
 
 
 print(f"Device: {device}")
