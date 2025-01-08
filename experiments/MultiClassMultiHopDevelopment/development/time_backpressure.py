@@ -7,14 +7,14 @@ import warnings
 import torch
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 # device should be GPU if available
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-device = "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cpu"
 print(f"Device: {device}")
 file_path = "../envs/grid_5x5.json"
 env_info = json.load(open(file_path, 'r'))
 net = MultiClassMultiHop(**env_info)
 net.to(device)
-bp_actor = BackpressureActor(net)
+bp_actor = BackpressureActor(net).to(device)
 start_time = time.time()
 td = net.rollout(max_steps = 500, policy=bp_actor)
 end_time = time.time()
