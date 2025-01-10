@@ -17,7 +17,7 @@ from modules.torchrl_development.utils.metrics import compute_lta
 import matplotlib.pyplot as plt
 import os
 
-file_path = "../envs/grid_4x4_mod/grid_4x4_node_subsampled_gWscje.json"
+file_path = "../envs/grid_5x5.json"
 env_info = json.load(open(file_path, 'r'))
 # env_info["action_func"] = "bp+interference"
 env_info["action_func"] = "bpi"
@@ -26,7 +26,7 @@ net = MultiClassMultiHopBP(**env_info)
 
 save_path = "../comparison"
 
-td = net.rollout(1000)
+td = net.rollout(2000)
 y_lim = 7
 # K = net.K
 # # plot the backlog for each queue in for each class
@@ -44,10 +44,10 @@ y_lim = 7
 # #     fig.show()
 # #     # fig.savefig(os.path.join(save_path, f"{env_info['action_func']}_{k}"))
 #
-# fig, ax = plt.subplots()
-# plt.plot(compute_lta(td["Q"].sum((1,2))))
-# fig.suptitle("Total Backlog")
-# fig.show()
+fig, ax = plt.subplots()
+plt.plot(compute_lta(td["Q"].sum((1,2))))
+fig.suptitle("Total Backlog")
+fig.show()
 # # fig.savefig(os.path.join(save_path, f"{env_info['action_func']}_Total"))
 #
 #

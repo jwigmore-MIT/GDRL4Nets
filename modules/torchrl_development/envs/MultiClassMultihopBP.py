@@ -242,11 +242,11 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         if self.action_func == self.backpressureWithInterference:
             start_Q = self.Q.sum().item()
             to_transmit = torch.min(action, self.Q[self.start_nodes])
-            self.Q.index_add(0, self.start_nodes, -to_transmit)
-            self.Q.index_add(0, self.end_nodes, to_transmit)
+            self.Q.index_add_(0, self.start_nodes, -to_transmit)
+            self.Q.index_add_(0, self.end_nodes, to_transmit)
             end_Q = self.Q.sum().item()
             if end_Q - start_Q > 0:
-                raise ValueError(f"Backpressure with interference increased the total number of packets in the network by {diff}")
+                raise ValueError(f"Backpressure with interference increased the total number of packets in the network by {end_Q-start_Q}")
         else:
             start_Q = self.Q.clone()
             diffQ = torch.zeros_like(self.Q)
@@ -308,12 +308,20 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
         # send the largest class using the full link capacity for each link
         action = torch.zeros([M, K])
-        weights = torch.zeros([M,1])
-        chosen_class = torch.zeros([M,1], dtype = torch.int)
-        for m in range(M):
-            pressure = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
-            chosen_class[m] = torch.argmax(pressure)
-            weights[m] = pressure[chosen_class[m]]
+        # weights = torch.zeros([M,1])
+        # chosen_class = torch.zeros([M,1], dtype = torch.int)
+        # for m in range(M):
+        #     pressure = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
+        #     chosen_class[m] = torch.argmax(pressure)
+        #     weights[m] = pressure[chosen_class[m]]
+
+        # Compute the pressure for all links
+        # start_nodes = torch.tensor([link_info[m]["start"] for m in range(M)])
+        # end_nodes = torch.tensor([link_info[m]["end"] for m in range(M)])
+        pressure = cap.unsqueeze(1)*(Q[self.start_nodes] - Q[self.end_nodes]) * mask[:, 1:]
+
+        # Find the class with the maximum pressure for each link
+        weights, chosen_class = torch.max(pressure, dim=1, keepdim=True)
 
         """
         Now we need to take the argmax over all links that share the same start node
@@ -324,6 +332,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
             # get the classes that have the highest pressure
             argmax_weight = torch.argmax(weights[links])
             action[links[argmax_weight], chosen_class[links[argmax_weight]]] = cap[links[argmax_weight]]
+
 
         return action*mask[:,1:]
 
