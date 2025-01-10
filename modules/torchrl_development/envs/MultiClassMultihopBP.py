@@ -82,6 +82,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
                  context_id: Optional[int] = 0,
                  max_backlog: Optional[int] = None,
                  device: Optional[str] = None,
+                 action_func: Optional[str] = None,
                  **kwargs):
         super().__init__()
 
@@ -99,6 +100,12 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
         # Internal random number generator
         self.rng = torch.Generator()
+
+        # set action function
+        if action_func == "bpi":
+            self.action_func = self.backpressureWithInterference
+        else:
+            self.action_func = self.backpressure
 
 
         # Nodes/Buffers/Queues
@@ -230,21 +237,31 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
     def _step(self, td:TensorDict):
         # [:,-K:] is used to ensure that the last K columns are used in-case action is K+1
         # *self.base_mask ensures that we don't try to send packets to nodes that cannot reach the destination
-        action = self.backpressure(self.Q, self.cap, td["mask"], self.M, self.K, self.link_info)
+        action = self.action_func(self.Q, self.cap, td["mask"], self.M, self.K, self.link_info)
 
-        start_Q = self.Q.clone()
-        diffQ = torch.zeros_like(self.Q)
-        for m in torch.randperm(self.M):
-            # (checks)
-            # (1) ensures that the sum of packets transmitted over a link cannot exceed the capacity of the link
-            assert action[m].sum(dim = 0) <= self.cap[m]
-            # (2) ensures that we don't try to transmit more packets than are available at the start node
-            to_transmit = torch.min(action[m], start_Q[self.start_nodes[m]])
-            start_Q[self.start_nodes[m]] -= to_transmit # needed for (2)
-            # (3) updates the difference in packets at the start and end nodes
-            diffQ[self.start_nodes[m]] -= to_transmit
-            diffQ[self.end_nodes[m]] += to_transmit
-        self.Q += diffQ
+        if self.action_func == self.backpressureWithInterference:
+            start_Q = self.Q.sum().item()
+            to_transmit = torch.min(action, self.Q[self.start_nodes])
+            self.Q.index_add(0, self.start_nodes, -to_transmit)
+            self.Q.index_add(0, self.end_nodes, to_transmit)
+            end_Q = self.Q.sum().item()
+            if end_Q - start_Q > 0:
+                raise ValueError(f"Backpressure with interference increased the total number of packets in the network by {diff}")
+        else:
+            start_Q = self.Q.clone()
+            diffQ = torch.zeros_like(self.Q)
+        # for m in torch.randperm(self.M):
+            for m in range(self.M):
+                # (checks)
+                # (1) ensures that the sum of packets transmitted over a link cannot exceed the capacity of the link
+                assert action[m].sum(dim = 0) <= self.cap[m]
+                # (2) ensures that we don't try to transmit more packets than are available at the start node
+                to_transmit = torch.min(action[m], start_Q[self.start_nodes[m]])
+                start_Q[self.start_nodes[m]] -= to_transmit # needed for (2)
+                # (3) updates the difference in packets at the start and end nodes
+                diffQ[self.start_nodes[m]] -= to_transmit
+                diffQ[self.end_nodes[m]] += to_transmit
+            self.Q += diffQ
 
         return self._get_observation()
 
@@ -272,6 +289,43 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
             if diff[max_class] > 0:
                 action[m, max_class] = cap[m]
         return action
+
+    def backpressureWithInterference(self, Q: torch.Tensor, cap: torch.Tensor, mask: torch.Tensor, M: int, K: int, link_info: dict):
+        """
+        Runs the backpressure algorithm given the network
+
+        Backpressure algorithm:
+            For each link:
+                1. Find the class which has the greatest difference between the queue length at the start and end nodes THAT IS NOT MASKED
+                2. Send the largest class using the full link capacity for each link if there is a positive differential between start and end nodes
+                3. If there is no positive differential, send no packets i.e. a_i[0,1:] = 0, a_i[0,0] = Y[i]
+
+        :param net: MultiClassMultiHop object
+        :param td: TensorDict object, should contain "mask" which is a torch.Tensor of shape [M, K]
+
+        :return: action: torch.Tensor of shape [M, K] where M is the number of links and K is the number of classes
+        """
+
+        # send the largest class using the full link capacity for each link
+        action = torch.zeros([M, K])
+        weights = torch.zeros([M,1])
+        chosen_class = torch.zeros([M,1], dtype = torch.int)
+        for m in range(M):
+            pressure = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
+            chosen_class[m] = torch.argmax(pressure)
+            weights[m] = pressure[chosen_class[m]]
+
+        """
+        Now we need to take the argmax over all links that share the same start node
+        """
+        for n in range(self.N):
+            # get the links that start at node n
+            links = self.outgoing_links[n]
+            # get the classes that have the highest pressure
+            argmax_weight = torch.argmax(weights[links])
+            action[links[argmax_weight], chosen_class[links[argmax_weight]]] = cap[links[argmax_weight]]
+
+        return action*mask[:,1:]
 
     """
     Old _step() that requires converting to a valid action

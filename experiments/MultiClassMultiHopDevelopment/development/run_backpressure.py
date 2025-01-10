@@ -39,3 +39,16 @@ file_path = "../envs/grid_5x5.json"
 env_info = json.load(open(file_path, 'r'))
 
 mean_lta, tds = test_backpressure(env_info = env_info, rollout_length=10000, runs=3)
+
+#get all ltas
+ltas = []
+for td in tds:
+    ltas.append(compute_lta(td["Q"].sum((1,2))))
+
+mean_ltas = torch.stack(ltas).mean(dim=0)
+
+# plot percent abs(mean_ltas[-1] - mean_ltas[i])/mean_ltas[-1] for all i
+fig, ax = plt.subplots()
+norm_lta = (mean_ltas - mean_ltas[-1])/mean_ltas[-1]
+ax.plot(norm_lta, label="Normalized LTA")
+fig.show()

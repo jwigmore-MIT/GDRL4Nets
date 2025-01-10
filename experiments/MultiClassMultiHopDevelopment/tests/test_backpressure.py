@@ -3,6 +3,7 @@ import json
 import torch
 import pytest
 from modules.torchrl_development.envs.MultiClassMultihop import MultiClassMultiHop
+from modules.torchrl_development.envs.MultiClassMultihopBP import MultiClassMultiHopBP
 from experiments.MultiClassMultiHopDevelopment.development.backpressure import BackpressureActor
 
 
@@ -49,6 +50,23 @@ def test_backpressure_algorithm(bp_actor, net):
     assert backlog.sum().item() > 0
 
 
+def test_MultihopMulticlassBP_env(env_info):
+    net = MultiClassMultiHopBP(**env_info)
+    env_info["action_func"] = "bp+interference"
+    td = net.reset()
+    T = 1000
+    total_arrivals = td["arrivals"].sum().item()
+    total_departures = 0
+    backlog = torch.zeros([T])
+
+    for t in range(T):
+        td = net.step(td)
+        backlog[t] = td["Q"].sum()
+        total_departures += td["departures"].sum().item()
+        total_arrivals += td["arrivals"].sum().item()
+        assert total_arrivals == td["Q"].sum().item() + total_departures
+
+    assert backlog.sum().item() > 0
 
 
 if __name__ == "__main__":
