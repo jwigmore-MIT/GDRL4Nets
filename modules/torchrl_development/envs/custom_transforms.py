@@ -703,10 +703,24 @@ class RunningAverageTransform(Transform):
         self.window_size = window_size
 
 
-    def _apply_transform(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        self.time_avg_stats.update(input_tensor)
-        return self.time_avg_stats.mean, self.time_avg_stats.sampleStdev
-    @_apply_to_composite
+    def _call(self, tensordict: TensorDictBase) -> TensorDictBase:
+        for key in self.in_keys:
+            self.time_avg_stats.update(tensordict[key])
+            tensordict["ta_mean_" + key] = self.time_avg_stats.mean
+            tensordict["ta_stdev_" + key] = self.time_avg_stats.sampleStdev
+        return tensordict
+
+    def _reset(
+        self, tensordict: TensorDictBase, tensordict_reset: TensorDictBase
+    ) -> TensorDictBase:
+        self.time_avg_stats.reset()
+        tensordict_reset = self._call(tensordict_reset)
+        return tensordict_reset
+
+    # def _apply_transform(self, input_tensor: torch.Tensor) -> torch.Tensor:
+    #     self.time_avg_stats.update(input_tensor)
+    #     return self.time_avg_stats.mean, self.time_avg_stats.sampleStdev
+    # @_apply_to_composite
     def transform_observation_spec(self, observation_spec: TensorSpec) -> TensorSpec:
         observation_spec["ta_mean_" + self.in_keys[0]] = Unbounded(
             dtype=torch.float,

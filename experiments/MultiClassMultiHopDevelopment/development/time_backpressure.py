@@ -68,7 +68,7 @@ def main():
         make_net = lambda: MultiClassMultiHopBP(**env_info)
         net = ParallelEnv(num_cpus, make_net)
         start_time = time.time()
-        td = net.rollout(max_steps = 500)
+        td = net.rollout(max_steps = 1000)
         end_time = time.time()
         rollout_time = end_time-start_time
         print(f"Rollout Time: {rollout_time:.2f} seconds")

@@ -163,6 +163,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
         self.observation_spec = Composite({
             "Q": Unbounded(shape = self.Q.shape, dtype = torch.float32),
+            "backlog": Unbounded(shape = torch.Size([1]), dtype = torch.float32),
             "cap": Bounded(low = 0, high = 100, shape = self.cap.shape, dtype = torch.float32),
             "edge_index": Unbounded(shape = self.edge_index.shape, dtype = torch.long),
             "arrival_rates": Unbounded(shape = self.arrival_rates.shape, dtype = torch.float32),
@@ -380,8 +381,11 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         # Step 3: Deliver all packets that have reached their destination
         departures = self._process_departures()
 
+
+
         # Step 4: Compute reward, with shape (1,)
         reward = -torch.sum(self.Q).reshape([1])
+        backlog = torch.sum(self.Q).reshape([1])
 
         # Step 5: Check if the episode should be truncated
         terminated = False
@@ -397,6 +401,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
         td = TensorDict({
             "Q": self.Q.clone(),
+            "backlog": backlog,
             "cap": self.cap,
             "departures": departures,
             "arrivals": arrivals,
