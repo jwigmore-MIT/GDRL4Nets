@@ -236,35 +236,9 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         return self._get_observation(reset = True)
 
     def _step(self, td:TensorDict):
-        # [:,-K:] is used to ensure that the last K columns are used in-case action is K+1
-        # *self.base_mask ensures that we don't try to send packets to nodes that cannot reach the destination
-        action = self.action_func(self.Q, self.cap, td["mask"], self.M, self.K, self.link_info)
+        action = self.action_func(self.Q, self.cap, self._get_mask(), self.M, self.K, self.link_info)
+        return self._get_observation(action = action)
 
-        if self.action_func == self.backpressureWithInterference:
-            start_Q = self.Q.sum().item()
-            to_transmit = torch.min(action, self.Q[self.start_nodes])
-            self.Q.index_add_(0, self.start_nodes, -to_transmit)
-            self.Q.index_add_(0, self.end_nodes, to_transmit)
-            end_Q = self.Q.sum().item()
-            if end_Q - start_Q > 0:
-                raise ValueError(f"Backpressure with interference increased the total number of packets in the network by {end_Q-start_Q}")
-        else:
-            start_Q = self.Q.clone()
-            diffQ = torch.zeros_like(self.Q)
-        # for m in torch.randperm(self.M):
-            for m in range(self.M):
-                # (checks)
-                # (1) ensures that the sum of packets transmitted over a link cannot exceed the capacity of the link
-                assert action[m].sum(dim = 0) <= self.cap[m]
-                # (2) ensures that we don't try to transmit more packets than are available at the start node
-                to_transmit = torch.min(action[m], start_Q[self.start_nodes[m]])
-                start_Q[self.start_nodes[m]] -= to_transmit # needed for (2)
-                # (3) updates the difference in packets at the start and end nodes
-                diffQ[self.start_nodes[m]] -= to_transmit
-                diffQ[self.end_nodes[m]] += to_transmit
-            self.Q += diffQ
-
-        return self._get_observation()
 
     def backpressure(self, Q: torch.Tensor, cap: torch.Tensor, mask: torch.Tensor, M: int, K: int, link_info: dict):
         """
@@ -282,14 +256,77 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         :return: action: torch.Tensor of shape [M, K] where M is the number of links and K is the number of classes
         """
 
-        # send the largest class using the full link capacity for each link
+        # Initialize action tensor
         action = torch.zeros([M, K])
-        for m in range(M):
-            diff = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
-            max_class = torch.argmax(diff)
-            if diff[max_class] > 0:
-                action[m, max_class] = cap[m]
+
+        # Compute the pressure over each link for each class
+        # Mask ensures that the pressure is 0 for classes that are not allowed to be sent
+        pressure = (Q[self.start_nodes] - Q[self.end_nodes]) * mask[:, 1:]
+
+        # Find the class with the maximum pressure for each link
+        weights, chosen_class = torch.max(pressure, dim=1, keepdim=True)
+
+        # For each node transmit in order of the maxweight for each class
+        # Apply Action
+        start_Q = self.Q.clone()
+        diffQ = torch.zeros_like(self.Q)
+
+        for n in range(self.N):
+            # get the links that start at node n
+            links = self.outgoing_links[n]
+            link_weights = weights[links]
+            cap = self.cap[links]
+            # sort (links, link_weights) in descending order of link_weights
+            links = [x for _, x in sorted(zip(link_weights*cap.unsqueeze(-1), links), reverse=True)]
+            for link in links:
+                to_transmit = torch.min(cap[link], start_Q[self.start_nodes[link], chosen_class[link]])
+                action[link, chosen_class[link]] = to_transmit
+                start_Q[self.start_nodes[link], chosen_class[link]] -= to_transmit
+                diffQ[self.start_nodes[link], chosen_class[link]] -= to_transmit
+                diffQ[self.end_nodes[link], chosen_class[link]] += to_transmit
+
+        self.Q += diffQ
         return action
+
+
+        #
+        #
+        #
+        #     argmax_weight = torch.argmax(weights[links], dim=0)
+        #     action[links[argmax_weight], chosen_class[links[argmax_weight]]] = cap[links[argmax_weight]]
+        #
+        # # send the largest class using the full link capacity for each link
+        # action = torch.zeros([M, K])
+        # for m in range(M):
+        #     diff = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
+        #     max_class = torch.argmax(diff)
+        #     if diff[max_class] > 0:
+        #         action[m, max_class] = cap[m]
+        # # Apply Action
+        # start_Q = self.Q.clone()
+        # diffQ = torch.zeros_like(self.Q)
+        # """
+        # Applying the action:
+        #     It is possible that the sum of actions over all outgoing links of a particular node is greater than the number
+        #     of packets at that node leading to a queue underflow.  To prevent this we need to iterate for each link
+        #     and not transmit once the number of packets at the start node is zero.  However, when iterating over the links,
+        #     it is not obviously which links get priority.  The local maxweight schedule would mean that the links are chosen in
+        #     order of the maximum weight. I have used either in order of their index or a random permutation each time
+        #     as not to prioritize links.
+        # """
+        # # for m in torch.randperm(self.M):
+        # for m in range(self.M):
+        #     # (checks)
+        #     # (1) ensures that the sum of packets transmitted over a link cannot exceed the capacity of the link
+        #     assert action[m].sum(dim=0) <= self.cap[m]
+        #     # (2) ensures that we don't try to transmit more packets than are available at the start node
+        #     to_transmit = torch.min(action[m], start_Q[self.start_nodes[m]])
+        #     start_Q[self.start_nodes[m]] -= to_transmit  # needed for (2)
+        #     # (3) updates the difference in packets at the start and end nodes
+        #     diffQ[self.start_nodes[m]] -= to_transmit
+        #     diffQ[self.end_nodes[m]] += to_transmit
+        # self.Q += diffQ
+        # return action
 
     def backpressureWithInterference(self, Q: torch.Tensor, cap: torch.Tensor, mask: torch.Tensor, M: int, K: int, link_info: dict):
         """
@@ -307,60 +344,39 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         :return: action: torch.Tensor of shape [M, K] where M is the number of links and K is the number of classes
         """
 
-        # send the largest class using the full link capacity for each link
+        # Initialize action tensor
         action = torch.zeros([M, K])
-        # weights = torch.zeros([M,1])
-        # chosen_class = torch.zeros([M,1], dtype = torch.int)
-        # for m in range(M):
-        #     pressure = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
-        #     chosen_class[m] = torch.argmax(pressure)
-        #     weights[m] = pressure[chosen_class[m]]
 
-        # Compute the pressure for all links
-        # start_nodes = torch.tensor([link_info[m]["start"] for m in range(M)])
-        # end_nodes = torch.tensor([link_info[m]["end"] for m in range(M)])
-        pressure = cap.unsqueeze(1)*(Q[self.start_nodes] - Q[self.end_nodes]) * mask[:, 1:]
+        # Compute the pressure over each link for each class
+        # Mask ensures that the pressure is 0 for classes that are not allowed to be sent
+        pressure = (Q[self.start_nodes] - Q[self.end_nodes]) * mask[:, 1:]
 
         # Find the class with the maximum pressure for each link
         weights, chosen_class = torch.max(pressure, dim=1, keepdim=True)
 
-        """
-        Now we need to take the argmax over all links that share the same start node
-        """
+        # For each node, schedule a single class corresponding to the maxweight
         for n in range(self.N):
             # get the links that start at node n
             links = self.outgoing_links[n]
             # get the classes that have the highest pressure
-            argmax_weight = torch.argmax(weights[links])
+            argmax_weight = torch.argmax(weights[links]*cap[links].unsqueeze(-1), dim=0)
             action[links[argmax_weight], chosen_class[links[argmax_weight]]] = cap[links[argmax_weight]]
 
+        # Prevent trying to send packets from empty queues with mask
+        action = action * mask[:, 1:]
 
-        return action*mask[:,1:]
+        # Apply Backpressure
+        start_Q = self.Q.sum().item()
+        to_transmit = torch.min(action, self.Q[self.start_nodes])
+        self.Q.index_add_(0, self.start_nodes, -to_transmit)
+        self.Q.index_add_(0, self.end_nodes, to_transmit)
+        end_Q = self.Q.sum().item()
+        if end_Q - start_Q > 0:
+            raise ValueError(
+                f"Backpressure with interference increased the total number of packets in the network by {end_Q - start_Q}")
 
-    """
-    Old _step() that requires converting to a valid action
-    ------------------------------
-    def _step(self, td:TensorDict): 
+        return action
 
-        # Step 1: Get valid action in case td["action"] violates constraints
-        if td.get("valid_action", False):
-            action = td["action"]
-        else:
-            action = self._get_valid_action(td["action"])
-        if action.shape[1] == self.K +1:
-            action = action[:,1:]
-
-        # Step 2: Apply action to queues
-        
-        Assuming the action is a valid (M,K) tensor where (m,k) denotes the number of packets to transmits over start 
-        node of link m to end node of link m of class k
-        
-        for m in range(self.M):
-            self.Q[self.start_nodes[m]] -= action[m]
-            self.Q[self.end_nodes[m]] += action[m]
-
-        return self._get_observation()
-    """
 
     def convert_action(self, action):
         """
@@ -377,7 +393,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
 
 
-    def _get_observation(self, reset = False):
+    def _get_observation(self, action = None, reset = False):
         # Step 3: Deliver all packets that have reached their destination
         departures = self._process_departures()
 
@@ -399,13 +415,16 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         # Step 7: Generate new link capacities
         self._sim_capacities()
 
+        # Step 8: Generate Next Mask
+        self.mask = self._get_mask()
+
         td = TensorDict({
             "Q": self.Q.clone(),
             "backlog": backlog,
-            "cap": self.cap,
+            "cap": self.cap.clone(),
             "departures": departures,
             "arrivals": arrivals,
-            "mask": self._get_mask(),
+            "mask": self._get_mask().clone(),
             "sp_dist": self.sp_dist,
             "edge_index": self.edge_index,
             "link_rates": self.link_rates,
@@ -414,6 +433,9 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
             "terminated": torch.tensor([terminated], dtype=bool),
 
         }, batch_size=self.batch_size)
+        if action is not None:
+            td.set("action", action)
+
 
         if not reset:
             td.set("reward", reward)

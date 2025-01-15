@@ -20,14 +20,16 @@ import os
 
 file_path = "../envs/grid_5x5.json"
 env_info = json.load(open(file_path, 'r'))
-# env_info["action_func"] = "bp+interference"
 env_info["action_func"] = "bpi"
 net = MultiClassMultiHopBP(**env_info)
 
 
 save_path = "../comparison"
-
-td = net.rollout(3000)
+start_time = time.time()
+td = net.rollout(5000)
+end_time = time.time()
+rollout_time = end_time-start_time
+print(f"Rollout Time: {rollout_time:.2f} seconds")
 y_lim = 7
 # K = net.K
 # # plot the backlog for each queue in for each class

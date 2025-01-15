@@ -31,7 +31,7 @@ def main():
     print(f"Device: {device}")
     file_path = "../envs/grid_5x5.json"
     env_info = json.load(open(file_path, 'r'))
-    env_info["action_func"] = "bpi"
+    # env_info["action_func"] = "bpi"
 
     # Using BackpressureGNN_Actor
     """
