@@ -275,11 +275,11 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
             # get the links that start at node n
             links = self.outgoing_links[n]
             link_weights = weights[links]
-            cap = self.cap[links]
+            cap = self.cap[links].unsqueeze(-1)
             # sort (links, link_weights) in descending order of link_weights
-            links = [x for _, x in sorted(zip(link_weights*cap.unsqueeze(-1), links), reverse=True)]
+            links = [x for _, x in sorted(zip(link_weights*cap, links), reverse=True)]
             for link in links:
-                to_transmit = torch.min(cap[link], start_Q[self.start_nodes[link], chosen_class[link]])
+                to_transmit = torch.min(self.cap[link], start_Q[self.start_nodes[link], chosen_class[link]])
                 action[link, chosen_class[link]] = to_transmit
                 start_Q[self.start_nodes[link], chosen_class[link]] -= to_transmit
                 diffQ[self.start_nodes[link], chosen_class[link]] -= to_transmit
