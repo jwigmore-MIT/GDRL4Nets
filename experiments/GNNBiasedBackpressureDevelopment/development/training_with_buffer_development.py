@@ -21,13 +21,17 @@ import torch_geometric as pyg
 import matplotlib.pyplot as plt
 import math
 from copy import deepcopy
+from torchrl.data import ReplayBuffer, ListStorage
+
 
 from experiments.GNNBiasedBackpressureDevelopment.utils import tensors_to_batch, plot_nx_graph
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-
-NUM_ENVS = 2
+# get the number of cpus
+import multiprocessing
+NUM_CPUS = multiprocessing.cpu_count()
+NUM_ENVS = NUM_CPUS-2
 FRAMES_PER_BATCH = 8
 TOTAL_FRAMES = FRAMES_PER_BATCH*1000
 SEED = 13
@@ -70,6 +74,12 @@ if __name__ == '__main__':
     create_env_func = lambda: create_network_runner(env=env, max_steps=2000, graph=True)
     baseline_runner = create_network_runner(env=env, max_steps=2000, graph=False)
 
+    replay_buffer = ReplayBuffer(
+        storage=ListStorage(max_size = 512),
+        collate_fn= lambda x: x,
+
+    )
+
     collector = MultiSyncDataCollector(
             create_env_fn=[create_env_func]*NUM_ENVS,
             policy=actor,
@@ -77,6 +87,9 @@ if __name__ == '__main__':
             total_frames=NUM_ENVS*1000,
             reset_at_each_iter=True,
             )
+
+
+
 
 
     optimizer = optim.Adam(actor.parameters(), lr=1e-2)
@@ -93,21 +106,29 @@ if __name__ == '__main__':
         sp_td = baseline_runner.get_run(bias = sp_bias)
         print(f"SPBP Backlog: {-sp_td['reward']}")
         sp_reward = sp_td["reward"]
-    for epoch, samples in enumerate(collector):
-
-        if isinstance(samples["next","data"], list):
-            # combine all lists all lists
-            # flatten list
-            flattened = [item for sublist in samples["next", "data"] for item in sublist]
-            batch = Batch.from_data_list(flattened)  # needed to get non-tensor data
+    for epoch, new_samples in enumerate(collector):
+        # add samples to the replay buffer
+        flattened = [item for sublist in new_samples["next", "data"] for item in sublist]
+        if len(replay_buffer) > 0:
+            update_samples = deepcopy(flattened)
+            update_samples.extend(replay_buffer.sample(batch_size = min(len(replay_buffer), 128)))
         else:
-            batch = Batch.from_data_list([data[0] for data in samples["next", "data"]])  # needed to get non-tensor data
+            update_samples = flattened
+        replay_buffer.extend(flattened)
+        batch = Batch.from_data_list(update_samples)
+        # if isinstance(samples["next","data"], list):
+        #     # combine all lists all lists
+        #     # flatten list
+        #     flattened = [item for sublist in samples["next", "data"] for item in sublist]
+        #     batch = Batch.from_data_list(flattened)  # needed to get non-tensor data
+        # else:
+        #     batch = Batch.from_data_list([data[0] for data in samples["next", "data"]])  # needed to get non-tensor data
 
         # update the running average mean reward
         if mean_reward is None:
-            mean_reward = samples["reward"].mean()
+            mean_reward = new_samples["reward"].mean()
         else:
-            mean_reward = 0.9*mean_reward + 0.1*samples["reward"].mean()
+            mean_reward = 0.9*mean_reward + 0.1*new_samples["reward"].mean()
 
         dist_td = TensorDict({"X": batch.X, "edge_index": batch.edge_index, "edge_attr": batch.edge_attr})
         dist = actor.get_dist(dist_td)
@@ -115,7 +136,7 @@ if __name__ == '__main__':
 
 
         loss = -log_prob * (batch["link_rewards"] - mean_reward)
-        total_loss = loss.sum()
+        total_loss = loss.mean()
 
         optimizer.zero_grad()
         total_loss.backward()
@@ -127,17 +148,17 @@ if __name__ == '__main__':
 
         log_info = {
             "Loss": total_loss.item(),
-            "Mean Backlog": samples["backlog"].mean(),
-            "Mean Reward": samples["reward"].mean(),
-            "Max Reward": samples["reward"].max(),
-            "Min Reward": samples["reward"].min(),
-            "Std Reward": samples["reward"].std(),
+            "Mean Backlog": new_samples["backlog"].mean(),
+            "Mean Reward": new_samples["reward"].mean(),
+            "Max Reward": new_samples["reward"].max(),
+            "Min Reward": new_samples["reward"].min(),
+            "Std Reward": new_samples["reward"].std(),
             # "Mean Location": batch["tanh_loc"].mean().item(),
-            "Mean Scale": batch["scale"].mean().item(),
-            "Std Location": batch["loc"].std().item(),
-            "Std Scale": batch["scale"].std().item(),
-            "Mean Loc Logits": batch["logits"][0, :].mean().item(),
-            "Mean Scale Logits": batch["logits"][1, :].mean().item(),
+            # "Mean Scale": batch["scale"].mean().item(),
+            # "Std Location": batch["loc"].std().item(),
+            # "Std Scale": batch["scale"].std().item(),
+            # "Mean Loc Logits": batch["logits"][0, :].mean().item(),
+            # "Mean Scale Logits": batch["logits"][1, :].mean().item(),
 
         }
 
@@ -159,7 +180,7 @@ if __name__ == '__main__':
             # set the range of colors for the plot
             erange = (-2, 2)
             vrange = (0, 5)
-            subtitle = f"Epoch {epoch}; Mean Backlog: {samples['backlog'].mean().item():.2f}; Sample Backlog: {graph['backlog'].mean().item():.2f}"
+            subtitle = f"Epoch {epoch}; Mean Backlog: {new_samples['backlog'].mean().item():.2f}; Sample Backlog: {graph['backlog'].mean().item():.2f}"
 
 
             # Plotting Edge Location
