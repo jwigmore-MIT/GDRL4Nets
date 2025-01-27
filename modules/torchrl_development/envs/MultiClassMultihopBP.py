@@ -1,6 +1,5 @@
 
 # import
-from copy import deepcopy
 from typing import Optional, Union, List, Dict
 from collections import OrderedDict
 import networkx as nx
@@ -83,6 +82,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
                  max_backlog: Optional[int] = None,
                  device: Optional[str] = None,
                  action_func: Optional[str] = None,
+                 bias = None,
                  **kwargs):
         super().__init__()
 
@@ -133,21 +133,35 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         self.num_classes = self.K = len(class_info)
         self.Q = torch.zeros([self.N, self.K])
         self.arrival_map = {}  # Maps (start, end) to class id
-        self.arrival_rates = torch.zeros(self.num_classes, dtype=torch.float32)
+        self.arrival_rates = torch.zeros((self.N,self.K), dtype=torch.float32)
         self.destination_map = {}
         self.arrival_distribution_type = arrival_distribution.lower()
 
         self._init_classes(class_info)
         # self._process_arrivals() # Creates initial arrivals at $t=0$
 
+        # Initialize Bias
+        if bias is None:
+            self.bias = torch.zeros([self.M, self.K], dtype = torch.float32)
+        else:
+            self.bias = torch.tensor(bias, dtype = torch.float32) # Bias for each link and class
+            if bias.shape != (self.M, self.K):
+                raise ValueError(f"bias must have shape (M,K) ({self.M}, {self.K})")
+
+        # Initialize Graph
         self.graphx = nx.DiGraph(list(self.link_map.values()))
+        self.graphx = nx.DiGraph()
+        # Set weight for each edge equal to the link rates
+        self.graphx.add_weighted_edges_from([(self.link_map[m][0], self.link_map[m][1], 1/self.link_rates[m]) for m in range(self.M)])
 
         self.max_shortest_path = 100
         self.shortest_path_dist = {} # shortest path from node i to destination node of class k
+        self.weighted_shortest_path_dist = {}
         self.sp_dist = torch.zeros([self.N, self.K]) #Tensor form of shortest_path_dist
-
+        self.weighted_sp_dist = torch.zeros([self.N, self.K]) # Tensor form of shortest_path_dist with weights
 
         self._init_shortest_path_dist()
+        self._init_weighted_shortest_path_dist()
 
         self.base_mask = torch.zeros([self.M, self.K], dtype = torch.bool)
         self._init_base_mask()
@@ -171,7 +185,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
             "context_id": Unbounded(shape = self.context_id.shape, dtype = torch.float32),
             "mask": Binary(shape = (self.base_mask.shape[0], self.base_mask.shape[1]+1), dtype = torch.bool),
             "departures": Unbounded(shape = self.Q.shape, dtype = torch.float32),
-            "arrivals": Unbounded(shape = torch.Size([self.K]), dtype = torch.float32),
+            "arrivals": Unbounded(shape = self.arrival_rates.shape, dtype = torch.float32),
             "sp_dist": Unbounded(shape = self.sp_dist.shape, dtype = torch.float32),
 
 
@@ -195,9 +209,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
     def _process_arrivals(self):
         arrivals = self._sim_arrivals()
-        for id, class_dict in enumerate(self.class_info):
-            start = self.arrival_map[id]
-            self.Q[start,id] += arrivals[id]
+        self.Q += arrivals
         return arrivals
 
     def _process_departures(self):
@@ -212,7 +224,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         for id, class_dict in enumerate(class_info):
             self.arrival_map[id] = class_dict["source"]
             self.destination_map[id] = class_dict["destination"]
-            self.arrival_rates[id] = class_dict["rate"]
+            self.arrival_rates[class_dict["source"], id] = class_dict["rate"]
         self._sim_arrivals = self._init_random_process(self.arrival_rates, self.arrival_distribution_type)
 
 
@@ -261,7 +273,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
         # Compute the pressure over each link for each class
         # Mask ensures that the pressure is 0 for classes that are not allowed to be sent
-        pressure = (Q[self.start_nodes] - Q[self.end_nodes]) * mask[:, 1:]
+        pressure = (Q[self.start_nodes] - Q[self.end_nodes] + self.bias) * mask[:, 1:]
 
         # Find the class with the maximum pressure for each link
         weights, chosen_class = torch.max(pressure, dim=1, keepdim=True)
@@ -289,44 +301,6 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         return action
 
 
-        #
-        #
-        #
-        #     argmax_weight = torch.argmax(weights[links], dim=0)
-        #     action[links[argmax_weight], chosen_class[links[argmax_weight]]] = cap[links[argmax_weight]]
-        #
-        # # send the largest class using the full link capacity for each link
-        # action = torch.zeros([M, K])
-        # for m in range(M):
-        #     diff = (Q[link_info[m]["start"]] - Q[link_info[m]["end"]]) * mask[m][1:]  # mask out the classes that are not allowed to be sent
-        #     max_class = torch.argmax(diff)
-        #     if diff[max_class] > 0:
-        #         action[m, max_class] = cap[m]
-        # # Apply Action
-        # start_Q = self.Q.clone()
-        # diffQ = torch.zeros_like(self.Q)
-        # """
-        # Applying the action:
-        #     It is possible that the sum of actions over all outgoing links of a particular node is greater than the number
-        #     of packets at that node leading to a queue underflow.  To prevent this we need to iterate for each link
-        #     and not transmit once the number of packets at the start node is zero.  However, when iterating over the links,
-        #     it is not obviously which links get priority.  The local maxweight schedule would mean that the links are chosen in
-        #     order of the maximum weight. I have used either in order of their index or a random permutation each time
-        #     as not to prioritize links.
-        # """
-        # # for m in torch.randperm(self.M):
-        # for m in range(self.M):
-        #     # (checks)
-        #     # (1) ensures that the sum of packets transmitted over a link cannot exceed the capacity of the link
-        #     assert action[m].sum(dim=0) <= self.cap[m]
-        #     # (2) ensures that we don't try to transmit more packets than are available at the start node
-        #     to_transmit = torch.min(action[m], start_Q[self.start_nodes[m]])
-        #     start_Q[self.start_nodes[m]] -= to_transmit  # needed for (2)
-        #     # (3) updates the difference in packets at the start and end nodes
-        #     diffQ[self.start_nodes[m]] -= to_transmit
-        #     diffQ[self.end_nodes[m]] += to_transmit
-        # self.Q += diffQ
-        # return action
 
     def backpressureWithInterference(self, Q: torch.Tensor, cap: torch.Tensor, mask: torch.Tensor, M: int, K: int, link_info: dict):
         """
@@ -349,7 +323,7 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
 
         # Compute the pressure over each link for each class
         # Mask ensures that the pressure is 0 for classes that are not allowed to be sent
-        pressure = (Q[self.start_nodes] - Q[self.end_nodes]) * mask[:, 1:]
+        pressure = (Q[self.start_nodes] - Q[self.end_nodes] + self.bias) * mask[:, 1:]
 
         # Find the class with the maximum pressure for each link
         weights, chosen_class = torch.max(pressure, dim=1, keepdim=True)
@@ -357,7 +331,9 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         # For each node, schedule a single class corresponding to the maxweight
         for n in range(self.N):
             # get the links that start at node n
-            links = self.outgoing_links[n]
+            links = self.outgoing_links.get(n, [])
+            if len(links) == 0:
+                continue
             # get the classes that have the highest pressure
             argmax_weight = torch.argmax(weights[links]*cap[links].unsqueeze(-1), dim=0)
             action[links[argmax_weight], chosen_class[links[argmax_weight]]] = cap[links[argmax_weight]]
@@ -390,8 +366,32 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         return {self.link_map[m]: action[m].tolist() for m in range(self.M)}
 
 
+    def get_net_spec(self, include = ["sp_dist", "bias"]):
+        return self.get_rep(include = include)
 
+    def get_rep(self, include = ["sp_dist"])-> TensorDict:
+        """
+        Returns the representation of the network needed for the GNN
+        :return: td
+        """
 
+        if "bias" in include:
+            # expand link rates to shape of bias
+            link_rates = self.link_rates.unsqueeze(-1).expand(-1, self.K)
+            edge_attr = torch.stack([link_rates, self.bias], dim = 2)
+            # raise NotImplementedError("Include bias not yet implemented")
+        else:
+            edge_attr = self.link_rates.unsqueeze(-1).expand(-1, self.K).unsqueeze(-1)
+        if "sp_dist" in include:
+            X = torch.stack((self.arrival_rates, self.sp_dist), dim = 2)
+        else:
+            X = self.arrival_rates.unsqueeze(-1)
+        # TODO: Onehot encode destination map and add to node feature
+        
+        return TensorDict({"X": X,
+                         "edge_attr": edge_attr,
+                         "edge_index": self.edge_index}
+                        )
 
     def _get_observation(self, action = None, reset = False):
         # Step 3: Deliver all packets that have reached their destination
@@ -528,6 +528,22 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         for n in range(self.N):
             for k in range(self.K):
                 self.sp_dist[n,k] = self.shortest_path_dist[n][self.destination_map[k]]
+        return self.sp_dist
+
+    def _init_weighted_shortest_path_dist(self):
+
+        for source, dest_dict in nx.all_pairs_dijkstra_path_length(self.graphx):
+            self.weighted_shortest_path_dist[source] = {}
+            for n in range(self.N):
+                if n in dest_dict:
+                    self.weighted_shortest_path_dist[source][n] = dest_dict[n]
+                else:
+                    self.weighted_shortest_path_dist[source][n] = self.max_shortest_path
+        # Convert to tensor
+        for n in range(self.N):
+            for k in range(self.K):
+                self.weighted_sp_dist[n,k] = self.weighted_shortest_path_dist[n][self.destination_map[k]]
+        return
 
 
     def _init_base_mask(self):
@@ -553,6 +569,36 @@ class MultiClassMultiHopBP(EnvBase): # TODO: Make it compatible with torchrl Env
         # ones = torch.ones([mask.shape[0],1], dtype = torch.bool)
         # return torch.concat([ones,torch.logical_and(mask, self.base_mask)],dim=1)
 
+    def set_bias(self, bias):
+        if bias.dim() > 2:
+            bias.squeeze_(-1)
+        if bias.dim() == 1:
+            bias.unsqueeze_(-1)
+        self.bias = torch.tensor(bias, dtype = torch.float32)
+        if bias.shape != (self.M, self.K):
+            raise ValueError(f"bias must have shape (M,K) ({self.M}, {self.K}) but input has shape {bias.shape}")
 
+
+
+
+
+
+def create_sp_bias(net,weighted = False,  alpha=1):
+    """
+    Given a network instance get the shortest path bias for each link and class,
+    where the shortest path bias of a link, class pair is the shortest path distance from the end node
+    to the destination of said class
+    :param net:
+    :return:
+    """
+    if weighted:
+        node_sp_dist = net.weighted_sp_dist if hasattr(net, "weighted_sp_dist") else net._init_weighted_shortest_path_dist()
+    else:
+        node_sp_dist = net.sp_dist if hasattr(net, "sp_dist") else net._init_shortest_path_dist()
+    link_sp_dist = node_sp_dist[net.start_nodes]- node_sp_dist[net.end_nodes]
+    bias = alpha/link_sp_dist
+    bias[torch.isinf(bias)] = 0
+    bias[torch.isnan(bias)] = 0
+    return bias, link_sp_dist
 
 
